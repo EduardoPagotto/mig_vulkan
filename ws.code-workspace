@@ -228,50 +228,21 @@
 		"version": "0.2.0",
 		"configurations": [
 			{
-				"name": "Models3",
+				"name": "SDL_test",
 				"type": "lldb",
 				"request": "launch",
-				"program": "${workspaceFolder}/bin/models3",
+				"program": "${workspaceFolder}/bin/sdl_test",
 				"args": [],
+				"env": {
+					"SDL_VIDEODRIVER": "x11"
+				},
 				"cwd": "${workspaceFolder}"
 			},
 			{
-				"name": "HelloWorld",
+				"name": "GLFW_Test",
 				"type": "lldb",
 				"request": "launch",
-				"program": "${workspaceFolder}/bin/helloworld",
-				"args": [],
-				"cwd": "${workspaceFolder}"
-			},
-			{
-				"name": "Simples",
-				"type": "lldb",
-				"request": "launch",
-				"program": "${workspaceFolder}/bin/simples_cubo",
-				"args": [],
-				"cwd": "${workspaceFolder}"
-			},
-			{
-				"name": "BSPTree",
-				"type": "lldb",
-				"request": "launch",
-				"program": "${workspaceFolder}/bin/bsptree",
-				"args": [],
-				"cwd": "${workspaceFolder}"
-			},
-			{
-				"name": "Raycasting",
-				"type": "lldb",
-				"request": "launch",
-				"program": "${workspaceFolder}/bin/raycasting",
-				"args": [],
-				"cwd": "${workspaceFolder}"
-			},
-			{
-				"name": "Terrain",
-				"type": "lldb",
-				"request": "launch",
-				"program": "${workspaceFolder}/bin/terrain",
+				"program": "${workspaceFolder}/bin/glwf_test",
 				"args": [],
 				"cwd": "${workspaceFolder}"
 			}

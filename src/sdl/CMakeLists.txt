@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
 
-PROJECT(ChimeraEngineVulkan VERSION 0.0.1 LANGUAGES CXX)
+PROJECT(sdl_test VERSION 0.0.1 LANGUAGES CXX)
 
 find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)

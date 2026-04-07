@@ -16,8 +16,8 @@ VulkanRenderer vulkanRenderer;
 void initWindow(std::string wName = "Test window", const int width = 800, const int height = 600) {
 
     // Inicia GLFW
-    glfwInit();
     glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+    glfwInit();
 
     // Set GLFW to Not work with OpenGL
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
