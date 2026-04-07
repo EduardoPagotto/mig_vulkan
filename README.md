@@ -1,6 +1,18 @@
-# Test Vulkan
+# Vulkan API
+Migrating my knowledge from OpenGL to Vulkan
 
-## Dependencias para DEV
+## Features of project:
+- Editor: VSCode (clangd, Clang-Format, CMake Tools, CodeLLDB)
+- Build tool: CMAKE
+- Compiler: Clang (mostly C++20)
+- Debug: lldb
+- Ident: clang-format (file: .clang-format)
+- LIBS an API's:
+  - Vulkan 1.1
+  - SDL3, SDL3_Image, SDL3_TTF
+  - GLFW3
+
+## Deps develop
 ```bash
 # wayland-devel
 sudo dnf install wayland-devel libxkbcommon-devel libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
@@ -32,7 +44,7 @@ sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel
 sudo dnf install glfw-devel
 ```
 
-## Build engine and examples and test:
+## Build and test:
 ```bash
 
 cmake -G "Unix Makefiles" \
@@ -43,11 +55,10 @@ cmake -G "Unix Makefiles" \
 
 make -C build -j 4
 
+# test SDL3
 # wayland still has erros, force X11
 SDL_VIDEODRIVER=x11 ./bin/sdl_test
 
 # test with GLFW
 ./bin/glwf_test
 ```
-
-main1.cpp te inicializacao com o VMA mas preciso buscar os valores de algun jeito
