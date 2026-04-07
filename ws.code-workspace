@@ -1,0 +1,327 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		// open file with double click only
+		//"workbench.editor.enablePreview": false,
+		//"workbench.list.openMode": "doubleClick",
+		"workbench.colorCustomizations": {
+			"editorCursor.foreground": "#ffff00",
+			"editorCursor.background": "#ff0000",
+			"terminalCursor.foreground": "#ffff00",
+			"terminalCursor.background": "#ff0000"
+		},
+		// Remove editor distractions
+		"editor.cursorBlinking": "blink",
+		"editor.cursorSmoothCaretAnimation": "on",
+		"editor.cursorStyle": "line",
+		"editor.hover.enabled": "off", // hover manual crt+k, crt+i
+		"editor.occurrencesHighlight": "off", // off disable highligh
+		"editor.selectionHighlight": false, // True show similar selectec
+		"editor.suggestOnTriggerCharacters": false,
+		"editor.acceptSuggestionOnEnter": "smart",
+		"editor.acceptSuggestionOnCommitCharacter": false,
+		"editor.bracketPairColorization.enabled": true,
+		"editor.guides.bracketPairs": true,
+		"editor.quickSuggestions": {
+			"other": "off",
+			"comments": "off",
+			"strings": "off"
+		},
+		"editor.inlineSuggest.enabled": false,
+		"editor.suggest.preview": false,
+		"editor.snippetSuggestions": "none",
+		"editor.wordBasedSuggestions": "off",
+		"editor.minimap.enabled": false,
+		// Font settings
+		"editor.fontFamily": "JetBrains Mono",
+		"editor.fontSize": 15,
+		"editor.fontWeight": "normal",
+		"editor.fontLigatures": true,
+		"editor.letterSpacing": 0.8,
+		"editor.lineHeight": 1.5,
+		// misc
+		"editor.rulers": [
+			120
+		],
+		"editor.formatOnSave": true,
+		"editor.tabSize": 4,
+		"editor.smoothScrolling": true,
+		// Terminal
+		"terminal.integrated.letterSpacing": 0.8,
+		"terminal.integrated.fontWeight": "normal",
+		"terminal.integrated.defaultProfile.windows": "Command Prompt",
+		"terminal.integrated.fontFamily": "JetBrains Mono",
+		"terminal.integrated.fontLigatures.enabled": true,
+		"terminal.integrated.lineHeight": 1.0,
+		"terminal.integrated.fontSize": 15,
+		"terminal.integrated.cursorStyle": "line",
+		"terminal.integrated.cursorBlinking": true,
+		"terminal.integrated.cursorStyleInactive": "block",
+		// Explorer
+		"explorer.compactFolders": false,
+		"explorer.confirmDragAndDrop": true,
+		"explorer.confirmDelete": true,
+		"explorer.copyRelativePathSeparator": "/",
+		// Files
+		"files.autoSave": "onFocusChange",
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true,
+		"files.trimTrailingWhitespace": true,
+		// Git
+		"git.enableSmartCommit": true,
+		"git.autofetch": true,
+		"git.confirmSync": true,
+		"git.openRepositoryInParentFolders": "always",
+		// Error lens
+		"errorLens.enabled": true,
+		"errorLens.delay": 1000,
+		"errorLens.delayMode": "new",
+		"errorLens.enabledDiagnosticLevels": [
+			"error",
+			"warning"
+		],
+		"errorLens.problemRangeDecorationEnabled": true,
+		"errorLens.gutterIconsEnabled": true,
+		"errorLens.followCursor": "activeLine",
+		"errorLens.gutterIconsFollowCursorOverride": true,
+		"errorLens.decorations": {
+			"errorRange": {
+				"border": "1px dashed red",
+				"backgroundColor": "#ff000090",
+				"color": "#ffffff"
+			},
+			"warningRange": {
+				"border": "2px dotted #fa9121"
+			},
+			"infoRange": {
+				"textDecoration": ";background:linear-gradient(45deg,#ff8400,#00d9ff);background-clip:text;color:transparent;border-bottom:2px solid #00d9ff",
+				"backgroundColor": "#fff0"
+			},
+			"hintRange": {
+				"textDecoration": ";box-shadow:0 0 5px 3px #2faf6470;border-radius:0.25em"
+			}
+		},
+		// LLDB
+		"lldb.showDisassembly": "auto",
+		"lldb.dereferencePointers": true,
+		"lldb.consoleMode": "commands",
+		//"lldb-dap.executable-path": "/usr/bin/lldb-dap",
+		// CPP
+		"C_Cpp.intelliSenseCachePath": "${workspaceFolder}/build/vscode_cache",
+		//"C_Cpp.default.browse.path": [],
+		//"C_Cpp.loggingLevel": "Debug",
+		//"C_Cpp.intelliSenseEngineFallback": "enabled",
+		"C_Cpp.configurationWarnings": "enabled",
+		"C_Cpp.intelliSenseEngine": "Tag Parser",
+		"C_Cpp.clang_format_path": "/usr/bin/clang-format",
+		// CMAKE
+		"cmake.configureOnOpen": true,
+		"cmake.options.statusBarVisibility": "visible",
+		"cmake.useCMakePresets": "never",
+		"files.associations": {
+			"any": "cpp",
+			"array": "cpp",
+			"atomic": "cpp",
+			"strstream": "cpp",
+			"barrier": "cpp",
+			"bit": "cpp",
+			"bitset": "cpp",
+			"cctype": "cpp",
+			"cfenv": "cpp",
+			"charconv": "cpp",
+			"chrono": "cpp",
+			"cinttypes": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"codecvt": "cpp",
+			"compare": "cpp",
+			"complex": "cpp",
+			"concepts": "cpp",
+			"condition_variable": "cpp",
+			"coroutine": "cpp",
+			"csetjmp": "cpp",
+			"csignal": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"cuchar": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"deque": "cpp",
+			"forward_list": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"string": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"exception": "cpp",
+			"expected": "cpp",
+			"algorithm": "cpp",
+			"functional": "cpp",
+			"iterator": "cpp",
+			"memory": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"optional": "cpp",
+			"random": "cpp",
+			"ratio": "cpp",
+			"regex": "cpp",
+			"source_location": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"flat_map": "cpp",
+			"flat_set": "cpp",
+			"format": "cpp",
+			"fstream": "cpp",
+			"future": "cpp",
+			"generator": "cpp",
+			"initializer_list": "cpp",
+			"iomanip": "cpp",
+			"iosfwd": "cpp",
+			"iostream": "cpp",
+			"istream": "cpp",
+			"latch": "cpp",
+			"limits": "cpp",
+			"mutex": "cpp",
+			"new": "cpp",
+			"numbers": "cpp",
+			"ostream": "cpp",
+			"print": "cpp",
+			"ranges": "cpp",
+			"scoped_allocator": "cpp",
+			"semaphore": "cpp",
+			"shared_mutex": "cpp",
+			"span": "cpp",
+			"spanstream": "cpp",
+			"sstream": "cpp",
+			"stacktrace": "cpp",
+			"stdexcept": "cpp",
+			"stdfloat": "cpp",
+			"stop_token": "cpp",
+			"streambuf": "cpp",
+			"syncstream": "cpp",
+			"text_encoding": "cpp",
+			"thread": "cpp",
+			"typeindex": "cpp",
+			"typeinfo": "cpp",
+			"valarray": "cpp",
+			"variant": "cpp",
+			"queue": "cpp",
+			"stack": "cpp"
+		},
+		// OTHERS
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Models3",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/models3",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"name": "HelloWorld",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/helloworld",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"name": "Simples",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/simples_cubo",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"name": "BSPTree",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/bsptree",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"name": "Raycasting",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/raycasting",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			},
+			{
+				"name": "Terrain",
+				"type": "lldb",
+				"request": "launch",
+				"program": "${workspaceFolder}/bin/terrain",
+				"args": [],
+				"cwd": "${workspaceFolder}"
+			}
+		],
+		"compounds": []
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "cmake",
+				"type": "shell",
+				"options": {
+					"cwd": "${workspaceRoot}/build"
+				},
+				"command": "cmake",
+				"args": [
+					"-G",
+					"Unix Makefiles",
+					"-DCMAKE_BUILD_TYPE=Debug",
+					".."
+				],
+			},
+			{
+				"label": "make",
+				"type": "shell",
+				"options": {
+					"cwd": "${workspaceRoot}/build"
+				},
+				"dependsOn": [
+					"cmake"
+				],
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"command": "make",
+				"problemMatcher": {
+					"owner": "cpp",
+					"fileLocation": "absolute",
+					"pattern": {
+						"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+						"file": 1,
+						"line": 2,
+						"column": 3,
+						"severity": 4,
+						"message": 5
+					}
+				}
+			}
+		]
+	}
+}
