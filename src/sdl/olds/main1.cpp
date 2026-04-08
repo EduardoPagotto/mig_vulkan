@@ -1,11 +1,10 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
-#include <vulkan/vulkan.h>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <vulkan/vulkan.h>
 
 #define VMA_IMPLEMENTATION
-
 
 // Include Vulkan Memory Allocator (VMA) - requires vma_impl.cpp
 #include "vk_mem_alloc.h"
@@ -26,7 +25,7 @@ int main(int argc, char* argv[]) {
 
     // 3. Get required Instance Extensions
     unsigned int extensionCount = 0;
-    SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, nullptr);
+    SDL_Vulkan_GetInstanceExtensions(&extensionCount);
     std::vector<const char*> extensions(extensionCount);
     SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensions.data());
 
