@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
+project(VulkanTest)
 
 set(CMAKE_CXX_FLAGS "-std=c++20 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs -fstandalone-debug")
 

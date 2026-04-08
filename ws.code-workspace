@@ -228,7 +228,7 @@
 				"program": "${workspaceFolder}/bin/sdl_test",
 				"args": [],
 				"env": {
-					"SDL_VIDEODRIVER": "x11"
+					//"SDL_VIDEODRIVER": "x11"
 				},
 				"cwd": "${workspaceFolder}"
 			},

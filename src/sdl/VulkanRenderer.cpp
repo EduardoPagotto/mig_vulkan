@@ -1,14 +1,12 @@
 #include "VulkanRenderer.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
+#include <iostream>
 #include <stdexcept>
 
 VulkanRenderer::VulkanRenderer() {}
 
 VulkanRenderer::~VulkanRenderer() {}
 
-int VulkanRenderer::init(GLFWwindow* window) {
+bool VulkanRenderer::init(SDL_Window* window) {
     this->window = window;
 
     try {
@@ -16,11 +14,11 @@ int VulkanRenderer::init(GLFWwindow* window) {
         this->getPhysicalDevice();
         this->createLogicalDevices();
     } catch (const std::runtime_error& e) {
-        printf("Error: %s\n", e.what());
-        return EXIT_FAILURE;
+        std::cerr << "Error: " << e.what() << std::endl;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
 void VulkanRenderer::cleanup() {
@@ -51,15 +49,15 @@ void VulkanRenderer::createInstance() {
     std::vector<const char*> instanceExtentions = std::vector<const char*>();
 
     // set up extentions will use
-    uint32_t glfwExtentionCount = 0; // GLFW may require multiple extentions
-    const char** glfwExtentions;     // Extentions passed as array of cstring,
-    ;                                // so need pointer (the array) to pointer(the string)
-    // Get glfw extentions
-    glfwExtentions = glfwGetRequiredInstanceExtensions(&glfwExtentionCount);
+    uint32_t sdl_extension_count = 0;  // GLFW may require multiple extentions
+    const char* const* sdl_extensions; // Extentions passed as array of cstring,
+    ;                                  // so need pointer (the array) to pointer(the string)
+    // Get SDL extentions
+    sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_extension_count);
 
     // Add glwf extentions to list of extentions
-    for (size_t i = 0; i < glfwExtentionCount; i++) {
-        instanceExtentions.push_back(glfwExtentions[i]);
+    for (size_t i = 0; i < sdl_extension_count; i++) {
+        instanceExtentions.push_back(sdl_extensions[i]);
     }
 
     // check Instance Extentions suppoted..
