@@ -2,7 +2,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <set>
 #include <stdexcept>
+#include <vector>
 
 VulkanRenderer::VulkanRenderer() {}
 
@@ -13,7 +15,9 @@ int VulkanRenderer::init(GLFWwindow* window) {
 
     try {
         this->createInstance();
-        this->getPhysicalDevice();
+        // createDebugCallBack();  // TODO: nao implementado ainda
+        this->createSurface();     // create before physical
+        this->getPhysicalDevice(); // now need see if support surface
         this->createLogicalDevices();
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
@@ -24,6 +28,7 @@ int VulkanRenderer::init(GLFWwindow* window) {
 }
 
 void VulkanRenderer::cleanup() {
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyDevice(mainDevice.logicalDevice, nullptr);
     vkDestroyInstance(instance, nullptr);
 }
@@ -170,6 +175,14 @@ QueueFamilyIndices VulkanRenderer::getQueueFamillies(VkPhysicalDevice device) {
             indices.graphicsFamily = i; // if queue family is valid then get index
         }
 
+        // Check if Queue Family support presentation
+        VkBool32 presentationSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentationSupport); // TODO: validar se result OK
+        // check if queue is presentation type (can bo boyh graphics and presentation)
+        if (queueFamily.queueCount > 0 && presentationSupport) {
+            indices.presentationFamily = i;
+        }
+
         // check if queue family indices are in valid state, stop searching if so
         if (indices.isValid()) {
             break;
@@ -186,23 +199,33 @@ void VulkanRenderer::createLogicalDevices() {
     // Get the queue family indices for the chosen Physical device
     QueueFamilyIndices indices = this->getQueueFamillies(this->mainDevice.physicalDevice);
 
-    // Queues the logical device needs to create and info to do so (only 1 for now, will add more late)
-    VkDeviceQueueCreateInfo queueCreateInfo = {};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily; // The index of the family to create a from
-    queueCreateInfo.queueCount = 1;                            // Numbers of queues to create
-    float priority = 1.0f;
-    queueCreateInfo.pQueuePriorities =
-        &priority; // Vulkan needs to know how to handle multiple queues, so decide priority (1 is hight)
+    // vector for queue creation information, and set for family indices
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<int> queueFamilyIndices = {indices.graphicsFamily, indices.presentationFamily};
+
+    // Queues the logical device needs to create and info to do so
+    for (int queueFamiyIndex : queueFamilyIndices) {
+
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamiyIndex; // The index of the family to create a from
+        queueCreateInfo.queueCount = 1;                     // Numbers of queues to create
+        float priority = 1.0f;
+        queueCreateInfo.pQueuePriorities =
+            &priority; // Vulkan needs to know how to handle multiple queues, so decide priority (1 is hight)
+
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     // Information to create logical device (sometimes called "device")
     VkDeviceCreateInfo deviceCreateInfo = {};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = 1; // Number of queue create infos
+    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()); // Number queueCreateInfos
     deviceCreateInfo.pQueueCreateInfos =
-        &queueCreateInfo;                       // List of queue create infos so device can create required queues
-    deviceCreateInfo.enabledExtensionCount = 0; // Number of enable logical device extentions
-    deviceCreateInfo.ppEnabledExtensionNames = nullptr; // List of enable logicva device extentions
+        queueCreateInfos.data(); // List of queueCreateInfos so device can create required queues
+
+    deviceCreateInfo.enabledExtensionCount = 0;         // Number of enable logical device extentions
+    deviceCreateInfo.ppEnabledExtensionNames = nullptr; // List of enable logical device extentions
 
     // Physical Device Features the Logical Device will be using
     VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -215,9 +238,19 @@ void VulkanRenderer::createLogicalDevices() {
         throw std::runtime_error("Failed to create a logical device");
     }
 
-    // queues are createat the same time as the device
+    // queues are created the same time as the device
     // so we want handle to queues
     // From given logical device, of given Queue Family, of given Queue Index(0 since only one), place reference in
     // given Vkqueue
     vkGetDeviceQueue(mainDevice.logicalDevice, indices.graphicsFamily, 0, &this->graphicsQueue);
+    vkGetDeviceQueue(mainDevice.logicalDevice, indices.presentationFamily, 0, &this->presentationQueue);
+}
+
+void VulkanRenderer::createSurface() {
+
+    // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
+    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create a surface!");
+    }
 }
