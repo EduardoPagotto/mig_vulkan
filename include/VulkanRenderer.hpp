@@ -1,8 +1,12 @@
 #pragma once
 
+#ifdef SET_GLFW_ENABLE
 #define GLFW_INCLUDE_VULKAN
-#include "Ultilities.hpp"
 #include <GLFW/glfw3.h>
+#else
+#endif
+
+#include "Ultilities.hpp"
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
@@ -14,11 +18,26 @@ class VulkanRenderer {
     VulkanRenderer();
     virtual ~VulkanRenderer();
 
-    int init(GLFWwindow* window);
+#ifdef SET_GLFW_ENABLE
+    int init(GLFWwindow* window) {
+        this->window = window;
+        return init_vulkan();
+    }
+#else
+    bool init(SDL_Window* window) {
+        this->window = window;
+        return init_vulkan();
+    }
+#endif
+
     void cleanup();
 
   private:
+#ifdef SET_GLFW_ENABLE
     GLFWwindow* window;
+#else
+    SDL_Window* window;
+#endif
 
     // vulkan components
     VkInstance instance;
@@ -53,4 +72,7 @@ class VulkanRenderer {
     // -- Getter Functions
     QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
     SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
+
+    // generic
+    int init_vulkan();
 };

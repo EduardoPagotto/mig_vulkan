@@ -12,9 +12,7 @@ VulkanRenderer::VulkanRenderer() {}
 
 VulkanRenderer::~VulkanRenderer() {}
 
-int VulkanRenderer::init(GLFWwindow* window) {
-    this->window = window;
-
+int VulkanRenderer::init_vulkan() {
     try {
         this->createInstance();
         this->createDebugCallback();
@@ -67,15 +65,22 @@ void VulkanRenderer::createInstance() {
     std::vector<const char*> instanceExtensions = std::vector<const char*>();
 
     // set up extentions will use
-    uint32_t glfwExtentionCount = 0; // GLFW may require multiple extentions
-    const char** glfwExtentions;     // Extentions passed as array of cstring,
-    ;                                // so need pointer (the array) to pointer(the string)
+    uint32_t hwExtentionCount = 0; // may require multiple extentions
+
+#ifdef SET_GLFW_ENABLE
+    const char** hwExtentions; // Extentions passed as array of cstring,
+    ;                          // so need pointer (the array) to pointer(the string)
     // Get glfw extentions
-    glfwExtentions = glfwGetRequiredInstanceExtensions(&glfwExtentionCount);
+    hwExtentions = glfwGetRequiredInstanceExtensions(&hwExtentionCount);
+#else
+    const char* const* hwExtentions; // Extentions passed as array of cstring,
+    ;                                // so need pointer (the array) to pointer(the string)
+    hwExtentions = SDL_Vulkan_GetInstanceExtensions(&hwExtentionCount);
+#endif
 
     // Add glwf extentions to list of extentions
-    for (size_t i = 0; i < glfwExtentionCount; i++) {
-        instanceExtensions.push_back(glfwExtentions[i]);
+    for (size_t i = 0; i < hwExtentionCount; i++) {
+        instanceExtensions.push_back(hwExtentions[i]);
     }
 
     // If validation enabled, add extension to report validation debug info
@@ -369,10 +374,18 @@ void VulkanRenderer::createLogicalDevices() {
 void VulkanRenderer::createSurface() {
 
     // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
+
+#ifdef SET_GLFW_ENABLE
     VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a surface!");
     }
+#else
+    bool result = SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface);
+    if (!result) {
+        throw std::runtime_error("Failed to create a surface!");
+    }
+#endif
 }
 
 SwapChainDetails VulkanRenderer::getSwapChainDetails(VkPhysicalDevice device) {

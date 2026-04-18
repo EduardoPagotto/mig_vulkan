@@ -1,6 +1,7 @@
 #include "VulkanRenderer.hpp"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_log.h>
 #include <SDL3/SDL_vulkan.h>
 #include <iostream>
 #include <string>
@@ -28,6 +29,8 @@ bool initWindow(const std::string& sName = "Teste", const int width = 800, const
         return false;
     }
 
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Vulkan SD3 Window Created");
+
     return true;
 }
 
@@ -36,7 +39,7 @@ int main() {
     if (!initWindow("Teste", 800, 600))
         return SDL_APP_FAILURE;
 
-    if (!vulkanRenderer.init(window))
+    if (vulkanRenderer.init(window) == EXIT_FAILURE)
         return SDL_APP_FAILURE;
 
     // --- Main Loop ---
