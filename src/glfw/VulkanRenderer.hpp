@@ -6,7 +6,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include <stdexcept>
+// #include <stdexcept>
 #include <vector>
 
 class VulkanRenderer {
@@ -22,6 +22,7 @@ class VulkanRenderer {
 
     // vulkan components
     VkInstance instance;
+    VkDebugReportCallbackEXT callback;
     struct {
         VkPhysicalDevice physicalDevice;
         VkDevice logicalDevice;
@@ -35,6 +36,7 @@ class VulkanRenderer {
     // Vulkan Functions
     // - Create functions
     void createInstance();
+    void createDebugCallback();
     void createLogicalDevices();
     void createSurface();
 
@@ -44,8 +46,11 @@ class VulkanRenderer {
     // - Suport Functions
     // -- Checker functions
     bool checkInstanceExtentionsSupport(std::vector<const char*>* checkExtentions);
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+    bool checkValidationLayerSupport();
     bool checkDeviceSuitable(VkPhysicalDevice device);
 
     // -- Getter Functions
-    QueueFamilyIndices getQueueFamillies(VkPhysicalDevice device);
+    QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
+    SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
 };

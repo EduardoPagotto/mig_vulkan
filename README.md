@@ -38,7 +38,7 @@ sudo dnf install bullet bullet-devel bullet-extras bullet-extras-devel
 sudo dnf install SDL3-static SDL3-devel SDL3_image-devel SDL3_ttf SDL3_ttf-devel
 
 # Lib vulkan
-sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel glslang glslc VulkanMemoryAllocator-devel
+sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel glslang glslc VulkanMemoryAllocator-devel vulkan-validation-layers
 
 # Teste do GLFW
 sudo dnf install glfw-devel
