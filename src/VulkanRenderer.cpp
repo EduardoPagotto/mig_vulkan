@@ -7,7 +7,6 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
-#include <vector>
 
 VulkanRenderer::VulkanRenderer() {}
 
@@ -30,6 +29,10 @@ int VulkanRenderer::init_vulkan() {
 }
 
 void VulkanRenderer::cleanup() {
+
+    for (auto image : this->swapchainImages) {
+        vkDestroyImageView(mainDevice.logicalDevice, image.imageView, nullptr);
+    }
 
     vkDestroySwapchainKHR(mainDevice.logicalDevice, this->swapchain, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -297,6 +300,57 @@ void VulkanRenderer::createSwapChain() {
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a Swapchain");
     }
+
+    // Store for late reference
+    this->swapchainImageFormat = surrfaceFormat.format;
+    this->swapchainExtent = extent;
+
+    // Get swap chain images (first count the values)
+    uint32_t swapChainImageCount;
+    vkGetSwapchainImagesKHR(mainDevice.logicalDevice, swapchain, &swapChainImageCount, nullptr);
+
+    std::vector<VkImage> images(swapChainImageCount);
+    vkGetSwapchainImagesKHR(mainDevice.logicalDevice, swapchain, &swapChainImageCount, images.data());
+
+    for (VkImage image : images) {
+        // Store image handle
+        SwapchainImage swapChainImage = {};
+        swapChainImage.image = image;
+        swapChainImage.imageView = this->createImageView(image, swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+        // Add to swapchain image list
+        this->swapchainImages.push_back(swapChainImage);
+    }
+}
+
+VkImageView VulkanRenderer::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+    //
+    VkImageViewCreateInfo viewCreateInfo = {};
+    viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewCreateInfo.image = image;                                // Image to create view for
+    viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;             // Type of image (1D, 2D, 3D, Cube, etc)
+    viewCreateInfo.format = format;                              // Format of image data
+    viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY; // Allows remapping of rgba component to other values
+    viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+    // Subresources allow the view to view only a part of a image
+    viewCreateInfo.subresourceRange.aspectMask =
+        aspectFlags;                                    // which aspect of image to view (e.g. COLOR_BIT for view color)
+    viewCreateInfo.subresourceRange.baseMipLevel = 0;   // Start mipmap level to start from
+    viewCreateInfo.subresourceRange.levelCount = 1;     // Number of mipmap levels to view
+    viewCreateInfo.subresourceRange.baseArrayLayer = 0; // Start array level to view from
+    viewCreateInfo.subresourceRange.layerCount = 1;     // Numbers of array levels to view
+
+    // Create image view and return it
+    VkImageView imageView;
+    VkResult result = vkCreateImageView(mainDevice.logicalDevice, &viewCreateInfo, nullptr, &imageView);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create an Image View!");
+    }
+
+    return imageView;
 }
 
 // Best format is subjective, but ours will be:

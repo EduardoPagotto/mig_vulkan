@@ -39,7 +39,8 @@ class VulkanRenderer {
     SDL_Window* window;
 #endif
 
-    // vulkan components
+    // Vulkan components
+    // - Main
     VkInstance instance;
     VkDebugReportCallbackEXT callback;
     struct {
@@ -50,6 +51,11 @@ class VulkanRenderer {
     VkQueue presentationQueue;
     VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
+    std::vector<SwapchainImage> swapchainImages;
+
+    // - Utility
+    VkFormat swapchainImageFormat;
+    VkExtent2D swapchainExtent;
 
     // Vulkan Functions
     // - Create functions
@@ -77,6 +83,9 @@ class VulkanRenderer {
     VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
     VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+
+    // -- Create Functions
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
     // generic
     int init_vulkan();
