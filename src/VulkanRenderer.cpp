@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <set>
 #include <stdexcept>
 #include <vector>
@@ -19,6 +20,7 @@ int VulkanRenderer::init_vulkan() {
         this->createSurface();     // create before physical
         this->getPhysicalDevice(); // now need see if support surface
         this->createLogicalDevices();
+        this->createSwapChain();
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -28,6 +30,8 @@ int VulkanRenderer::init_vulkan() {
 }
 
 void VulkanRenderer::cleanup() {
+
+    vkDestroySwapchainKHR(mainDevice.logicalDevice, this->swapchain, nullptr);
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyDevice(mainDevice.logicalDevice, nullptr);
 
@@ -229,6 +233,132 @@ bool VulkanRenderer::checkValidationLayerSupport() {
     return true;
 }
 
+void VulkanRenderer::createSwapChain() {
+    // Get Swap Chain details so we cam pick best setting
+    SwapChainDetails swapchainDetails = this->getSwapChainDetails(mainDevice.physicalDevice);
+
+    // Find optimal surface value for our swap chain
+    VkSurfaceFormatKHR surrfaceFormat = this->chooseBestSurfaceFormat(swapchainDetails.formats);
+    VkPresentModeKHR presentMode = this->chooseBestPresentationMode(swapchainDetails.presentationModes);
+    VkExtent2D extent = this->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
+
+    // how many images are in the swap chain? Get 1 more than the minimum to allow triple buffering
+    uint32_t imageCount = swapchainDetails.surfaceCapabilities.minImageCount + 1;
+
+    // If imagecount higher than max the clamp down to max
+    // If 0, then limitless
+    if (swapchainDetails.surfaceCapabilities.maxImageCount > 0 &&
+        swapchainDetails.surfaceCapabilities.maxImageCount < imageCount) {
+        imageCount = swapchainDetails.surfaceCapabilities.maxImageCount;
+    }
+
+    // Create information for swap chain
+    VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
+    swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchainCreateInfo.surface = this->surface;                          // Swapchain surface
+    swapchainCreateInfo.imageFormat = surrfaceFormat.format;              // Swapchain format
+    swapchainCreateInfo.imageColorSpace = surrfaceFormat.colorSpace;      // Swapchain color space
+    swapchainCreateInfo.presentMode = presentMode;                        // Swapchain presentation mode
+    swapchainCreateInfo.imageExtent = extent;                             // Swapchain image extents
+    swapchainCreateInfo.minImageCount = imageCount;                       // Minimum image in swapchain
+    swapchainCreateInfo.imageArrayLayers = 1;                             // Number of layers for each image in chain
+    swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // What attachement image will be used as
+    swapchainCreateInfo.preTransform =
+        swapchainDetails.surfaceCapabilities.currentTransform; // Transform to perform on swap chain images
+    swapchainCreateInfo.compositeAlpha =
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // How to handle blending images with external graphics(e.g. other windows)
+    swapchainCreateInfo.clipped =
+        VK_TRUE; // Whether to clip parts of image not in view (e.g. behind another window, off screen, etc)
+
+    // Get Queue Family indices
+    QueueFamilyIndices indices = getQueueFamilies(mainDevice.physicalDevice);
+
+    // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
+    if (indices.graphicsFamily != indices.presentationFamily) {
+
+        // Queue to share between
+        uint32_t queueFamilyIndices[] = {(uint32_t)indices.graphicsFamily, (uint32_t)indices.presentationFamily};
+
+        swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // Image share handling
+        swapchainCreateInfo.queueFamilyIndexCount = 2;                     // Number of queues to share images between
+        swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;      // Array of queues to share between
+    } else {
+        swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        swapchainCreateInfo.queueFamilyIndexCount = 0;
+        swapchainCreateInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    // If old swap chain been destroyed and this one replaces it, then link old one to quickly hand over
+    // responsabilities
+    swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    // Create Swapchain
+    VkResult result = vkCreateSwapchainKHR(mainDevice.logicalDevice, &swapchainCreateInfo, nullptr, &this->swapchain);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create a Swapchain");
+    }
+}
+
+// Best format is subjective, but ours will be:
+// Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
+// colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+VkSurfaceFormatKHR VulkanRenderer::chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+
+    // If only 1 format avaible and is undefined, them this means ALL formats ase avaible (no restricion)
+    if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
+        return {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    }
+
+    // If restriced, searche for optimal format
+    for (const auto& format : formats) {
+        if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
+            format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            return format;
+        }
+    }
+
+    // If can't find optimal format, then just return first format
+    return formats[0]; // FIXME: pade data pau aqui
+}
+
+VkPresentModeKHR VulkanRenderer::chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes) {
+    // Look for Mailbox presentation mode
+    for (const auto& presentationMode : presentationModes) {
+        if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+            return presentationMode;
+        }
+    }
+
+    return VK_PRESENT_MODE_FIFO_KHR; // allways avaible by vulkan
+}
+
+VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
+
+    // If current extend!!!!!!!!!!!!
+    if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        return surfaceCapabilities.currentExtent;
+    } else {
+        int witdh, height;
+#ifdef SET_GLFW_ENABLE
+        glfwGetFramebufferSize(window, &witdh, &height);
+#else
+        SDL_GetWindowSizeInPixels(window, &witdh, &height); // TODO: Testar
+#endif
+        VkExtent2D newExtent = {};
+        newExtent.width = static_cast<uint32_t>(witdh);
+        newExtent.height = static_cast<uint32_t>(height);
+
+        // surface also defie max and min, so make sure within bondaries by clamping value
+        newExtent.width = std::max(surfaceCapabilities.minImageExtent.width,
+                                   std::min(surfaceCapabilities.maxImageExtent.width, newExtent.width));
+
+        newExtent.height = std::max(surfaceCapabilities.minImageExtent.height,
+                                    std::min(surfaceCapabilities.maxImageExtent.height, newExtent.height));
+
+        return newExtent;
+    }
+}
+
 void VulkanRenderer::getPhysicalDevice() {
     // Enumerate Physical devices the vkInstance can access
     uint32_t deviceCount = 0;
@@ -293,15 +423,16 @@ QueueFamilyIndices VulkanRenderer::getQueueFamilies(VkPhysicalDevice device) {
     for (const auto& queueFamily : queueFamilyList) {
 
         // First check if queue has at least 1 queue in that family (could have no queue)
-        // Queue cam be multiple types defined through bitfield. Need to bitwise AND with VK_QUEUE_*_BIT to check if has
-        // requered type
+        // Queue cam be multiple types defined through bitfield. Need to bitwise AND with VK_QUEUE_*_BIT to check if
+        // has requered type
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i; // if queue family is valid then get index
         }
 
         // Check if Queue Family support presentation
         VkBool32 presentationSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentationSupport); // TODO: validar se result OK
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
+                                             &presentationSupport); // TODO: validar se result OK
         // check if queue is presentation type (can bo boyh graphics and presentation)
         if (queueFamily.queueCount > 0 && presentationSupport) {
             indices.presentationFamily = i;

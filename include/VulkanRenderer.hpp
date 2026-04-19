@@ -48,9 +48,8 @@ class VulkanRenderer {
     } mainDevice;
     VkQueue graphicsQueue;
     VkQueue presentationQueue;
-
-    //
     VkSurfaceKHR surface;
+    VkSwapchainKHR swapchain;
 
     // Vulkan Functions
     // - Create functions
@@ -58,6 +57,7 @@ class VulkanRenderer {
     void createDebugCallback();
     void createLogicalDevices();
     void createSurface();
+    void createSwapChain();
 
     // - Get Functions
     void getPhysicalDevice();
@@ -72,6 +72,11 @@ class VulkanRenderer {
     // -- Getter Functions
     QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
     SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
+
+    // - Choose functions
+    VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+    VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
 
     // generic
     int init_vulkan();
