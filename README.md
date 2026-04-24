@@ -39,7 +39,8 @@ sudo dnf install bullet bullet-devel bullet-extras bullet-extras-devel
 sudo dnf install SDL3-static SDL3-devel SDL3_image-devel SDL3_ttf SDL3_ttf-devel
 
 # Lib vulkan
-sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel glslang glslc VulkanMemoryAllocator-devel vulkan-validation-layers
+sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel glslang glslc VulkanMemoryAllocator-devel vulkan-validation-layers libshaderc-devel
+
 
 # Lib GLFW
 sudo dnf install glfw-devel
@@ -63,4 +64,9 @@ SDL_VIDEODRIVER=x11 ./bin/sdl_test
 # simple tests
 ./bin/glwf_test
 ./bin/sdl_test
+
+# compile spirv
+glslangValidator  -V ./shaders/shader.vert -o ./bin/vert.spv
+glslangValidator  -V ./shaders/shader.frag -o ./bin/frag.spv
+
 ```

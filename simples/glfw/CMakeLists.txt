@@ -12,6 +12,20 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
+# Compilar SpirV
+# find_program(GLSLANG_VALIDATOR "glslangValidator")
+# if(NOT GLSLANG_VALIDATOR)
+#     message(FATAL_ERROR "glslangValidator não encontrado. Instale o Vulkan SDK.")
+# endif()
+
+# set(SHADER_SOURCES
+#     ./shaders/shader.vert
+#     ./shaders/shader.frag
+# )
+
+# set(SPV_OUTPUTS "./bin")
+
+
 set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp

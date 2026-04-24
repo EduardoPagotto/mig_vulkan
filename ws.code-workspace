@@ -216,6 +216,9 @@
 			"queue": "cpp",
 			"stack": "cpp"
 		},
+		"glsllint.glslangValidatorArgs": [
+			"-V"
+		]
 		// OTHERS
 	},
 	"launch": {
