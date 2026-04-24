@@ -1,4 +1,8 @@
 #pragma once
+#include <cstddef>
+#include <fstream>
+#include <ios>
+#include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -22,3 +26,30 @@ struct SwapchainImage {
     VkImage image;
     VkImageView imageView;
 };
+
+static std::vector<char> readFile(const std::string& filename) {
+    // Open stream from given file
+    // std::ios::binary tells stream to read file as binary
+    // std::ios::ate tells stream to start reading from end file
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    // Chack if fstream sucessfully open
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open a file!");
+    }
+
+    size_t filesize = (size_t)file.tellg();
+
+    std::vector<char> fileBuffer(filesize);
+
+    // Move read position (seek to0 the start of the file)
+    file.seekg(0);
+
+    // Read the file data into the buffer (stream "fileSize" in total)
+    file.read(fileBuffer.data(), filesize);
+
+    // Close stream
+    file.close();
+
+    return fileBuffer;
+}

@@ -64,6 +64,7 @@ class VulkanRenderer {
     void createLogicalDevices();
     void createSurface();
     void createSwapChain();
+    void createGraphicsPipeline();
 
     // - Get Functions
     void getPhysicalDevice();
@@ -86,6 +87,7 @@ class VulkanRenderer {
 
     // -- Create Functions
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+    VkShaderModule createShaderModule(const std::vector<char>& code);
 
     // generic
     int init_vulkan();

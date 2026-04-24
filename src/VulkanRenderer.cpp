@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <set>
 #include <stdexcept>
+#include <vulkan/vulkan_core.h>
 
 VulkanRenderer::VulkanRenderer() {}
 
@@ -20,6 +22,7 @@ int VulkanRenderer::init_vulkan() {
         this->getPhysicalDevice(); // now need see if support surface
         this->createLogicalDevices();
         this->createSwapChain();
+        this->createGraphicsPipeline();
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -602,4 +605,59 @@ SwapChainDetails VulkanRenderer::getSwapChainDetails(VkPhysicalDevice device) {
     }
 
     return swapChainDetails;
+}
+
+void VulkanRenderer::createGraphicsPipeline() {
+
+    // Read in SPIR-V code shaders
+    auto vertexShadercode = readFile("./bin/vert.spv");
+    auto fragmentShadercode = readFile("./bin/frag.spv");
+
+    // Create shader modules
+    VkShaderModule vertexShaderModule = this->createShaderModule(vertexShadercode);
+    VkShaderModule fragmentShaderModule = this->createShaderModule(fragmentShadercode);
+
+    // -- SHADER STAGE CREATION INFORMATION --
+    // Vertex Stage creation information
+    VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
+    vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexShaderCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT; // Shader stage name
+    vertexShaderCreateInfo.module = vertexShaderModule;        // Shader module to be used by stage
+    vertexShaderCreateInfo.pName = "main";                     // Entry point in to shader
+
+    // Fragment Stage creation information
+    VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo = {};
+    fragmentShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragmentShaderCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT; // Shader stage name
+    fragmentShaderCreateInfo.module = fragmentShaderModule;        // Shader module to be used by stage
+    fragmentShaderCreateInfo.pName = "main";                       // Entry point in to shader
+
+    // Put shader creation info in to array
+    // Graphics Pipeline creation info required array of shader stage creates
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderCreateInfo, fragmentShaderCreateInfo};
+
+    // VkGraphicsPipelineCreateInfo
+
+    // CREATE PIPELINE
+
+    // Destroy Shader Module, no longer need after Pipeline create
+    vkDestroyShaderModule(mainDevice.logicalDevice, fragmentShaderModule, nullptr);
+    vkDestroyShaderModule(mainDevice.logicalDevice, vertexShaderModule, nullptr);
+}
+
+VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code) {
+    //
+    VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
+    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shaderModuleCreateInfo.codeSize = code.size(); // size of code
+    shaderModuleCreateInfo.pCode =
+        reinterpret_cast<const uint32_t*>(code.data()); // pointer to code(of uint32_t pointer type)
+
+    VkShaderModule shaderModule;
+    VkResult result = vkCreateShaderModule(mainDevice.logicalDevice, &shaderModuleCreateInfo, nullptr, &shaderModule);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create a shader module");
+    }
+
+    return shaderModule;
 }
