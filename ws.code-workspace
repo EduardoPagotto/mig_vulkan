@@ -52,7 +52,10 @@
 		"editor.formatOnSave": true,
 		"editor.tabSize": 4,
 		"editor.smoothScrolling": true,
+		"editor.stickyScroll.enabled": false, // Desabilita o stick chato!
+		"workbench.tree.enableStickyScroll": false, // Desabilita o stick chato!
 		// Terminal
+		"terminal.integrated.stickyScroll.enabled": false, // Desabilita o stick chato!
 		"terminal.integrated.letterSpacing": 0.8,
 		"terminal.integrated.fontWeight": "normal",
 		"terminal.integrated.defaultProfile.windows": "Command Prompt",
