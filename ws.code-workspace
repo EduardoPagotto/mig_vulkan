@@ -49,7 +49,6 @@
 			80,
 			120
 		],
-		"editor.formatOnSave": true,
 		"editor.tabSize": 4,
 		"editor.smoothScrolling": true,
 		"editor.stickyScroll.enabled": false, // Desabilita o stick chato!
@@ -119,6 +118,16 @@
 		"cmake.configureOnOpen": true,
 		"cmake.options.statusBarVisibility": "visible",
 		"cmake.useCMakePresets": "never",
+		"cmake.buildDirectory": "${workspaceFolder}/build",
+		"clangd.arguments": [
+			"--background-index",
+			"--compile-commands-dir=build", // Aponta para a pasta onde o CMake gera o compile_commands.json
+			"--clang-tidy",
+			"--header-insertion=iwyu"
+		],
+		"editor.formatOnSave": true, // Formata automaticamente ao salvar
+		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+		"clangd.onConfigChanged": "restart",
 		"files.associations": {
 			"any": "cpp",
 			"array": "cpp",
