@@ -1,19 +1,10 @@
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-// #define GLM_FORCE_RADIANS
-// #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-// #include <glm/glm.hpp>
-// #include <glm/mat4x4.hpp>
 #include "VulkanRenderer.hpp"
-#include <iostream>
-#include <stdexcept>
-#include <vector>
 
 GLFWwindow* window;
 VulkanRenderer vulkanRenderer;
 
-void initWindow(std::string wName = "Test window", const int width = 800, const int height = 600) {
+void initWindow(const std::string& wName = "Test window", const int width = 800, const int height = 600) {
 
     // Inicia GLFW
     glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
@@ -29,14 +20,14 @@ void initWindow(std::string wName = "Test window", const int width = 800, const 
 int main() {
 
     // Create a windows
-    initWindow("teste", 800, 600);
+    initWindow("teste");
 
-    if (const int fail = vulkanRenderer.init(window) == EXIT_FAILURE) {
-        return fail;
+    if (vulkanRenderer.init(window) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
     }
 
     // loop until close
-    while (!glfwWindowShouldClose(window)) {
+    while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
     }
 

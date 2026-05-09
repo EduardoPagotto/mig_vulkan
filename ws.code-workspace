@@ -121,7 +121,7 @@
 		"cmake.buildDirectory": "${workspaceFolder}/build",
 		"clangd.arguments": [
 			"--background-index",
-			"--compile-commands-dir=build", // Aponta para a pasta onde o CMake gera o compile_commands.json
+			"--compile-commands-dir=${workspaceFolder}/build", // Aponta para a pasta onde o CMake gera o compile_commands.json
 			"--clang-tidy",
 			"--header-insertion=iwyu"
 		],
@@ -253,7 +253,11 @@
 				"request": "launch",
 				"program": "${workspaceFolder}/bin/glwf_test",
 				"args": [],
-				"cwd": "${workspaceFolder}"
+				"cwd": "${workspaceFolder}",
+				"env": {
+					//"DEBUG_MODE": "true"
+				}
+				// "preLaunchTask": "CMake: build"
 			}
 		],
 		"compounds": []
@@ -262,45 +266,18 @@
 		"version": "2.0.0",
 		"tasks": [
 			{
-				"label": "cmake",
-				"type": "shell",
-				"options": {
-					"cwd": "${workspaceRoot}/build"
-				},
-				"command": "cmake",
-				"args": [
-					"-G",
-					"Unix Makefiles",
-					"-DCMAKE_BUILD_TYPE=Debug",
-					".."
-				],
-			},
-			{
-				"label": "make",
-				"type": "shell",
-				"options": {
-					"cwd": "${workspaceRoot}/build"
-				},
-				"dependsOn": [
-					"cmake"
+				"type": "cmake",
+				"label": "CMake: build",
+				"command": "build",
+				"targets": [
+					"all"
 				],
 				"group": {
-					"kind": "build",
-					"isDefault": true
+					"kind":"build",
+					"isDefault":true
 				},
-				"command": "make",
-				"problemMatcher": {
-					"owner": "cpp",
-					"fileLocation": "absolute",
-					"pattern": {
-						"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-						"file": 1,
-						"line": 2,
-						"column": 3,
-						"severity": 4,
-						"message": 5
-					}
-				}
+				"problemMatcher": [],
+				"detail": "CMake template build task"
 			}
 		]
 	}

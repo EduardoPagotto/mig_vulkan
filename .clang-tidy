@@ -8,6 +8,9 @@ Checks: >
   google-explicit-constructor,
   -modernize-use-trailing-return-type
 
+ExtraArgsBefore:
+  - -std=c++20
+
 # Trata avisos específicos como erros
 WarningsAsErrors: >
   bugcheck-*,

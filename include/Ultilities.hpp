@@ -13,7 +13,7 @@ struct QueueFamilyIndices {
     int presentationFamily = -1; // Location of Presentation Queue family
 
     // check if queue families are valid
-    bool isValid() { return graphicsFamily >= 0 && presentationFamily >= 0; }
+    [[nodiscard]] bool isValid() const { return (graphicsFamily >= 0) && (presentationFamily >= 0); }
 };
 
 struct SwapChainDetails {
@@ -27,7 +27,7 @@ struct SwapchainImage {
     VkImageView imageView;
 };
 
-static std::vector<char> readFile(const std::string& filename) {
+[[maybe_unused]] static std::vector<char> readFile(const std::string& filename) {
     // Open stream from given file
     // std::ios::binary tells stream to read file as binary
     // std::ios::ate tells stream to start reading from end file

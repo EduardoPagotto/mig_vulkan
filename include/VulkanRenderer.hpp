@@ -4,19 +4,17 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #else
+#include <SDL3/SDL_vulkan.h>
 #endif
 
 #include "Ultilities.hpp"
-#include <SDL3/SDL_vulkan.h>
-#include <vulkan/vulkan_core.h>
-
-// #include <stdexcept>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 class VulkanRenderer {
   public:
-    VulkanRenderer();
-    virtual ~VulkanRenderer();
+    VulkanRenderer() = default;
+    virtual ~VulkanRenderer() {}
 
 #ifdef SET_GLFW_ENABLE
     int init(GLFWwindow* window) {
@@ -24,7 +22,7 @@ class VulkanRenderer {
         return init_vulkan();
     }
 #else
-    bool init(SDL_Window* window) {
+    int init(SDL_Window* window) {
         this->window = window;
         return init_vulkan();
     }
@@ -71,9 +69,9 @@ class VulkanRenderer {
 
     // - Suport Functions
     // -- Checker functions
-    bool checkInstanceExtentionsSupport(std::vector<const char*>* checkExtentions);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-    bool checkValidationLayerSupport();
+    bool static checkInstanceExtentionsSupport(std::vector<const char*>* checkExtentions);
+    bool static checkDeviceExtensionSupport(VkPhysicalDevice device);
+    bool static checkValidationLayerSupport();
     bool checkDeviceSuitable(VkPhysicalDevice device);
 
     // -- Getter Functions
@@ -81,13 +79,13 @@ class VulkanRenderer {
     SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
 
     // - Choose functions
-    VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-    VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+    VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+    VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
 
     // -- Create Functions
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-    VkShaderModule createShaderModule(const std::vector<char>& code);
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+    [[nodiscard]] VkShaderModule createShaderModule(const std::vector<char>& code) const;
 
     // generic
     int init_vulkan();
