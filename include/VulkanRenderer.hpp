@@ -51,6 +51,9 @@ class VulkanRenderer {
     VkSwapchainKHR swapchain;
     std::vector<SwapchainImage> swapchainImages;
 
+    // - Pipeline
+    VkPipelineLayout pipelineLayout;
+
     // - Utility
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainExtent;

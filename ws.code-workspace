@@ -46,7 +46,7 @@
 		"editor.lineHeight": 1.5,
 		// misc
 		"editor.rulers": [
-			80,
+			//80,
 			120
 		],
 		"editor.tabSize": 4,
