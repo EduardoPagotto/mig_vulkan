@@ -23,6 +23,7 @@ int VulkanRenderer::init_vulkan() {
         this->createSwapChain();
         this->createRenderPass();
         this->createGraphicsPipeline();
+        this->createFramebuffers();
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -33,10 +34,12 @@ int VulkanRenderer::init_vulkan() {
 
 void VulkanRenderer::cleanup() {
 
+    for (auto& framebuffer : swapChainFrameBuffers) { // ? auto& mesmo ??
+        vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
+    }
+
     vkDestroyPipeline(this->mainDevice.logicalDevice, this->graphicsPipeline, nullptr);
-
     vkDestroyPipelineLayout(this->mainDevice.logicalDevice, this->pipelineLayout, nullptr);
-
     vkDestroyRenderPass(this->mainDevice.logicalDevice, this->renderPass, nullptr);
 
     for (auto image : this->swapchainImages) {
@@ -906,5 +909,32 @@ void VulkanRenderer::createRenderPass() {
 
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create render pass!!!");
+    }
+}
+
+void VulkanRenderer::createFramebuffers() {
+    // Resize framebuffer count to equal chain image count
+    this->swapChainFrameBuffers.resize(this->swapchainImages.size());
+
+    // Create a framebuffer for eache swap chain image
+    for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
+
+        std::array<VkImageView, 1> attachments = {this->swapchainImages[i].imageView};
+
+        VkFramebufferCreateInfo framebufferCreateInfo = {};
+        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferCreateInfo.renderPass = this->renderPass; // Render Pass layout the framebuffer will be used with
+        framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferCreateInfo.pAttachments = attachments.data();     // List of attachments (1:1 with Render Pass)
+        framebufferCreateInfo.width = this->swapchainExtent.width;   // Framebuffer width
+        framebufferCreateInfo.height = this->swapchainExtent.height; // Framebuffer height
+        framebufferCreateInfo.layers = 1;                            // Framebuffer layers
+
+        VkResult result = vkCreateFramebuffer(this->mainDevice.logicalDevice, &framebufferCreateInfo, nullptr,
+                                              &this->swapChainFrameBuffers[i]);
+
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Faleid to create a frambuffer");
+        }
     }
 }
