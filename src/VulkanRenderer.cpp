@@ -34,6 +34,8 @@ int VulkanRenderer::init_vulkan() {
 
 void VulkanRenderer::cleanup() {
 
+    vkDestroyCommandPool(this->mainDevice.logicalDevice, this->graphicsCommandPool, nullptr);
+
     for (auto& framebuffer : swapChainFrameBuffers) { // ? auto& mesmo ??
         vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
     }
@@ -936,5 +938,24 @@ void VulkanRenderer::createFramebuffers() {
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Faleid to create a frambuffer");
         }
+    }
+}
+
+void VulkanRenderer::createCommandPool() {
+
+    // Get inidices of queue families from device
+    QueueFamilyIndices queueFamilyIndices = this->getQueueFamilies(this->mainDevice.physicalDevice);
+
+    VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.queueFamilyIndex =
+        queueFamilyIndices.graphicsFamily; // Queue Family type that buffers from this command pool will use
+
+    // Create a Graphics Queue Family Command Pool
+    VkResult result =
+        vkCreateCommandPool(this->mainDevice.logicalDevice, &poolInfo, nullptr, &this->graphicsCommandPool);
+
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create Commnad Pool");
     }
 }

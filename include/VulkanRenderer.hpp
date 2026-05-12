@@ -57,6 +57,9 @@ class VulkanRenderer {
     VkPipelineLayout pipelineLayout;
     VkRenderPass renderPass;
 
+    // - Pools
+    VkCommandPool graphicsCommandPool;
+
     // - Utility
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainExtent;
@@ -71,6 +74,7 @@ class VulkanRenderer {
     void createRenderPass();
     void createGraphicsPipeline();
     void createFramebuffers();
+    void createCommandPool();
 
     // - Get Functions
     void getPhysicalDevice();
