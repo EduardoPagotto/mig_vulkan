@@ -52,7 +52,9 @@ class VulkanRenderer {
     std::vector<SwapchainImage> swapchainImages;
 
     // - Pipeline
+    VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
+    VkRenderPass renderPass;
 
     // - Utility
     VkFormat swapchainImageFormat;
@@ -65,6 +67,7 @@ class VulkanRenderer {
     void createLogicalDevices();
     void createSurface();
     void createSwapChain();
+    void createRenderPass();
     void createGraphicsPipeline();
 
     // - Get Functions
