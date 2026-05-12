@@ -24,6 +24,9 @@ int VulkanRenderer::init_vulkan() {
         this->createRenderPass();
         this->createGraphicsPipeline();
         this->createFramebuffers();
+        this->createCommandPool();
+        this->createCommandBuffers();
+        this->recordCommand();
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -957,5 +960,80 @@ void VulkanRenderer::createCommandPool() {
 
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Commnad Pool");
+    }
+}
+
+void VulkanRenderer::createCommandBuffers() {
+
+    // Resize command buffer count to have one for each frambuffer
+    this->commandBuffers.resize(this->swapChainFrameBuffers.size());
+
+    VkCommandBufferAllocateInfo cbAllocInfo = {};
+    cbAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cbAllocInfo.commandPool = graphicsCommandPool;
+    cbAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
+                                                         // to queue. Can't be called by other buffers.
+                                                         // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
+                                                         // directly. cam be called from other buffe via
+                                                         // "VkCmdExecuteCommand" when recording commands in primary buf
+    cbAllocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+
+    // Allocate command buffers and place handles in array of buffers
+    VkResult result =
+        vkAllocateCommandBuffers(this->mainDevice.logicalDevice, &cbAllocInfo, this->commandBuffers.data());
+
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to Allocate Command buffers!");
+    }
+}
+
+void VulkanRenderer::recordCommand() {
+    // Information abaout how to begin each command buffer
+
+    VkCommandBufferBeginInfo bufferBeginInfo = {};
+    bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bufferBeginInfo.flags =
+        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Buffer can be resubmitted when it has alredy been submited and
+                                                      // is awaiting execution
+
+    // Information about how to begin a render pass (only need for graphical application)
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = this->renderPass;        // Render pass to begin
+    renderPassBeginInfo.renderArea.offset = {.x = 0, .y = 0}; // Start point of render pass in pixels
+    renderPassBeginInfo.renderArea.extent =
+        this->swapchainExtent; // Size of region to run render pass on (starting at offset)
+
+    VkClearValue clearValues[] = {{{{0.6F, 0.65F, 0.4F, 1.0F}}}}; // NOLINT(readability-magic-numbers)
+
+    renderPassBeginInfo.pClearValues = clearValues; // List of clear values (TODO: Depth Attachment Clear Value)
+    renderPassBeginInfo.clearValueCount = 1;
+
+    for (size_t i = 0; i < this->commandBuffers.size(); i++) {
+
+        renderPassBeginInfo.framebuffer = this->swapChainFrameBuffers[i];
+
+        // Start recording command to command buffer!
+        VkResult result = vkBeginCommandBuffer(this->commandBuffers[i], &bufferBeginInfo);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to start recording a Command Buffer!");
+        }
+
+        // Begin Render Pass
+        vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        // Bind Pipeline to be used  in render pass
+        vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
+
+        // Execute pipeline
+        vkCmdDraw(this->commandBuffers[i], 3, 1, 0, 0);
+
+        // End Render Pass
+        vkCmdEndRenderPass(this->commandBuffers[i]);
+
+        result = vkEndCommandBuffer(this->commandBuffers[i]);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to stop recording a Command Buffer!");
+        }
     }
 }
