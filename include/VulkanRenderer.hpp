@@ -38,6 +38,8 @@ class VulkanRenderer {
     SDL_Window* window;
 #endif
 
+    int currentFrame = 0;
+
     // Vulkan components
     // - Main
     VkInstance instance;
@@ -67,8 +69,9 @@ class VulkanRenderer {
     VkExtent2D swapchainExtent;
 
     // - Synchronization
-    VkSemaphore imageAvailable;
-    VkSemaphore renderFinished;
+    std::vector<VkSemaphore> imageAvailable;
+    std::vector<VkSemaphore> renderFinished;
+    std::vector<VkFence> drawFences;
 
     // Vulkan Functions
     // - Create functions

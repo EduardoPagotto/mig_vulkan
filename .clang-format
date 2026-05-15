@@ -4,7 +4,7 @@ Standard: c++20
 IndentWidth: 4
 IndentCaseLabels: true
 AllowShortBlocksOnASingleLine: true
-ColumnLimit: 120
+ColumnLimit: 160
 PointerAlignment: Left
 DerivePointerAlignment: false
 BreakTemplateDeclarations: Yes

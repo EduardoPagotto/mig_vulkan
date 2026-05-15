@@ -47,7 +47,8 @@
 		// misc
 		"editor.rulers": [
 			//80,
-			120
+			120,
+			160
 		],
 		"editor.tabSize": 4,
 		"editor.smoothScrolling": true,
