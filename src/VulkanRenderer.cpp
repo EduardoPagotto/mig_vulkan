@@ -27,6 +27,8 @@ int VulkanRenderer::init_vulkan() {
         this->createCommandPool();
         this->createCommandBuffers();
         this->recordCommand();
+        this->createSynchronization();
+
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -37,9 +39,12 @@ int VulkanRenderer::init_vulkan() {
 
 void VulkanRenderer::cleanup() {
 
+    vkDestroySemaphore(this->mainDevice.logicalDevice, this->renderFinished, nullptr);
+    vkDestroySemaphore(this->mainDevice.logicalDevice, this->imageAvailable, nullptr);
+
     vkDestroyCommandPool(this->mainDevice.logicalDevice, this->graphicsCommandPool, nullptr);
 
-    for (auto& framebuffer : swapChainFrameBuffers) { // ? auto& mesmo ??
+    for (auto& framebuffer : this->swapChainFrameBuffers) { // ? auto& mesmo ??
         vkDestroyFramebuffer(mainDevice.logicalDevice, framebuffer, nullptr);
     }
 
@@ -1035,5 +1040,62 @@ void VulkanRenderer::recordCommand() {
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to stop recording a Command Buffer!");
         }
+    }
+}
+
+void VulkanRenderer::createSynchronization() {
+    // Semaphore creation information
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (vkCreateSemaphore(this->mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &this->imageAvailable) !=
+            VK_SUCCESS ||
+        (vkCreateSemaphore(this->mainDevice.logicalDevice, &semaphoreCreateInfo, nullptr, &this->renderFinished) !=
+         VK_SUCCESS)) {
+
+        throw std::runtime_error("Failed to create a Semaphore!");
+    }
+}
+
+void VulkanRenderer::draw() {
+
+    // -- GET NEXT IMAGE --
+    // Get index of next image to be draw to, and signal semaphore when ready to be draw to
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(this->mainDevice.logicalDevice, this->swapchain, std::numeric_limits<uint64_t>::max(),
+                          this->imageAvailable, VK_NULL_HANDLE, &imageIndex);
+
+    // -- SUBMIT COMMAND BUFFER TO RENDER
+    // Queue submission information
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 1;                  // Number of semaphores to wait on
+    submitInfo.pWaitSemaphores = &this->imageAvailable; //
+    VkPipelineStageFlags waintStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.pWaitDstStageMask = waintStages;                     // Stagegs to check semaphores at
+    submitInfo.commandBufferCount = 1;                              // Number of command buffers to submit
+    submitInfo.pCommandBuffers = &this->commandBuffers[imageIndex]; // Command buffer to submit
+    submitInfo.signalSemaphoreCount = 1;                            // Number of semaphore to signal
+    submitInfo.pSignalSemaphores = &this->renderFinished;           // Semaphore to signal when command buffer finishes
+
+    // Submit command buffer to queue
+    VkResult result = vkQueueSubmit(this->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to submit Command Buffer to Queue!");
+    }
+
+    // -- PRESENT RENDERED IMAGE TO SCREEN --
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;                  // Number of semaphores to wait on
+    presentInfo.pWaitSemaphores = &this->renderFinished; // Semaphores to wait on
+    presentInfo.swapchainCount = 1;                      // Number of swapchains to present to
+    presentInfo.pSwapchains = &this->swapchain;          // Swapchais to present images to
+    presentInfo.pImageIndices = &imageIndex;             // Index of Images in swapchains to present
+
+    // Present Image
+    result = vkQueuePresentKHR(this->presentationQueue, &presentInfo);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to present Image!");
     }
 }

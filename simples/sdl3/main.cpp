@@ -49,7 +49,9 @@ int main() {
                 running = false;
             }
         }
+
         // Vulkan rendering would go here
+        vulkanRenderer.draw();
     }
 
     vulkanRenderer.cleanup();

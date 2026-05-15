@@ -28,6 +28,7 @@ class VulkanRenderer {
     }
 #endif
 
+    void draw();
     void cleanup();
 
   private:
@@ -65,6 +66,10 @@ class VulkanRenderer {
     VkFormat swapchainImageFormat;
     VkExtent2D swapchainExtent;
 
+    // - Synchronization
+    VkSemaphore imageAvailable;
+    VkSemaphore renderFinished;
+
     // Vulkan Functions
     // - Create functions
     void createInstance();
@@ -77,6 +82,7 @@ class VulkanRenderer {
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
+    void createSynchronization();
 
     // - Record Functions
     void recordCommand();
