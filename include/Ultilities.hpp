@@ -14,6 +14,7 @@ const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NA
 // Vertex data representation
 struct Vertex {
     glm::vec3 pos; // Vertex Position (x, y, z)
+    glm::vec3 col; // Vertex Color (r, g, b)
 };
 
 struct QueueFamilyIndices {

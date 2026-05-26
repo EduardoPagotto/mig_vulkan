@@ -20,6 +20,20 @@ int VulkanRenderer::init_vulkan() {
         this->createSurface();     // create before physical
         this->getPhysicalDevice(); // now need see if support surface
         this->createLogicalDevices();
+
+        // Create a mesh
+        std::vector<Vertex> meshVertices = {
+            //
+            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}}, //
+            {{0.4, 0.4, 0.0}, {0.0, 1.0, 0.0}},  //
+            {{-0.4, 0.4, 0.0}, {0.0, 0.0, 1.0}}, //
+
+            {{-0.4, 0.4, 0.0}, {0.0, 0.0, 1.0}},  //
+            {{-0.4, -0.4, 0.0}, {1.0, 1.0, 0.0}}, //
+            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}},  //
+        };
+        this->firstMesh = Mesh(this->mainDevice.physicalDevice, this->mainDevice.logicalDevice, &meshVertices);
+
         this->createSwapChain();
         this->createRenderPass();
         this->createGraphicsPipeline();
@@ -28,7 +42,6 @@ int VulkanRenderer::init_vulkan() {
         this->createCommandBuffers();
         this->recordCommand();
         this->createSynchronization();
-
     } catch (const std::runtime_error& e) {
         printf("Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -41,6 +54,8 @@ void VulkanRenderer::cleanup() {
 
     // Wait until no action being run on device before destroying
     vkDeviceWaitIdle(this->mainDevice.logicalDevice);
+
+    this->firstMesh.destroyVertexBuffer();
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
@@ -660,13 +675,19 @@ void VulkanRenderer::createGraphicsPipeline() {
     ;                                                           // VK_VERTEX_INPUT_RATE_INDEX : Move on to the next vertex
     ;                                                           // VK_VERTEX_INPUT_RATR_INSTANCE: Move to a vertex for the next instance
     // How the data for an attribute is defined within a vertex
-    std::array<VkVertexInputAttributeDescription, 1> attributeDescriptions;
+    std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions;
 
     // Position Attribute
     attributeDescriptions[0].binding = 0;                         // Which binding the data is at (should be sdame as above)
     attributeDescriptions[0].location = 0;                        // Location in shader where data will be read from
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Forma the data will take (also helps define size of data)
     attributeDescriptions[0].offset = offsetof(Vertex, pos);      // Where this attribute is defined in the data for a single vertex
+
+    // Color Attribute
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = offsetof(Vertex, col);
 
     // -- VERTEX INPUT --
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
@@ -1011,13 +1032,17 @@ void VulkanRenderer::recordCommand() {
 
         // Begin Render Pass
         vkCmdBeginRenderPass(this->commandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        {
+            // Bind Pipeline to be used  in render pass
+            vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
 
-        // Bind Pipeline to be used  in render pass
-        vkCmdBindPipeline(this->commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
+            VkBuffer vertexBuffer[] = {this->firstMesh.getVertexBuffer()};          // Buffers to bind
+            VkDeviceSize offsets[] = {0};                                           // Offsets into buffers being bound
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffer, offsets); // Command to bind vertex buffer before drawing with then
 
-        // Execute pipeline
-        vkCmdDraw(this->commandBuffers[i], 3, 1, 0, 0);
-
+            // Execute pipeline
+            vkCmdDraw(this->commandBuffers[i], static_cast<uint32_t>(this->firstMesh.getVertexCount()), 1, 0, 0);
+        }
         // End Render Pass
         vkCmdEndRenderPass(this->commandBuffers[i]);
 

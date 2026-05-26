@@ -7,6 +7,7 @@
 #include <SDL3/SDL_vulkan.h>
 #endif
 
+#include "Mesh.hpp"
 #include "Ultilities.hpp"
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -39,6 +40,9 @@ class VulkanRenderer {
 #endif
 
     int currentFrame = 0;
+
+    // Scene Objects
+    Mesh firstMesh;
 
     // Vulkan components
     // - Main
