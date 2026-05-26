@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <fstream>
+#include <glm/glm.hpp>
 #include <ios>
 #include <stdexcept>
 #include <vector>
@@ -9,6 +10,11 @@
 const int MAX_FRAME_DRAWS = 2;
 
 const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+// Vertex data representation
+struct Vertex {
+    glm::vec3 pos; // Vertex Position (x, y, z)
+};
 
 struct QueueFamilyIndices {
     int graphicsFamily = -1;     // Location of graphics Queue Family
