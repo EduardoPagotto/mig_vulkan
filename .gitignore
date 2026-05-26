@@ -15,4 +15,5 @@
 # cmake temps and test
 /build
 /bin
+ori
 .cache

@@ -20,7 +20,7 @@
 		"editor.cursorSmoothCaretAnimation": "on",
 		"editor.cursorStyle": "line",
 		"editor.hover.enabled": "off", // hover manual crt+k, crt+i
-		"editor.occurrencesHighlight": "off", // off disable highligh
+		"editor.occurrencesHighlight": "singleFile", // off disable highligh
 		"editor.selectionHighlight": false, // True show similar selectec
 		"editor.suggestOnTriggerCharacters": false,
 		"editor.acceptSuggestionOnEnter": "smart",

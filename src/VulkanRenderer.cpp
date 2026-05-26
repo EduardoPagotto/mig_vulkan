@@ -1052,18 +1052,23 @@ void VulkanRenderer::draw() {
     vkAcquireNextImageKHR(this->mainDevice.logicalDevice, this->swapchain, std::numeric_limits<uint64_t>::max(), this->imageAvailable[this->currentFrame],
                           VK_NULL_HANDLE, &imageIndex);
 
+    // this->imageAvailable -> imageAvailableSemaphores
+
     // -- SUBMIT COMMAND BUFFER TO RENDER
     // Queue submission information
+    VkSemaphore waitSemaphores[] = {this->imageAvailable[this->currentFrame]};
+    VkSemaphore signalSemaphores[] = {this->renderFinished[this->currentFrame]};
+
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.waitSemaphoreCount = 1;                                                    // Number of semaphores to wait on
-    submitInfo.pWaitSemaphores = &this->imageAvailable[this->currentFrame];               //
-    VkPipelineStageFlags waintStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; //
-    submitInfo.pWaitDstStageMask = waintStages;                                           // Stagegs to check semaphores at
-    submitInfo.commandBufferCount = 1;                                                    // Number of command buffers to submit
-    submitInfo.pCommandBuffers = &this->commandBuffers[imageIndex];                       // Command buffer to submit
-    submitInfo.signalSemaphoreCount = 1;                                                  // Number of semaphore to signal
-    submitInfo.pSignalSemaphores = &this->renderFinished[this->currentFrame];             // Semaphore to signal when command buffer finishes
+    submitInfo.waitSemaphoreCount = 1;                                                   // Number of semaphores to wait on
+    submitInfo.pWaitSemaphores = waitSemaphores;                                         //
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; //
+    submitInfo.pWaitDstStageMask = waitStages;                                           // Stagegs to check semaphores at
+    submitInfo.commandBufferCount = 1;                                                   // Number of command buffers to submit
+    submitInfo.pCommandBuffers = &this->commandBuffers[imageIndex];                      // Command buffer to submit
+    submitInfo.signalSemaphoreCount = 1;                                                 // Number of semaphore to signal
+    submitInfo.pSignalSemaphores = signalSemaphores;                                     // Semaphore to signal when command buffer finishes
 
     // Submit command buffer to queue
     VkResult result = vkQueueSubmit(this->graphicsQueue, 1, &submitInfo, this->drawFences[this->currentFrame]);
@@ -1073,12 +1078,13 @@ void VulkanRenderer::draw() {
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
     VkPresentInfoKHR presentInfo = {};
+    VkSwapchainKHR swapChains[] = {this->swapchain};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;                                      // Number of semaphores to wait on
-    presentInfo.pWaitSemaphores = &this->renderFinished[this->currentFrame]; // Semaphores to wait on
-    presentInfo.swapchainCount = 1;                                          // Number of swapchains to present to
-    presentInfo.pSwapchains = &this->swapchain;                              // Swapchais to present images to
-    presentInfo.pImageIndices = &imageIndex;                                 // Index of Images in swapchains to present
+    presentInfo.waitSemaphoreCount = 1;             // Number of semaphores to wait on
+    presentInfo.pWaitSemaphores = signalSemaphores; // Semaphores to wait on
+    presentInfo.swapchainCount = 1;                 // Number of swapchains to present to
+    presentInfo.pSwapchains = swapChains;           // Swapchais to present images to
+    presentInfo.pImageIndices = &imageIndex;        // Index of Images in swapchains to present
 
     // Present Image
     result = vkQueuePresentKHR(this->presentationQueue, &presentInfo);
@@ -1088,4 +1094,9 @@ void VulkanRenderer::draw() {
 
     // Get next frame
     this->currentFrame = (this->currentFrame + 1) % MAX_FRAME_DRAWS;
+
+    // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
+    if (this->currentFrame == (MAX_FRAME_DRAWS - 1)) {
+        vkDeviceWaitIdle(this->mainDevice.logicalDevice);
+    }
 }
