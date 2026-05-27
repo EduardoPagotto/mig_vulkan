@@ -21,6 +21,12 @@ int VulkanRenderer::init_vulkan() {
         this->getPhysicalDevice(); // now need see if support surface
         this->createLogicalDevices();
 
+        this->createSwapChain();
+        this->createRenderPass();
+        this->createGraphicsPipeline();
+        this->createFramebuffers();
+        this->createCommandPool();
+
         // Create a mesh
         std::vector<Vertex> meshVertices = {
             //
@@ -32,13 +38,8 @@ int VulkanRenderer::init_vulkan() {
             {{-0.4, -0.4, 0.0}, {1.0, 1.0, 0.0}}, //
             {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}},  //
         };
-        this->firstMesh = Mesh(this->mainDevice.physicalDevice, this->mainDevice.logicalDevice, &meshVertices);
+        this->firstMesh = Mesh(this->mainDevice.physicalDevice, this->mainDevice.logicalDevice, this->graphicsQueue, this->graphicsCommandPool, &meshVertices);
 
-        this->createSwapChain();
-        this->createRenderPass();
-        this->createGraphicsPipeline();
-        this->createFramebuffers();
-        this->createCommandPool();
         this->createCommandBuffers();
         this->recordCommand();
         this->createSynchronization();

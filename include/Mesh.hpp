@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "Ultilities.hpp"
 #include <GLFW/glfw3.h>
@@ -8,7 +9,7 @@
 class Mesh {
   public:
     Mesh();
-    Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, std::vector<Vertex>* vertices);
+    Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices);
     ~Mesh();
 
     int getVertexCount() const;
@@ -24,5 +25,5 @@ class Mesh {
     VkPhysicalDevice physicalDevice;
     VkDevice device;
 
-    void createVertexBuffer(std::vector<Vertex>* vertices);
+    void createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices);
 };
