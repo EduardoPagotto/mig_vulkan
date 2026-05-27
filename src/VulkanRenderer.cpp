@@ -28,17 +28,23 @@ int VulkanRenderer::init_vulkan() {
         this->createCommandPool();
 
         // Create a mesh
+        // Vertex Data
         std::vector<Vertex> meshVertices = {
-            //
-            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}}, //
-            {{0.4, 0.4, 0.0}, {0.0, 1.0, 0.0}},  //
-            {{-0.4, 0.4, 0.0}, {0.0, 0.0, 1.0}}, //
-
-            {{-0.4, 0.4, 0.0}, {0.0, 0.0, 1.0}},  //
-            {{-0.4, -0.4, 0.0}, {1.0, 1.0, 0.0}}, //
-            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}},  //
+            // seq 0,1,2,2,3,0
+            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}},  // 0
+            {{0.4, 0.4, 0.0}, {0.0, 1.0, 0.0}},   // 1
+            {{-0.4, 0.4, 0.0}, {0.0, 0.0, 1.0}},  // 2
+            {{-0.4, -0.4, 0.0}, {1.0, 1.0, 0.0}}, // 3
         };
-        this->firstMesh = Mesh(this->mainDevice.physicalDevice, this->mainDevice.logicalDevice, this->graphicsQueue, this->graphicsCommandPool, &meshVertices);
+
+        // Index data
+        std::vector<uint32_t> meshIndices = {
+            0, 1, 2, // t0
+            2, 3, 0  // t1
+        };
+
+        this->firstMesh =
+            Mesh(this->mainDevice.physicalDevice, this->mainDevice.logicalDevice, this->graphicsQueue, this->graphicsCommandPool, &meshVertices, &meshIndices);
 
         this->createCommandBuffers();
         this->recordCommand();
@@ -56,7 +62,7 @@ void VulkanRenderer::cleanup() {
     // Wait until no action being run on device before destroying
     vkDeviceWaitIdle(this->mainDevice.logicalDevice);
 
-    this->firstMesh.destroyVertexBuffer();
+    this->firstMesh.destroyBuffers();
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
@@ -1041,8 +1047,12 @@ void VulkanRenderer::recordCommand() {
             VkDeviceSize offsets[] = {0};                                           // Offsets into buffers being bound
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffer, offsets); // Command to bind vertex buffer before drawing with then
 
+            // Bind mesh index buffer, with 0 offset and using the uint32_t type
+            vkCmdBindIndexBuffer(commandBuffers[i], firstMesh.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
             // Execute pipeline
-            vkCmdDraw(this->commandBuffers[i], static_cast<uint32_t>(this->firstMesh.getVertexCount()), 1, 0, 0);
+            // vkCmdDraw(this->commandBuffers[i], static_cast<uint32_t>(this->firstMesh.getVertexCount()), 1, 0, 0);
+            vkCmdDrawIndexed(commandBuffers[i], firstMesh.getIndexCount(), 1, 0, 0, 0);
         }
         // End Render Pass
         vkCmdEndRenderPass(this->commandBuffers[i]);
