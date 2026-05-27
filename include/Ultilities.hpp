@@ -1,4 +1,8 @@
 #pragma once
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include <cstddef>
 #include <fstream>
 #include <glm/glm.hpp>
@@ -61,4 +65,56 @@ struct SwapchainImage {
     file.close();
 
     return fileBuffer;
+}
+
+static uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
+    // get properties of physical device memory
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+
+        // Index of memory type must match corresponding bit in allowedTypes and desired property bit flag are part of memory type's property flags
+        if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            // this memory type is valid, so return its index
+            return i;
+        }
+    }
+}
+
+[[maybe_unused]] static void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+                                          VkMemoryPropertyFlags bufferProperties, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
+    // CREATE VERTEX BUFFER
+    // information to create a buffer (dosen't include assigning memory)
+    VkBufferCreateInfo bufferInfo = {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = bufferSize;                       // Size of buffer (size of 1 vertex * number of vertices)
+    bufferInfo.usage = bufferUsage;                     // Multiple types of buffer possible
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Similar to Swap Chain images, can share vertex buffers
+
+    VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to creaste a Vertex Buffer!");
+    }
+
+    // GET BUFFER MEMORY REQUIREMENTS
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
+
+    // ALLOCATE MEMORY TO BUFFER
+    VkMemoryAllocateInfo memoryAllocInfo = {};
+    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memoryAllocInfo.allocationSize = memRequirements.size;
+    memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits, bufferProperties);
+    ; // VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT : CPU can interact with memory
+    ; // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : Allows placement of data straight into buffer mapping (otherwise would have to specify manually)
+
+    // Allocate memory to VkDebviceMemory
+    result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate Vertex Buffer Memory!!");
+    }
+
+    // Allocate memory to given vertex buffer
+    vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
 }

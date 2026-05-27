@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #define GLFW_INCLUDE_VULKAN
 #include "Ultilities.hpp"
 #include <GLFW/glfw3.h>
@@ -26,5 +25,4 @@ class Mesh {
     VkDevice device;
 
     void createVertexBuffer(std::vector<Vertex>* vertices);
-    uint32_t findMemoryTypeIndex(uint32_t allowedTypes, VkMemoryPropertyFlags properties);
 };
