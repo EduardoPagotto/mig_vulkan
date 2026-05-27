@@ -42,7 +42,7 @@ class VulkanRenderer {
     int currentFrame = 0;
 
     // Scene Objects
-    Mesh firstMesh;
+    std::vector<Mesh> meshList;
 
     // Vulkan components
     // - Main
