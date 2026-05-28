@@ -1,3 +1,6 @@
+#include <GLFW/glfw3.h>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/trigonometric.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include "VulkanRenderer.hpp"
 
@@ -26,9 +29,25 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    float angle = 0.0f;
+    float deltaTime = 0.0f;
+    float lastTime = 0.0f;
+
     // loop until close
     while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
+
+        float now = glfwGetTime();
+        deltaTime = now - lastTime;
+        lastTime = now;
+
+        angle += 10.0f * deltaTime;
+        if (angle > 360.0) {
+            angle -= 360.0;
+        }
+
+        vulkanRenderer.updateModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)));
+
         vulkanRenderer.draw();
     }
 

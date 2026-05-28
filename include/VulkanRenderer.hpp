@@ -9,6 +9,8 @@
 
 #include "Mesh.hpp"
 #include "Ultilities.hpp"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -29,6 +31,8 @@ class VulkanRenderer {
     }
 #endif
 
+    void updateModel(glm::mat4 newModel);
+
     void draw();
     void cleanup();
 
@@ -43,6 +47,13 @@ class VulkanRenderer {
 
     // Scene Objects
     std::vector<Mesh> meshList;
+
+    // Scene Settings
+    struct MVP {
+        glm::mat4 projection; // como a camera esta configurada (ortho-perspect)
+        glm::mat4 view;       // onde a camera esta
+        glm::mat4 model;      // onde o modelo esta
+    } mvp;
 
     // Vulkan components
     // - Main
@@ -59,6 +70,15 @@ class VulkanRenderer {
     std::vector<SwapchainImage> swapchainImages;
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
+
+    // - Descriptors
+    VkDescriptorSetLayout descriptorSetLayout;
+
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSets;
+
+    std::vector<VkBuffer> uniformBuffer;
+    std::vector<VkDeviceMemory> uniformBufferMemory;
 
     // - Pipeline
     VkPipeline graphicsPipeline;
@@ -85,11 +105,18 @@ class VulkanRenderer {
     void createSurface();
     void createSwapChain();
     void createRenderPass();
+    void createDescriptorSetLayout();
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
     void createSynchronization();
+
+    void createUniformBufers();
+    void createDescriptorPool();
+    void createDescriptorSets();
+
+    void updateUniformBuffer(uint32_t imageIndex);
 
     // - Record Functions
     void recordCommand();
