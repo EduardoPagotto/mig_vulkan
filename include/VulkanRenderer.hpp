@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #ifdef SET_GLFW_ENABLE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -31,7 +32,7 @@ class VulkanRenderer {
     }
 #endif
 
-    void updateModel(glm::mat4 newModel);
+    void updateModel(int modelId, glm::mat4 newModel);
 
     void draw();
     void cleanup();
@@ -49,11 +50,10 @@ class VulkanRenderer {
     std::vector<Mesh> meshList;
 
     // Scene Settings
-    struct MVP {
-        glm::mat4 projection; // como a camera esta configurada (ortho-perspect)
-        glm::mat4 view;       // onde a camera esta
-        glm::mat4 model;      // onde o modelo esta
-    } mvp;
+    struct UboViewProjection {
+        glm::mat4 projection;
+        glm::mat4 view;
+    } uboViewProjection;
 
     // Vulkan components
     // - Main
@@ -77,8 +77,15 @@ class VulkanRenderer {
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkBuffer> uniformBuffer;
-    std::vector<VkDeviceMemory> uniformBufferMemory;
+    std::vector<VkBuffer> vpUniformBuffer;
+    std::vector<VkDeviceMemory> vpUniformBufferMemory;
+
+    std::vector<VkBuffer> modelDUniformBuffer;
+    std::vector<VkDeviceMemory> modelDUniformBufferMemory;
+
+    VkDeviceSize minUniformBufferOffset;
+    size_t modelUniformAlignment;
+    UboModel* modelTransferSpace;
 
     // - Pipeline
     VkPipeline graphicsPipeline;
@@ -116,13 +123,16 @@ class VulkanRenderer {
     void createDescriptorPool();
     void createDescriptorSets();
 
-    void updateUniformBuffer(uint32_t imageIndex);
+    void updateUniformBuffers(uint32_t imageIndex);
 
     // - Record Functions
     void recordCommand();
 
     // - Get Functions
     void getPhysicalDevice();
+
+    // - Allocate functions
+    void allocateDynamicBufferTransferSpace();
 
     // - Suport Functions
     // -- Checker functions

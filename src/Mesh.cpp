@@ -1,7 +1,7 @@
 #include "Mesh.hpp"
 #include "Ultilities.hpp"
 #include <cstring>
-#include <stdexcept>
+#include <glm/ext/matrix_float4x4.hpp>
 #include <vulkan/vulkan_core.h>
 
 Mesh::Mesh() {
@@ -18,6 +18,8 @@ Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue trans
 
     this->indexCount = indices->size();
     this->createIndexBuffer(transferQueue, transferCommandPool, indices);
+
+    this->uboModel.model = glm::mat4(1.0F);
 }
 Mesh::~Mesh() {
     //
@@ -100,3 +102,7 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
     vkDestroyBuffer(this->device, staginBuffer, nullptr);
     vkFreeMemory(this->device, stagingBufferMemory, nullptr);
 }
+
+void Mesh::setModel(glm::mat4 newModel) { this->uboModel.model = newModel; }
+
+UboModel Mesh::getModel() { return this->uboModel; }

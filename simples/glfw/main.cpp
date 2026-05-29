@@ -46,7 +46,16 @@ int main() {
             angle -= 360.0;
         }
 
-        vulkanRenderer.updateModel(glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0.0f, 0.0f, 1.0f)));
+        glm::mat4 firshtModel(1.0F);
+        glm::mat4 secoundModel(1.0F);
+        firshtModel = glm::translate(firshtModel, glm::vec3(-2.0F, 0.0F, -5.0F));
+        firshtModel = glm::rotate(firshtModel, glm::radians(angle), glm::vec3(0.0F, 0.0F, 1.0F));
+
+        secoundModel = glm::translate(secoundModel, glm::vec3(2.0F, 0.0F, -5.0F));
+        secoundModel = glm::rotate(secoundModel, glm::radians(-angle * 100), glm::vec3(0.0F, 0.0F, 1.0F));
+
+        vulkanRenderer.updateModel(0, firshtModel);
+        vulkanRenderer.updateModel(1, secoundModel);
 
         vulkanRenderer.draw();
     }
