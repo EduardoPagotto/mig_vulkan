@@ -1,3 +1,5 @@
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+
 #include <GLFW/glfw3.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
@@ -48,11 +50,11 @@ int main() {
 
         glm::mat4 firshtModel(1.0F);
         glm::mat4 secoundModel(1.0F);
-        firshtModel = glm::translate(firshtModel, glm::vec3(-2.0F, 0.0F, -5.0F));
+        firshtModel = glm::translate(firshtModel, glm::vec3(0.0F, 0.0F, -2.5F));
         firshtModel = glm::rotate(firshtModel, glm::radians(angle), glm::vec3(0.0F, 0.0F, 1.0F));
 
-        secoundModel = glm::translate(secoundModel, glm::vec3(2.0F, 0.0F, -5.0F));
-        secoundModel = glm::rotate(secoundModel, glm::radians(-angle * 100), glm::vec3(0.0F, 0.0F, 1.0F));
+        secoundModel = glm::translate(secoundModel, glm::vec3(0.0F, 0.0F, -3.0F));
+        secoundModel = glm::rotate(secoundModel, glm::radians(-angle * 10), glm::vec3(0.0F, 0.0F, 1.0F));
 
         vulkanRenderer.updateModel(0, firshtModel);
         vulkanRenderer.updateModel(1, secoundModel);

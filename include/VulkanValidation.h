@@ -12,13 +12,12 @@ const bool validationEnabled = true;
 const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 // Callback function for validation debugging (will be called when validation information record)
-[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL
-debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
-              VkDebugReportObjectTypeEXT objType, // Type of object causing error
-              uint64_t obj,                       // ID of object
-              size_t location, int32_t code, const char* layerPrefix,
-              const char* message, // Validation Information
-              void* userData) {
+[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
+                                                                     VkDebugReportObjectTypeEXT objType, // Type of object causing error
+                                                                     uint64_t obj,                       // ID of object
+                                                                     size_t location, int32_t code, const char* layerPrefix,
+                                                                     const char* message, // Validation Information
+                                                                     void* userData) {
     // If validation ERROR, then output error and return failure
     if ((flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) != 0) {
         std::cout << "VALIDATION ERROR: " << message << '\n';
@@ -34,10 +33,8 @@ debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
     return VK_FALSE;
 }
 
-[[maybe_unused]] static VkResult CreateDebugReportCallbackEXT(VkInstance instance,
-                                                              const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-                                                              const VkAllocationCallbacks* pAllocator,
-                                                              VkDebugReportCallbackEXT* pCallback) {
+[[maybe_unused]] static VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
+                                                              const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
     // vkGetInstanceProcAddr returns a function pointer to the requested function in the requested instance
     // resulting function is cast as a function pointer with the header of "vkCreateDebugReportCallbackEXT"
     auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
@@ -49,8 +46,7 @@ debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-[[maybe_unused]] static void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback,
-                                                           const VkAllocationCallbacks* pAllocator) {
+[[maybe_unused]] static void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
     // get function pointer to requested function, then cast to function pointer for vkDestroyDebugReportCallbackEXT
     auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
 
