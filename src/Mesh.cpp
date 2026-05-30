@@ -19,7 +19,7 @@ Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue trans
     this->indexCount = indices->size();
     this->createIndexBuffer(transferQueue, transferCommandPool, indices);
 
-    this->uboModel.model = glm::mat4(1.0F);
+    this->model.model = glm::mat4(1.0F);
 }
 Mesh::~Mesh() {
     //
@@ -103,6 +103,6 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
     vkFreeMemory(this->device, stagingBufferMemory, nullptr);
 }
 
-void Mesh::setModel(glm::mat4 newModel) { this->uboModel.model = newModel; }
+void Mesh::setModel(glm::mat4 newModel) { this->model.model = newModel; }
 
-UboModel Mesh::getModel() { return this->uboModel; }
+Model Mesh::getModel() { return this->model; }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #ifdef SET_GLFW_ENABLE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -73,6 +72,7 @@ class VulkanRenderer {
 
     // - Descriptors
     VkDescriptorSetLayout descriptorSetLayout;
+    VkPushConstantRange pushConstantRange;
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -80,12 +80,12 @@ class VulkanRenderer {
     std::vector<VkBuffer> vpUniformBuffer;
     std::vector<VkDeviceMemory> vpUniformBufferMemory;
 
-    std::vector<VkBuffer> modelDUniformBuffer;
-    std::vector<VkDeviceMemory> modelDUniformBufferMemory;
+    // std::vector<VkBuffer> modelDUniformBuffer;
+    // std::vector<VkDeviceMemory> modelDUniformBufferMemory;
 
-    VkDeviceSize minUniformBufferOffset;
-    size_t modelUniformAlignment;
-    UboModel* modelTransferSpace;
+    // VkDeviceSize minUniformBufferOffset;
+    // size_t modelUniformAlignment;
+    // UboModel* modelTransferSpace;
 
     // - Pipeline
     VkPipeline graphicsPipeline;
@@ -113,6 +113,7 @@ class VulkanRenderer {
     void createSwapChain();
     void createRenderPass();
     void createDescriptorSetLayout();
+    void createPushConstantRange();
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
@@ -126,13 +127,13 @@ class VulkanRenderer {
     void updateUniformBuffers(uint32_t imageIndex);
 
     // - Record Functions
-    void recordCommand();
+    void recordCommand(uint32_t currentImage);
 
     // - Get Functions
     void getPhysicalDevice();
 
     // - Allocate functions
-    void allocateDynamicBufferTransferSpace();
+    // void allocateDynamicBufferTransferSpace();
 
     // - Suport Functions
     // -- Checker functions

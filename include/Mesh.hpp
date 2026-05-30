@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 
-struct UboModel {
+struct Model {
     glm::mat4 model;
 };
 
@@ -18,7 +18,8 @@ class Mesh {
     ~Mesh();
 
     void setModel(glm::mat4 newModel);
-    UboModel getModel();
+    Model getModel();
+    const Model& getModel2() const { return this->model; }
 
     int getVertexCount() const;
     VkBuffer getVertexBuffer();
@@ -29,7 +30,7 @@ class Mesh {
     void destroyBuffers();
 
   private:
-    UboModel uboModel;
+    Model model;
 
     int vertexCount;
     VkBuffer vertexBuffer;
