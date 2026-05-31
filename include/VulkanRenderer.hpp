@@ -112,7 +112,7 @@ class VulkanRenderer {
     // - Create functions
     void createInstance();
     void createDebugCallback();
-    void createLogicalDevices();
+    void createLogicalDevice();
     void createSurface();
     void createSwapChain();
     void createRenderPass();
@@ -123,16 +123,16 @@ class VulkanRenderer {
     void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
-    void createSynchronization();
+    void createSynchronisation();
 
-    void createUniformBufers();
+    void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
 
     void updateUniformBuffers(uint32_t imageIndex);
 
     // - Record Functions
-    void recordCommand(uint32_t currentImage);
+    void recordCommands(uint32_t currentImage);
 
     // - Get Functions
     void getPhysicalDevice();
@@ -142,7 +142,7 @@ class VulkanRenderer {
 
     // - Suport Functions
     // -- Checker functions
-    bool static checkInstanceExtentionsSupport(std::vector<const char*>* checkExtentions);
+    bool static checkInstanceExtensionSupport(std::vector<const char*>* checkExtentions);
     bool static checkDeviceExtensionSupport(VkPhysicalDevice device);
     bool static checkValidationLayerSupport();
     bool checkDeviceSuitable(VkPhysicalDevice device);
