@@ -37,26 +37,40 @@ int VulkanRenderer::init_vulkan() {
         this->createFramebuffers();
         this->createCommandPool();
 
-        this->uboViewProjection.projection = glm::perspective(glm::radians(45.0F), (float)swapchainExtent.width / (float)swapchainExtent.height, 0.1F, 100.0F);
-        this->uboViewProjection.view = glm::lookAt(glm::vec3(0.0F, 0.0F, 3.0F), glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 1.0F, 0.0F));
+        // const float radixAngle = 45.0F;
+        const float near = 0.1F;
+        const float far = 100.0F;
+
+        const float radixAngle = glm::radians(45.F);
+        const glm::vec3 camPos = glm::vec3(0.0F, 0.0F, 3.0F);
+        const glm::vec3 camCenter = glm::vec3(0.0F, 0.0F, 0.0F);
+        const glm::vec3 camUp = glm::vec3(0.0F, 1.0F, 0.0F);
+        const float aspect = (float)swapchainExtent.width / (float)swapchainExtent.height;
+
+        this->uboViewProjection.projection = glm::perspective(radixAngle, aspect, near, far);
+
+        this->uboViewProjection.view = glm::lookAt(camPos, camCenter, camUp);
+
         this->uboViewProjection.projection[1][1] *= -1; // vulkan inverted of OpenGL
 
         // Create a mesh
         // Vertex Data
+        const float vertMax = 0.4F;
         std::vector<Vertex> meshVertices1 = {
-            // seq 0,1,2,2,3,0
-            {{-0.4, 0.4, 0.0}, {1.0, 0.0, 0.0}},  // 0
-            {{-0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}}, // 1
-            {{0.4, -0.4, 0.0}, {1.0, 0.0, 0.0}},  // 2
-            {{0.4, 0.4, 0.0}, {1.0, 0.0, 0.0}},   // 3
+            {.pos = {-vertMax, vertMax, 0.0}, .col = {1.0F, 0.0, 0.0}}, // 0
+            {.pos = {-vertMax, -vertMax, 0.0}, .col = {1.0, 0.0, 0.0}}, // 1
+            {.pos = {vertMax, -vertMax, 0.0}, .col = {1.0, 0.0, 0.0}},  // 2
+            {.pos = {vertMax, vertMax, 0.0}, .col = {1.0, 0.0, 0.0}},   // 3
         };
 
+        const float verPos1 = 0.25F;
+        const float verPos2 = 0.6F;
         std::vector<Vertex> meshVertices2 = {
             // seq 0,1,2,2,3,0
-            {{-0.25, 0.6, 0.0}, {0.0, 0.0, 1.0}},  // 0
-            {{-0.25, -0.6, 0.0}, {0.0, 0.0, 1.0}}, // 1
-            {{0.25, -0.6, 0.0}, {0.0, 0.0, 1.0}},  // 2
-            {{0.25, 0.6, 0.0}, {0.0, 0.0, 1.0}},   // 3
+            {.pos = {-verPos1, verPos2, 0.0}, .col = {0.0, 0.0, 1.0}},  // 0
+            {.pos = {-verPos1, -verPos2, 0.0}, .col = {0.0, 0.0, 1.0}}, // 1
+            {.pos = {verPos1, -verPos2, 0.0}, .col = {0.0, 0.0, 1.0}},  // 2
+            {.pos = {verPos1, verPos2, 0.0}, .col = {0.0, 0.0, 1.0}},   // 3
         };
 
         // Index data
@@ -1469,7 +1483,7 @@ void VulkanRenderer::createPushConstantRange() {
 }
 
 VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags,
-                                    VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) {
+                                    VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) const {
     // CREATE IMAGE
     // Image Create Info
     VkImageCreateInfo imageCreateInfo = {};
@@ -1517,7 +1531,7 @@ VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat for
     return image;
 }
 
-VkFormat VulkanRenderer::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) {
+VkFormat VulkanRenderer::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) const {
 
     // Loop through options and find compatible one
     for (VkFormat format : formats) {
