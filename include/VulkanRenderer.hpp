@@ -6,9 +6,9 @@
 #else
 #include <SDL3/SDL_vulkan.h>
 #endif
-
 #include "Mesh.hpp"
 #include "Ultilities.hpp"
+#include "stb_image.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -91,6 +91,10 @@ class VulkanRenderer {
     // size_t modelUniformAlignment;
     // UboModel* modelTransferSpace;
 
+    // - Assets
+    std::vector<VkImage> textureImages;
+    std::vector<VkDeviceMemory> textureImageMemory;
+
     // - Pipeline
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
@@ -162,6 +166,11 @@ class VulkanRenderer {
                         VkDeviceMemory* imageMemory) const;
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
     [[nodiscard]] VkShaderModule createShaderModule(const std::vector<char>& code) const;
+
+    int createTexture(const std::string& filename);
+
+    // -- Loader Funcions
+    static stbi_uc* loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize);
 
     // generic
     int init_vulkan();

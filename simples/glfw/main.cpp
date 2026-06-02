@@ -1,3 +1,4 @@
+#define STB_IMAGE_IMPLEMENTATION
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include <GLFW/glfw3.h>
@@ -31,9 +32,9 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    float angle = 0.0f;
-    float deltaTime = 0.0f;
-    float lastTime = 0.0f;
+    float angle = 0.0F;
+    float deltaTime = 0.0F;
+    float lastTime = 0.0F;
 
     // loop until close
     while (glfwWindowShouldClose(window) == 0) {
@@ -43,9 +44,9 @@ int main() {
         deltaTime = now - lastTime;
         lastTime = now;
 
-        angle += 10.0f * deltaTime;
-        if (angle > 360.0) {
-            angle -= 360.0;
+        angle += 10.0F * deltaTime;
+        if (angle > 360.0F) {
+            angle -= 360.0F;
         }
 
         glm::mat4 firshtModel(1.0F);

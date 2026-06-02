@@ -6,7 +6,9 @@ Checks: >
   readability-*,
   performance-*,
   google-explicit-constructor,
-  -modernize-use-trailing-return-type
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers'
 
 ExtraArgsBefore:
   - -std=c++20
