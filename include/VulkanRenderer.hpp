@@ -74,12 +74,17 @@ class VulkanRenderer {
     VkDeviceMemory depthBufferImageMemory;
     VkImageView depthBufferImageView;
 
+    VkSampler textureSampler;
+
     // - Descriptors
     VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSetLayout samplerSetLayout;
     VkPushConstantRange pushConstantRange;
 
     VkDescriptorPool descriptorPool;
+    VkDescriptorPool samplerDescriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<VkDescriptorSet> samplerDescriptorSets;
 
     std::vector<VkBuffer> vpUniformBuffer;
     std::vector<VkDeviceMemory> vpUniformBufferMemory;
@@ -94,6 +99,7 @@ class VulkanRenderer {
     // - Assets
     std::vector<VkImage> textureImages;
     std::vector<VkDeviceMemory> textureImageMemory;
+    std::vector<VkImageView> textureImageViews;
 
     // - Pipeline
     VkPipeline graphicsPipeline;
@@ -128,6 +134,7 @@ class VulkanRenderer {
     void createCommandPool();
     void createCommandBuffers();
     void createSynchronisation();
+    void createTextureSampler();
 
     void createUniformBuffers();
     void createDescriptorPool();
@@ -167,7 +174,9 @@ class VulkanRenderer {
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
     [[nodiscard]] VkShaderModule createShaderModule(const std::vector<char>& code) const;
 
+    int createTextureImage(const std::string& filename);
     int createTexture(const std::string& filename);
+    int createTextureDescriptor(VkImageView textureImage);
 
     // -- Loader Funcions
     static stbi_uc* loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize);

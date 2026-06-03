@@ -8,7 +8,7 @@ Mesh::Mesh() {
     //
 }
 Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices,
-           std::vector<uint32_t>* indices) {
+           std::vector<uint32_t>* indices, int newTexId) {
 
     this->physicalDevice = newPhysicalDevice;
     this->device = newDevice;
@@ -20,6 +20,7 @@ Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue trans
     this->createIndexBuffer(transferQueue, transferCommandPool, indices);
 
     this->model.model = glm::mat4(1.0F);
+    this->texId = newTexId;
 }
 Mesh::~Mesh() {
     //
@@ -32,6 +33,8 @@ VkBuffer Mesh::getVertexBuffer() { return this->vertexBuffer; }
 int Mesh::getIndexCount() const { return this->indexCount; }
 
 VkBuffer Mesh::getIndexBuffer() { return this->indexBuffer; }
+
+int Mesh::getTexId() const { return this->texId; }
 
 void Mesh::destroyBuffers() {
     //
