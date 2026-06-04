@@ -9,6 +9,7 @@ PROJECT(glwf_test VERSION 0.0.1 LANGUAGES CXX)
 # set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
 
 find_package(glfw3 3.3 REQUIRED)
+find_package(assimp REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
@@ -29,9 +30,10 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp
+                               ${CMAKE_SOURCE_DIR}/src/MeshModel.cpp
                                ${CMAKE_SOURCE_DIR}/src/Mesh.cpp
                                main.cpp)
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${IncludeDirs})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw vulkan)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw vulkan assimp::assimp)

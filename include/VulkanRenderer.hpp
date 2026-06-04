@@ -6,9 +6,12 @@
 #else
 #include <SDL3/SDL_vulkan.h>
 #endif
-#include "Mesh.hpp"
+#include "MeshModel.hpp"
 #include "Ultilities.hpp"
 #include "stb_image.h"
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
@@ -32,6 +35,7 @@ class VulkanRenderer {
 #endif
 
     void updateModel(int modelId, glm::mat4 newModel);
+    int createMeshModel(const std::string& modelFile);
 
     void draw();
     void cleanup();
@@ -46,7 +50,7 @@ class VulkanRenderer {
     int currentFrame = 0;
 
     // Scene Objects
-    std::vector<Mesh> meshList;
+    std::vector<MeshModel> modelList;
 
     // Scene Settings
     struct UboViewProjection {

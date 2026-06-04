@@ -44,6 +44,9 @@ sudo dnf install vulkan-loader-devel vulkan-tools vulkan-utility-libraries-devel
 
 # Lib GLFW
 sudo dnf install glfw-devel
+
+# ASSIMP (Model load)
+sudo dnf install assimp assimp-devel
 ```
 
 ## Build and test:

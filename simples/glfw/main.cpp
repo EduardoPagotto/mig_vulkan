@@ -36,6 +36,8 @@ int main() {
     float deltaTime = 0.0F;
     float lastTime = 0.0F;
 
+    int helicopter = vulkanRenderer.createMeshModel("./models/Seahawk.obj");
+
     // loop until close
     while (glfwWindowShouldClose(window) == 0) {
         glfwPollEvents();
@@ -49,16 +51,11 @@ int main() {
             angle -= 360.0F;
         }
 
-        glm::mat4 firshtModel(1.0F);
-        glm::mat4 secoundModel(1.0F);
-        firshtModel = glm::translate(firshtModel, glm::vec3(0.0F, 0.0F, -2.5F));
-        firshtModel = glm::rotate(firshtModel, glm::radians(angle), glm::vec3(0.0F, 0.0F, 1.0F));
+        glm::mat4 testMat = glm::rotate(glm::mat4(1.0F), glm::radians(angle), glm::vec3(0.0F, 1.0F, 0.0F));
+        // testMat = glm::rotate(testMat, glm::radians(-45.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+        // this->modelList[0].setModel(testMat);
 
-        secoundModel = glm::translate(secoundModel, glm::vec3(0.0F, 0.0F, -3.0F));
-        secoundModel = glm::rotate(secoundModel, glm::radians(-angle * 10), glm::vec3(0.0F, 0.0F, 1.0F));
-
-        vulkanRenderer.updateModel(0, firshtModel);
-        vulkanRenderer.updateModel(1, secoundModel);
+        vulkanRenderer.updateModel(helicopter, testMat);
 
         vulkanRenderer.draw();
     }
