@@ -71,5 +71,6 @@ SDL_VIDEODRIVER=x11 ./bin/sdl_test
 # compile spirv
 glslangValidator  -V ./shaders/shader.vert -o ./bin/vert.spv
 glslangValidator  -V ./shaders/shader.frag -o ./bin/frag.spv
-
+glslangValidator  -V ./shaders/second.vert -o ./bin/second_vert.spv
+glslangValidator  -V ./shaders/second.frag -o ./bin/second_frag.spv
 ```

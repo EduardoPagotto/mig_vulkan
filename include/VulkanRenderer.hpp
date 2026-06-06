@@ -74,21 +74,28 @@ class VulkanRenderer {
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkImage depthBufferImage;
-    VkDeviceMemory depthBufferImageMemory;
-    VkImageView depthBufferImageView;
+    std::vector<VkImage> colourBufferImage;
+    std::vector<VkDeviceMemory> colourBufferImageMemory;
+    std::vector<VkImageView> colourBufferImageView;
+
+    std::vector<VkImage> depthBufferImage;
+    std::vector<VkDeviceMemory> depthBufferImageMemory;
+    std::vector<VkImageView> depthBufferImageView;
 
     VkSampler textureSampler;
 
     // - Descriptors
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorSetLayout samplerSetLayout;
+    VkDescriptorSetLayout inputSetLayout;
     VkPushConstantRange pushConstantRange;
 
     VkDescriptorPool descriptorPool;
     VkDescriptorPool samplerDescriptorPool;
+    VkDescriptorPool inputDescriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
     std::vector<VkDescriptorSet> samplerDescriptorSets;
+    std::vector<VkDescriptorSet> inputDescriptorSet;
 
     std::vector<VkBuffer> vpUniformBuffer;
     std::vector<VkDeviceMemory> vpUniformBufferMemory;
@@ -108,6 +115,10 @@ class VulkanRenderer {
     // - Pipeline
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
+
+    VkPipeline secondPipeline;
+    VkPipelineLayout secondPipelineLayout;
+
     VkRenderPass renderPass;
 
     // - Pools
@@ -133,6 +144,7 @@ class VulkanRenderer {
     void createDescriptorSetLayout();
     void createPushConstantRange();
     void createGraphicsPipeline();
+    void createColourBufferImage();
     void createDepthBufferImage();
     void createFramebuffers();
     void createCommandPool();
@@ -143,6 +155,7 @@ class VulkanRenderer {
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
+    void createInputDescriptorSet();
 
     void updateUniformBuffers(uint32_t imageIndex);
 
