@@ -1,11 +1,6 @@
 #pragma once
 
-#ifdef SET_GLFW_ENABLE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#else
-#include <SDL3/SDL_vulkan.h>
-#endif
+#include "Device.hpp"
 #include "MeshModel.hpp"
 #include "Ultilities.hpp"
 #include "stb_image.h"
@@ -14,40 +9,26 @@
 #include <assimp/scene.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 class VulkanRenderer {
   public:
-    VulkanRenderer() = default;
-    virtual ~VulkanRenderer() {}
+    explicit VulkanRenderer(std::shared_ptr<ce::Device> dev);
 
-#ifdef SET_GLFW_ENABLE
-    int init(GLFWwindow* window) {
-        this->window = window;
-        return init_vulkan();
-    }
-#else
-    int init(SDL_Window* window) {
-        this->window = window;
-        return init_vulkan();
-    }
-#endif
+    virtual ~VulkanRenderer();
 
     void updateModel(int modelId, glm::mat4 newModel);
+
     int createMeshModel(const std::string& modelFile);
 
     void draw();
-    void cleanup();
 
   private:
-#ifdef SET_GLFW_ENABLE
-    GLFWwindow* window;
-#else
-    SDL_Window* window;
-#endif
-
     int currentFrame = 0;
+
+    std::shared_ptr<ce::Device> dev;
 
     // Scene Objects
     std::vector<MeshModel> modelList;
@@ -60,15 +41,6 @@ class VulkanRenderer {
 
     // Vulkan components
     // - Main
-    VkInstance instance;
-    VkDebugReportCallbackEXT callback;
-    struct {
-        VkPhysicalDevice physicalDevice;
-        VkDevice logicalDevice;
-    } mainDevice;
-    VkQueue graphicsQueue;
-    VkQueue presentationQueue;
-    VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
     std::vector<SwapchainImage> swapchainImages;
     std::vector<VkFramebuffer> swapChainFrameBuffers;
@@ -124,10 +96,6 @@ class VulkanRenderer {
 
     // Vulkan Functions
     // - Create functions
-    void createInstance();
-    void createDebugCallback();
-    void createLogicalDevice();
-    void createSurface();
     void createSwapChain();
     void createRenderPass();
     void createDescriptorSetLayout();
@@ -149,27 +117,13 @@ class VulkanRenderer {
     // - Record Functions
     void recordCommands(uint32_t currentImage);
 
-    // - Get Functions
-    void getPhysicalDevice();
-
     // - Allocate functions
     // void allocateDynamicBufferTransferSpace();
-
-    // - Suport Functions
-    // -- Checker functions
-    bool static checkInstanceExtensionSupport(std::vector<const char*>* checkExtentions);
-    bool static checkDeviceExtensionSupport(VkPhysicalDevice device);
-    bool static checkValidationLayerSupport();
-    bool checkDeviceSuitable(VkPhysicalDevice device);
-
-    // -- Getter Functions
-    QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
-    SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
 
     // - Choose functions
     VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
     VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+
     VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) const;
 
     // -- Create Functions
@@ -184,7 +138,4 @@ class VulkanRenderer {
 
     // -- Loader Funcions
     static stbi_uc* loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize);
-
-    // generic
-    int init_vulkan();
 };
