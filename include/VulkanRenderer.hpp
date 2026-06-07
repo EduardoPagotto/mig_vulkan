@@ -2,7 +2,7 @@
 
 #include "Device.hpp"
 #include "MeshModel.hpp"
-#include "Ultilities.hpp"
+#include "SwapChain.hpp"
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -29,6 +29,7 @@ class VulkanRenderer {
     int currentFrame = 0;
 
     std::shared_ptr<ce::Device> dev;
+    std::shared_ptr<ce::SwapChain> swc;
 
     // Scene Objects
     std::vector<MeshModel> modelList;
@@ -41,8 +42,6 @@ class VulkanRenderer {
 
     // Vulkan components
     // - Main
-    VkSwapchainKHR swapchain;
-    std::vector<SwapchainImage> swapchainImages;
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -85,10 +84,6 @@ class VulkanRenderer {
     // - Pools
     VkCommandPool graphicsCommandPool;
 
-    // - Utility
-    VkFormat swapchainImageFormat;
-    VkExtent2D swapchainExtent;
-
     // - Synchronization
     std::vector<VkSemaphore> imageAvailable;
     std::vector<VkSemaphore> renderFinished;
@@ -96,7 +91,6 @@ class VulkanRenderer {
 
     // Vulkan Functions
     // - Create functions
-    void createSwapChain();
     void createRenderPass();
     void createDescriptorSetLayout();
     void createPushConstantRange();
@@ -121,15 +115,15 @@ class VulkanRenderer {
     // void allocateDynamicBufferTransferSpace();
 
     // - Choose functions
-    VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-    VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+    // VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+    // VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
 
     VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) const;
 
     // -- Create Functions
     VkImage createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags,
                         VkDeviceMemory* imageMemory) const;
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+    // VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
     [[nodiscard]] VkShaderModule createShaderModule(const std::vector<char>& code) const;
 
     int createTextureImage(const std::string& filename);

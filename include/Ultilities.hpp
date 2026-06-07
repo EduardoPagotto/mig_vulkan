@@ -2,7 +2,6 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
 #include <cstddef>
 #include <fstream>
 #include <glm/glm.hpp>
@@ -19,11 +18,6 @@ struct Vertex {
     glm::vec3 pos; // Vertex Position (x, y, z)
     glm::vec3 col; // Vertex Color (r, g, b)
     glm::vec2 tex; // Texture Coords (u, v)
-};
-
-struct SwapchainImage {
-    VkImage image;
-    VkImageView imageView;
 };
 
 [[maybe_unused]] static std::vector<char> readFile(const std::string& filename) {
