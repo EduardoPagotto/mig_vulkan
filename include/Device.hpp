@@ -51,6 +51,7 @@ namespace ce {
         SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
         QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+        [[nodiscard]] VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags);
 
       private:
         // Vulkan components
@@ -63,7 +64,7 @@ namespace ce {
         VkQueue presentationQueue;
         VkSurfaceKHR surface;
 
-        bool validationEnabled = false;
+        bool validationEnabled = true;
 
 #ifdef SET_GLFW_ENABLE
         GLFWwindow* window;

@@ -2,6 +2,7 @@
 
 #include "Device.hpp"
 #include "MeshModel.hpp"
+#include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
@@ -30,6 +31,7 @@ class VulkanRenderer {
 
     std::shared_ptr<ce::Device> dev;
     std::shared_ptr<ce::SwapChain> swc;
+    std::shared_ptr<ce::Renderer> rederer;
 
     // Scene Objects
     std::vector<MeshModel> modelList;
@@ -79,7 +81,6 @@ class VulkanRenderer {
     // - Pipeline
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
-    VkRenderPass renderPass;
 
     // - Pools
     VkCommandPool graphicsCommandPool;
@@ -91,7 +92,6 @@ class VulkanRenderer {
 
     // Vulkan Functions
     // - Create functions
-    void createRenderPass();
     void createDescriptorSetLayout();
     void createPushConstantRange();
     void createGraphicsPipeline();
@@ -117,8 +117,6 @@ class VulkanRenderer {
     // - Choose functions
     // VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
     // VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
-
-    VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) const;
 
     // -- Create Functions
     VkImage createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags,

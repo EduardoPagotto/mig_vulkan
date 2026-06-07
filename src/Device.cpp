@@ -480,4 +480,27 @@ namespace ce {
         return newExtent;
     }
 
+    VkFormat Device::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) {
+
+        // Loop through options and find compatible one
+        for (VkFormat format : formats) {
+
+            // Get properties for give format on this device
+            VkFormatProperties properties;
+            vkGetPhysicalDeviceFormatProperties(this->getPhysicalDevice(), format, &properties);
+
+            // Depending on tiling choice, nned to check for difference bit flag
+            if (tilling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags) {
+                //
+                return format;
+            }
+            if (tilling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & featureFlags) == featureFlags) {
+                //
+                return format;
+            }
+        }
+
+        throw std::runtime_error("Failed to find a matching format!");
+    }
+
 } // namespace ce

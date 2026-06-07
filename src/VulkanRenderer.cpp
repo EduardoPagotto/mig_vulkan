@@ -1,6 +1,7 @@
 #include "VulkanRenderer.hpp"
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
+#include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "Ultilities.hpp"
 #include <array>
@@ -23,8 +24,8 @@
 
 VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::Device> dev) : dev(dev) { // NOLINT
 
-    this->swc = std::make_shared<ce::SwapChain>(dev); // this->createSwapChain();
-    this->createRenderPass();
+    this->swc = std::make_shared<ce::SwapChain>(dev);         // this->createSwapChain();
+    this->rederer = std::make_shared<ce::Renderer>(dev, swc); // this->createRenderPass();
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();
@@ -108,7 +109,6 @@ VulkanRenderer::~VulkanRenderer() {
 
     vkDestroyPipeline(dev->getLogical(), this->graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(dev->getLogical(), this->pipelineLayout, nullptr);
-    vkDestroyRenderPass(dev->getLogical(), this->renderPass, nullptr);
 }
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
@@ -180,104 +180,6 @@ void VulkanRenderer::draw() {
     // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
     if (this->currentFrame == (MAX_FRAME_DRAWS - 1)) {
         vkDeviceWaitIdle(dev->getLogical());
-    }
-}
-
-void VulkanRenderer::createRenderPass() {
-
-    // ATTACHEMNTS
-    // Colour attachment of render pass
-    VkAttachmentDescription colourAttachemnt = {};
-    colourAttachemnt.format = this->swc->getSwapchainImageFormat();     // Format to use for attachment
-    colourAttachemnt.samples = VK_SAMPLE_COUNT_1_BIT;                   // Number of samples to write for multisampling
-    colourAttachemnt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;              // Describes what to do with attachemnt before rendering
-    colourAttachemnt.storeOp = VK_ATTACHMENT_STORE_OP_STORE;            // Describes what todo with attachment after rendering
-    colourAttachemnt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;   // Describes what todo with stencil before rendering
-    colourAttachemnt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // Describes what todo with stencil before rendering
-
-    // Framebuffer data will be storage as an image, but images can be given different data layouts
-    // to give optimal use for certan operations
-    colourAttachemnt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;     // Image data layout before render pass starts
-    colourAttachemnt.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Imagedata layout after render pass (to change to)
-
-    // depth attachemnt of render pass
-    VkAttachmentDescription depthAttachemnt = {};
-    depthAttachemnt.format = this->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                                         VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                                         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-    depthAttachemnt.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachemnt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachemnt.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachemnt.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachemnt.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachemnt.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachemnt.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    // REFERENCES
-    // Attachemnt reference uses an attachemnt index that refer to index in the attachemnt list passes to
-    // renderPassCreateInfo
-    VkAttachmentReference colourAttachmentReference = {};
-    colourAttachmentReference.attachment = 0;
-    colourAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    // Depth Attachment Refence
-    VkAttachmentReference depthAttachemntReference = {};
-    depthAttachemntReference.attachment = 1;
-    depthAttachemntReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    // Information abaout a particular subpass the render pass is using
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // Pipeline type subpass is to be bound to
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colourAttachmentReference;
-    subpass.pDepthStencilAttachment = &depthAttachemntReference;
-
-    // Need to determine when layout transitions occour subpass dependencies
-    std::array<VkSubpassDependency, 2> subpassDependencies;
-
-    // Conversion from VK_IMAGE_LAYOUT_UNDEFINED to VK_IMAGE_LAYOUT_COLOR_ATTACHEMNT_OPTIMAL
-    // Transition must happen after..
-    subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL; // Subpass index (VK_SUBPASS_EXTERNAL = Special value means outside of renderpass)
-    subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // Pipeline stage
-    subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;           // Stage access mask (memory access)
-
-    // But must happen before..
-    subpassDependencies[0].dstSubpass = 0;
-    subpassDependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    subpassDependencies[0].dependencyFlags = 0;
-
-    //
-    // -----
-    // Conversion from VK_IMAGE_LAYOUT_COLOR_ATTACHEMNT_OPTIMAL to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    // Transition must happen after..
-    subpassDependencies[1].srcSubpass = 0;
-    subpassDependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    // But must happen before..
-    subpassDependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    subpassDependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    subpassDependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    subpassDependencies[1].dependencyFlags = 0;
-
-    std::array<VkAttachmentDescription, 2> renderPassAttachemnts = {colourAttachemnt, depthAttachemnt};
-
-    // Create Info for render pass
-    VkRenderPassCreateInfo renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(renderPassAttachemnts.size());
-    renderPassCreateInfo.pAttachments = renderPassAttachemnts.data();
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpass;
-    renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
-    renderPassCreateInfo.pDependencies = subpassDependencies.data();
-
-    VkResult result = vkCreateRenderPass(dev->getLogical(), &renderPassCreateInfo, nullptr, &this->renderPass);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create render pass!!!");
     }
 }
 
@@ -545,9 +447,9 @@ void VulkanRenderer::createGraphicsPipeline() {
     pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
     pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;       // Pipeline Layout pipeline shoud use
-    pipelineCreateInfo.renderPass = this->renderPass; // Render pass description the pipelineis compatible whit
-    pipelineCreateInfo.subpass = 0;                   // Subpass of render pass to use with pipeline
+    pipelineCreateInfo.layout = pipelineLayout;                     // Pipeline Layout pipeline shoud use
+    pipelineCreateInfo.renderPass = this->rederer->getRenderPass(); // Render pass description the pipelineis compatible whit
+    pipelineCreateInfo.subpass = 0;                                 // Subpass of render pass to use with pipeline
 
     // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
@@ -568,9 +470,9 @@ void VulkanRenderer::createGraphicsPipeline() {
 void VulkanRenderer::createDepthBufferImage() {
 
     // Get suported format for depth buffer
-    VkFormat depthFormat = this->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                                       VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                                       VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                   // Depth
+    VkFormat depthFormat = this->dev->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+                                                            VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
+                                                            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                   // Depth
 
     // Create Depth Buffer Image
     this->depthBufferImage =
@@ -592,7 +494,7 @@ void VulkanRenderer::createFramebuffers() {
 
         VkFramebufferCreateInfo framebufferCreateInfo = {};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.renderPass = this->renderPass; // Render Pass layout the framebuffer will be used with
+        framebufferCreateInfo.renderPass = this->rederer->getRenderPass(); // Render Pass layout the framebuffer will be used with
         framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferCreateInfo.pAttachments = attachments.data();               // List of attachments (1:1 with Render Pass)
         framebufferCreateInfo.width = this->swc->getSwapchainExtent().width;   // Framebuffer width
@@ -874,7 +776,8 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     // Information about how to begin a render pass (only need for graphical application)
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = this->renderPass;                       // Render pass to begin
+    renderPassBeginInfo.renderPass = this->rederer->getRenderPass();
+    ;                                                                        // Render pass to begin
     renderPassBeginInfo.renderArea.offset = {.x = 0, .y = 0};                // Start point of render pass in pixels
     renderPassBeginInfo.renderArea.extent = this->swc->getSwapchainExtent(); // Size of region to run render pass on (starting at offset)
 
@@ -955,29 +858,6 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 //     // Create space in memory to hold dynamic byffer that is alignment and holds MAX_OBJECTS
 //     this->modelTransferSpace = (UboModel*)aligned_alloc(this->modelUniformAlignment, this->modelUniformAlignment * MAX_OBJECTS);
 // }
-
-VkFormat VulkanRenderer::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) const {
-
-    // Loop through options and find compatible one
-    for (VkFormat format : formats) {
-
-        // Get properties for give format on this device
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(dev->getPhysicalDevice(), format, &properties);
-
-        // Depending on tiling choice, nned to check for difference bit flag
-        if (tilling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags) {
-            //
-            return format;
-        }
-        if (tilling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & featureFlags) == featureFlags) {
-            //
-            return format;
-        }
-    }
-
-    throw std::runtime_error("Failed to find a matching format!");
-}
 
 VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags,
                                     VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) const {
