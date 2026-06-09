@@ -32,6 +32,7 @@ set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/Device.cpp
                                ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
                                ${CMAKE_SOURCE_DIR}/src/Renderer.cpp
+                               #${CMAKE_SOURCE_DIR}/src/Pipeline.cpp
                                ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp
                                ${CMAKE_SOURCE_DIR}/src/MeshModel.cpp
                                ${CMAKE_SOURCE_DIR}/src/Mesh.cpp

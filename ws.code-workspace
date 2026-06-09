@@ -250,7 +250,7 @@
 			},
 			{
 				"name": "GLFW_Test",
-				"type": "lldb",
+				"type": "lldb-dap",
 				"request": "launch",
 				"program": "${workspaceFolder}/bin/glwf_test",
 				"args": [],
@@ -259,7 +259,7 @@
 					//"DEBUG_MODE": "true"
 				}
 				// "preLaunchTask": "CMake: build"
-			}
+			},
 		],
 		"compounds": []
 	},
