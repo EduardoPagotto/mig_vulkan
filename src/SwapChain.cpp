@@ -1,12 +1,13 @@
 #include "SwapChain.hpp"
-#include "VWrapp.hpp"
+#include "VWrappUtils.hpp"
 
 namespace ce {
 
     SwapChain::SwapChain(std::shared_ptr<VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails = VWrapp::getSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface()); // FIXME: alterar assinatura do metodo
+        SwapChainDetails swapchainDetails =
+            GetSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface()); // FIXME: alterar assinatura do metodo
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = SwapChain::chooseBestSurfaceFormat(swapchainDetails.formats);
@@ -26,20 +27,22 @@ namespace ce {
         // Create information for swap chain
         VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
         swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = vwrapp->getSurface();                                       // Swapchain surface
-        swapchainCreateInfo.imageFormat = surrfaceFormat.format;                                  // Swapchain format
-        swapchainCreateInfo.imageColorSpace = surrfaceFormat.colorSpace;                          // Swapchain color space
-        swapchainCreateInfo.presentMode = presentMode;                                            // Swapchain presentation mode
-        swapchainCreateInfo.imageExtent = extent;                                                 // Swapchain image extents
-        swapchainCreateInfo.minImageCount = imageCount;                                           // Minimum image in swapchain
-        swapchainCreateInfo.imageArrayLayers = 1;                                                 // Number of layers for each image in chain
-        swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;                     // What attachement image will be used as
-        swapchainCreateInfo.preTransform = swapchainDetails.surfaceCapabilities.currentTransform; // Transform to perform on swap chain images
-        swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // How to handle blending images with external graphics(e.g. other windows)
+        swapchainCreateInfo.surface = vwrapp->getSurface();                   // Swapchain surface
+        swapchainCreateInfo.imageFormat = surrfaceFormat.format;              // Swapchain format
+        swapchainCreateInfo.imageColorSpace = surrfaceFormat.colorSpace;      // Swapchain color space
+        swapchainCreateInfo.presentMode = presentMode;                        // Swapchain presentation mode
+        swapchainCreateInfo.imageExtent = extent;                             // Swapchain image extents
+        swapchainCreateInfo.minImageCount = imageCount;                       // Minimum image in swapchain
+        swapchainCreateInfo.imageArrayLayers = 1;                             // Number of layers for each image in chain
+        swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // What attachement image will be used as
+        swapchainCreateInfo.preTransform =
+            swapchainDetails.surfaceCapabilities.currentTransform; // Transform to perform on swap chain images
+        swapchainCreateInfo.compositeAlpha =
+            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // How to handle blending images with external graphics(e.g. other windows)
         swapchainCreateInfo.clipped = VK_TRUE; // Whether to clip parts of image not in view (e.g. behind another window, off screen, etc)
 
         // Get Queue Family indices
-        ce::QueueFamilyIndices indices = VWrapp::getQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
+        ce::QueueFamilyIndices indices = GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
 
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
         if (indices.graphicsFamily != indices.presentationFamily) {
@@ -81,7 +84,8 @@ namespace ce {
             // Store image handle
             SwapchainImage swapChainImage = {};
             swapChainImage.image = image;
-            swapChainImage.imageView = SwapChain::createImageView(vwrapp->getLogical(), image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+            swapChainImage.imageView =
+                SwapChain::createImageView(vwrapp->getLogical(), image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
             // Add to swapchain image list
             this->swapchainImages.push_back(swapChainImage);

@@ -29,7 +29,8 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
 
-add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VWrapp.cpp
+add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VWrappUtils.cpp
+                               ${CMAKE_SOURCE_DIR}/src/VWrapp.cpp
                                ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
                                ${CMAKE_SOURCE_DIR}/src/Renderer.cpp
                                #${CMAKE_SOURCE_DIR}/src/Pipeline.cpp

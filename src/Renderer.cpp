@@ -1,4 +1,5 @@
 #include "Renderer.hpp"
+#include "VWrappUtils.hpp"
 #include <array>
 
 namespace ce {
@@ -32,9 +33,10 @@ namespace ce {
 
         // depth attachemnt of render pass
         VkAttachmentDescription depthAttachemnt = {};
-        depthAttachemnt.format = vwrapp->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                                               VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                                               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        depthAttachemnt.format = ChooseSupportedFormat(
+            this->vwrapp->getPhysical(), {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+            VK_IMAGE_TILING_OPTIMAL,                                                                                        // Tilling
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         depthAttachemnt.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachemnt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -68,7 +70,8 @@ namespace ce {
 
         // Conversion from VK_IMAGE_LAYOUT_UNDEFINED to VK_IMAGE_LAYOUT_COLOR_ATTACHEMNT_OPTIMAL
         // Transition must happen after..
-        subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL; // Subpass index (VK_SUBPASS_EXTERNAL = Special value means outside of renderpass)
+        subpassDependencies[0].srcSubpass =
+            VK_SUBPASS_EXTERNAL; // Subpass index (VK_SUBPASS_EXTERNAL = Special value means outside of renderpass)
         subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT; // Pipeline stage
         subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;           // Stage access mask (memory access)
 

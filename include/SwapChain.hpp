@@ -2,6 +2,7 @@
 
 #include "VWrapp.hpp"
 #include <memory>
+#include <vector>
 
 namespace ce {
 

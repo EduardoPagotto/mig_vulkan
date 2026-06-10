@@ -5,6 +5,7 @@
 #include "SwapChain.hpp"
 #include "Ultilities.hpp"
 #include "VWrapp.hpp"
+#include "VWrappUtils.hpp"
 #include <array>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -130,8 +131,8 @@ void VulkanRenderer::draw() {
 
     // Get index of next image to be draw to, and signal semaphore when ready to be draw to
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(vwrapp->getLogical(), this->swc->getSwapchain(), std::numeric_limits<uint64_t>::max(), this->imageAvailable[this->currentFrame],
-                          VK_NULL_HANDLE, &imageIndex);
+    vkAcquireNextImageKHR(vwrapp->getLogical(), this->swc->getSwapchain(), std::numeric_limits<uint64_t>::max(),
+                          this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
 
@@ -193,7 +194,7 @@ void VulkanRenderer::createDescriptorSetLayout() {
     vpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // Type of descriptor (uniform, dynamic, image sampler, etc)
     vpLayoutBinding.descriptorCount = 1;                                // Number of descriptors for binding
     vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;            // Shade stage to bind to
-    vpLayoutBinding.pImmutableSamplers = nullptr;                       // for Texture: can make sampler unchangeable (immutable) by specifying in layout
+    vpLayoutBinding.pImmutableSamplers = nullptr; // for Texture: can make sampler unchangeable (immutable) by specifying in layout
 
     // // Model Binding Info
     // VkDescriptorSetLayoutBinding mLayoutBinding = {};
@@ -308,7 +309,8 @@ void VulkanRenderer::createGraphicsPipeline() {
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription; // List of vertex bind Descritions (data spacing stride information)
+    vertexInputCreateInfo.pVertexBindingDescriptions =
+        &bindingDescription; // List of vertex bind Descritions (data spacing stride information)
     vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputCreateInfo.pVertexAttributeDescriptions =
         attributeDescriptions.data(); // List of Vertex Attribute Descriptions (data format and where to bind to/from)
@@ -363,14 +365,16 @@ void VulkanRenderer::createGraphicsPipeline() {
     // -- RASTERIZER --
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
     rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizationCreateInfo.depthClampEnable = VK_FALSE;                 // Change if fragments beond near/far planes are clipped (default) of clamped to plane
-    rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE;          // Whether to diacard data and skip rasterization. Never
-                                                                         // create fragments, only suitable for pipeline without frambuffer output
-    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;          // How to handle filling points beteen vertices
-    rasterizationCreateInfo.lineWidth = 1.0F;                            // How thick lines shoud be when draw
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;            // Whitch face of a tri to cull(nao desenha a backface)
+    rasterizationCreateInfo.depthClampEnable =
+        VK_FALSE; // Change if fragments beond near/far planes are clipped (default) of clamped to plane
+    rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE; // Whether to diacard data and skip rasterization. Never
+                                                                // create fragments, only suitable for pipeline without frambuffer output
+    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // How to handle filling points beteen vertices
+    rasterizationCreateInfo.lineWidth = 1.0F;                   // How thick lines shoud be when draw
+    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;   // Whitch face of a tri to cull(nao desenha a backface)
     rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // kinding to determine side is front
-    rasterizationCreateInfo.depthBiasClamp = VK_FALSE; // Whether to add depth bias to fragment (good for stopping "swadow acne" in shadow mapping)
+    rasterizationCreateInfo.depthBiasClamp =
+        VK_FALSE; // Whether to add depth bias to fragment (good for stopping "swadow acne" in shadow mapping)
 
     //
     // -- MULTISMAPLING --
@@ -385,9 +389,9 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     // Blend Attachment State (how blending is handled)
     VkPipelineColorBlendAttachmentState colourState = {};
-    colourState.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT; // Color to apply blending to
-    colourState.blendEnable = VK_TRUE;                                                                             // Enable blending
+    colourState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                 VK_COLOR_COMPONENT_A_BIT; // Color to apply blending to
+    colourState.blendEnable = VK_TRUE;                     // Enable blending
 
     // Blending uses equation: (srcColorBlendfactor * new colour) colorBlendOp (dstColorBlendfactor * old colour)
     colourState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -454,7 +458,7 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
-    pipelineCreateInfo.basePipelineIndex = -1;              // or index of pipeline being created to derive from (in case creating multiple at once)
+    pipelineCreateInfo.basePipelineIndex = -1; // or index of pipeline being created to derive from (in case creating multiple at once)
 
     // Create Graphics Pipeline
     result = vkCreateGraphicsPipelines(vwrapp->getLogical(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &this->graphicsPipeline);
@@ -471,17 +475,19 @@ void VulkanRenderer::createGraphicsPipeline() {
 void VulkanRenderer::createDepthBufferImage() {
 
     // Get suported format for depth buffer
-    VkFormat depthFormat = vwrapp->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                                         VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                                         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                   // Depth
+    VkFormat depthFormat = ce::ChooseSupportedFormat(
+        this->vwrapp->getPhysical(), {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+        VK_IMAGE_TILING_OPTIMAL,                                                                                        // Tilling
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                                // Depth
 
     // Create Depth Buffer Image
-    this->depthBufferImage =
-        this->createImage(this->swc->getSwapchainExtent().width, this->swc->getSwapchainExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->depthBufferImageMemory);
+    this->depthBufferImage = this->createImage(this->swc->getSwapchainExtent().width, this->swc->getSwapchainExtent().height, depthFormat,
+                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->depthBufferImageMemory);
 
     // Create Depth Buffer Image View
-    this->depthBufferImageView = ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    this->depthBufferImageView =
+        ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanRenderer::createFramebuffers() {
@@ -491,7 +497,8 @@ void VulkanRenderer::createFramebuffers() {
     // Create a framebuffer for eache swap chain image
     for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
-        std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i].imageView, this->depthBufferImageView}; // order important same as upper
+        std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i].imageView,
+                                                  this->depthBufferImageView}; // order important same as upper
 
         VkFramebufferCreateInfo framebufferCreateInfo = {};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -513,7 +520,7 @@ void VulkanRenderer::createFramebuffers() {
 void VulkanRenderer::createCommandPool() {
 
     // Get inidices of queue families from device
-    ce::QueueFamilyIndices queueFamilyIndices = ce::VWrapp::getQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
+    ce::QueueFamilyIndices queueFamilyIndices = ce::GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -619,7 +626,8 @@ void VulkanRenderer::createUniformBuffers() {
     // Create Unifor buffers
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
         createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->vpUniformBuffer[i], &this->vpUniformBufferMemory[i]);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->vpUniformBuffer[i],
+                     &this->vpUniformBufferMemory[i]);
 
         // createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), modelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->modelDUniformBuffer[i],
@@ -649,9 +657,10 @@ void VulkanRenderer::createDescriptorPool() {
     // Data to create Descriptor Pool
     VkDescriptorPoolCreateInfo poolCreateInfo = {};
     poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolCreateInfo.maxSets = static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Maximum number of descriptor Sets that cam be create from pool
-    poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());       // Amount of Pool Sizes being passed
-    poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();                                 // Pool Sizes to create pool with
+    poolCreateInfo.maxSets =
+        static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Maximum number of descriptor Sets that cam be create from pool
+    poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size()); // Amount of Pool Sizes being passed
+    poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();                           // Pool Sizes to create pool with
 
     // Create Descriptor Pool
     VkResult result = vkCreateDescriptorPool(vwrapp->getLogical(), &poolCreateInfo, nullptr, &this->descriptorPool);
@@ -688,7 +697,7 @@ void VulkanRenderer::createDescriptorSets() {
     setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     setAllocInfo.descriptorPool = this->descriptorPool;                                              // Pool to allocate Descriptor Set from
     setAllocInfo.descriptorSetCount = static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Number of sets to allocate
-    setAllocInfo.pSetLayouts = setLayouts.data();                                                    // Layouts to use to allocate sets (1:1 relationship)
+    setAllocInfo.pSetLayouts = setLayouts.data(); // Layouts to use to allocate sets (1:1 relationship)
 
     // Allocate descriptor sets (multiple)
     VkResult result = vkAllocateDescriptorSets(vwrapp->getLogical(), &setAllocInfo, this->descriptorSets.data());
@@ -761,9 +770,9 @@ void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
     // }
 
     // // Map the list of model data
-    // vkMapMemory(vwrapp->getLogical(), this->modelDUniformBufferMemory[imageIndex], 0, this->modelUniformAlignment * meshList.size(), 0, &data);
-    // memcpy(data, this->modelTransferSpace, this->modelUniformAlignment * meshList.size());
-    // vkUnmapMemory(vwrapp->getLogical(), this->modelDUniformBufferMemory[imageIndex]);
+    // vkMapMemory(vwrapp->getLogical(), this->modelDUniformBufferMemory[imageIndex], 0, this->modelUniformAlignment * meshList.size(), 0,
+    // &data); memcpy(data, this->modelTransferSpace, this->modelUniformAlignment * meshList.size()); vkUnmapMemory(vwrapp->getLogical(),
+    // this->modelDUniformBufferMemory[imageIndex]);
 }
 
 void VulkanRenderer::recordCommands(uint32_t currentImage) {
@@ -771,7 +780,8 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
     VkCommandBufferBeginInfo bufferBeginInfo = {};
     bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    bufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Buffer can be resubmitted when it has alredy been submited and is awaiting
+    bufferBeginInfo.flags =
+        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Buffer can be resubmitted when it has alredy been submited and is awaiting
     // execution
 
     // Information about how to begin a render pass (only need for graphical application)
@@ -820,9 +830,10 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
                 //
 
-                VkBuffer vertexBuffer[] = {thisModel.getMesh(k)->getVertexBuffer()};               // Buffers to bind
-                VkDeviceSize offsets[] = {0};                                                      // Offsets into buffers being bound
-                vkCmdBindVertexBuffers(commandBuffers[currentImage], 0, 1, vertexBuffer, offsets); // Command to bind vertex buffer before drawing with then
+                VkBuffer vertexBuffer[] = {thisModel.getMesh(k)->getVertexBuffer()}; // Buffers to bind
+                VkDeviceSize offsets[] = {0};                                        // Offsets into buffers being bound
+                vkCmdBindVertexBuffers(commandBuffers[currentImage], 0, 1, vertexBuffer,
+                                       offsets); // Command to bind vertex buffer before drawing with then
 
                 // Bind mesh index buffer, with 0 offset and using the uint32_t type
                 vkCmdBindIndexBuffer(commandBuffers[currentImage], thisModel.getMesh(k)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -932,8 +943,8 @@ int VulkanRenderer::createTexture(const std::string& filename) {
     int textureImageLoc = this->createTextureImage(filename);
 
     // Create image view and add list
-    VkImageView imageView =
-        ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->textureImages[textureImageLoc], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageView imageView = ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->textureImages[textureImageLoc],
+                                                           VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
     textureImageViews.push_back(imageView);
 
     // TCreate Texture Descriptor
@@ -955,7 +966,8 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     VkBuffer imageStagingBuffer;
     VkDeviceMemory imageStagingBufferMemory;
     createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer, &imageStagingBufferMemory);
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer,
+                 &imageStagingBufferMemory);
 
     // copy image data to staging buffer
     void* data;
@@ -969,8 +981,9 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     // create image to hold final texture
     VkImage texImage;
     VkDeviceMemory texImageMemory;
-    texImage = this->createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
+    texImage = this->createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                 &texImageMemory);
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
@@ -981,8 +994,8 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer, texImage, width, height);
 
     // Transition image to be shader readable for shader
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImage,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     // add texture data to vector for reference
     this->textureImages.push_back(texImage);
@@ -1042,7 +1055,8 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     // Import model "scene"
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(modelFile.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+    const aiScene* scene =
+        importer.ReadFile(modelFile.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
     if (scene == nullptr) {
         throw std::runtime_error("Faile to load model! (" + modelFile + ")");
@@ -1069,8 +1083,8 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     }
 
     // Load in all our meshes
-    std::vector<Mesh> modelMeshes = MeshModel::LoadNode(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool,
-                                                        scene->mRootNode, scene, matToTex);
+    std::vector<Mesh> modelMeshes = MeshModel::LoadNode(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getGraphicsQueue(),
+                                                        this->graphicsCommandPool, scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     MeshModel meshModel(modelMeshes);
