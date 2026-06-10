@@ -487,7 +487,7 @@ void VulkanRenderer::createDepthBufferImage() {
 
     // Create Depth Buffer Image View
     this->depthBufferImageView =
-        ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        ce::CreateImageView(this->vwrapp->getLogical(), this->depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanRenderer::createFramebuffers() {
@@ -943,8 +943,8 @@ int VulkanRenderer::createTexture(const std::string& filename) {
     int textureImageLoc = this->createTextureImage(filename);
 
     // Create image view and add list
-    VkImageView imageView = ce::SwapChain::createImageView(this->vwrapp->getLogical(), this->textureImages[textureImageLoc],
-                                                           VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageView imageView = ce::CreateImageView(this->vwrapp->getLogical(), this->textureImages[textureImageLoc], VK_FORMAT_R8G8B8A8_UNORM,
+                                                VK_IMAGE_ASPECT_COLOR_BIT);
     textureImageViews.push_back(imageView);
 
     // TCreate Texture Descriptor

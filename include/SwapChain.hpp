@@ -21,7 +21,7 @@ namespace ce {
         std::vector<SwapchainImage>& getSwapchainImages() { return swapchainImages; }
         VkFormat& getSwapchainImageFormat() { return swapchainImageFormat; }
 
-        static VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+        // static VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
       private:
         VkSwapchainKHR swapchain;
@@ -31,7 +31,7 @@ namespace ce {
 
         std::shared_ptr<VWrapp> vwrapp;
 
-        static VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-        static VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
+        // static VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+        // static VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     };
 } // namespace ce

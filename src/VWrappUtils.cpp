@@ -267,4 +267,69 @@ namespace ce {
 
         return indices.isValid() && extensionsSupported && swapChainValid && (deviceFeatures.samplerAnisotropy == VK_TRUE);
     }
+
+    // --swapchain
+
+    VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+        //
+        VkImageViewCreateInfo viewCreateInfo = {};
+        viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewCreateInfo.image = image;                                // Image to create view for
+        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;             // Type of image (1D, 2D, 3D, Cube, etc)
+        viewCreateInfo.format = format;                              // Format of image data
+        viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY; // Allows remapping of rgba component to other values
+        viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        // Subresources allow the view to view only a part of a image
+        viewCreateInfo.subresourceRange.aspectMask = aspectFlags; // which aspect of image to view (e.g. COLOR_BIT for view color)
+        viewCreateInfo.subresourceRange.baseMipLevel = 0;         // Start mipmap level to start from
+        viewCreateInfo.subresourceRange.levelCount = 1;           // Number of mipmap levels to view
+        viewCreateInfo.subresourceRange.baseArrayLayer = 0;       // Start array level to view from
+        viewCreateInfo.subresourceRange.layerCount = 1;           // Numbers of array levels to view
+
+        // Create image view and return it
+        VkImageView imageView;
+        VkResult result = vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create an Image View!");
+        }
+
+        return imageView;
+    }
+
+    // Best format is subjective, but ours will be:
+    // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
+    // colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+    VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+
+        // If only 1 format avaible and is undefined, them this means ALL formats ase avaible (no restricion)
+        if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
+            return {.format = VK_FORMAT_R8G8B8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+        }
+
+        // If restriced, searche for optimal format
+        for (const auto& format : formats) {
+            if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
+                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                return format;
+            }
+        }
+
+        // If can't find optimal format, then just return first format
+        return formats[0]; // FIXME: pade data pau aqui
+    }
+
+    VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes) {
+        // Look for Mailbox presentation mode
+        for (const auto& presentationMode : presentationModes) {
+            if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                return presentationMode;
+            }
+        }
+
+        return VK_PRESENT_MODE_FIFO_KHR; // allways avaible by vulkan
+    }
+
 } // namespace ce
