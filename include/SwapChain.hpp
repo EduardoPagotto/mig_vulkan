@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Device.hpp"
+#include "VWrapp.hpp"
 #include <memory>
 
 namespace ce {
@@ -12,14 +12,15 @@ namespace ce {
 
     class SwapChain {
       public:
-        explicit SwapChain(std::shared_ptr<Device> dev);
+        explicit SwapChain(std::shared_ptr<VWrapp> vwrapp);
         virtual ~SwapChain();
 
         VkSwapchainKHR& getSwapchain() { return swapchain; }
         VkExtent2D& getSwapchainExtent() { return swapchainExtent; }
         std::vector<SwapchainImage>& getSwapchainImages() { return swapchainImages; }
         VkFormat& getSwapchainImageFormat() { return swapchainImageFormat; }
-        VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
+
+        static VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
       private:
         VkSwapchainKHR swapchain;
@@ -27,7 +28,7 @@ namespace ce {
         VkExtent2D swapchainExtent;
         std::vector<SwapchainImage> swapchainImages;
 
-        std::shared_ptr<Device> dev;
+        std::shared_ptr<VWrapp> vwrapp;
 
         static VkSurfaceFormatKHR chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
         static VkPresentModeKHR chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);

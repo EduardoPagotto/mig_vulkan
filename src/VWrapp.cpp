@@ -1,34 +1,33 @@
-#include "Device.hpp"
+#include "VWrapp.hpp"
 #include <cstring>
 #include <iostream>
 #include <set>
 #include <stdexcept>
 
 namespace ce {
-
-    Device::~Device() {
+    VWrapp::~VWrapp() {
         // cleanup
-        vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
-        vkDestroyDevice(this->logicalDevice, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroyDevice(logicalDevice, nullptr);
 
         if (validationEnabled) {
-            DestroyDebugReportCallbackEXT(this->instance, this->callback, nullptr);
+            DestroyDebugReportCallbackEXT(instance, callback, nullptr);
         }
 
-        vkDestroyInstance(this->instance, nullptr);
+        vkDestroyInstance(instance, nullptr);
     }
 
-    void Device::init_device() {
-        this->createInstance();
-        this->createDebugCallback();
-        this->createSurface();        // create before physical
-        this->getNewPhysicalDevice(); // now need see if support surface
-        this->createLogicalDevice();
+    void VWrapp::init_device() {
+        createInstance();
+        createDebugCallback();
+        createSurface();        // create before physical
+        getNewPhysicalDevice(); // now need see if support surface
+        createLogicalDevice();
     }
 
-    void Device::createInstance() {
+    void VWrapp::createInstance() {
 
-        if (validationEnabled && !Device::checkValidationLayerSupport()) {
+        if (validationEnabled && !VWrapp::checkValidationLayerSupport()) {
             throw std::runtime_error("Required Validation Layers not supported!");
         }
 
@@ -77,7 +76,7 @@ namespace ce {
         }
 
         // check Instance Extentions suppoted..
-        if (!Device::checkInstanceExtensionSupport(&instanceExtensions)) {
+        if (!VWrapp::checkInstanceExtensionSupport(&instanceExtensions)) {
             throw std::runtime_error("vkInstance does no suport requerid extentions!");
         }
 
@@ -94,13 +93,13 @@ namespace ce {
         }
 
         // Create instance
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &this->instance);
+        VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan Instance");
         }
     }
 
-    bool Device::checkValidationLayerSupport() {
+    bool VWrapp::checkValidationLayerSupport() {
         // Get number of validation layers to create vector of appropriate size
         uint32_t validationLayerCount = 0;
         vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
@@ -140,7 +139,7 @@ namespace ce {
         return true;
     }
 
-    bool Device::checkInstanceExtensionSupport(std::vector<const char*>* checkExtentions) {
+    bool VWrapp::checkInstanceExtensionSupport(std::vector<const char*>* checkExtentions) {
         // need to get number of extentions to create array of correct size to hold extentions
         uint32_t extentionsCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extentionsCount, nullptr);
@@ -168,7 +167,7 @@ namespace ce {
         return true;
     }
 
-    void Device::createDebugCallback() {
+    void VWrapp::createDebugCallback() {
         // Only create callback if validation enabled
         if (!validationEnabled) {
             return;
@@ -180,13 +179,13 @@ namespace ce {
         callbackCreateInfo.pfnCallback = debugCallback;                                             // Pointer to callback function itself
 
         // Create debug callback with custom create function
-        VkResult result = CreateDebugReportCallbackEXT(this->instance, &callbackCreateInfo, nullptr, &this->callback);
+        VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Debug Callback!");
         }
     }
 
-    VkResult Device::CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
+    VkResult VWrapp::CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
                                                   const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
         // vkGetInstanceProcAddr returns a function pointer to the requested function in the requested instance
         // resulting function is cast as a function pointer with the header of "vkCreateDebugReportCallbackEXT"
@@ -199,7 +198,7 @@ namespace ce {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    VKAPI_ATTR VkBool32 Device::VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
+    VKAPI_ATTR VkBool32 VWrapp::VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags,        // Type of error
                                                          VkDebugReportObjectTypeEXT objType, // Type of object causing error
                                                          uint64_t obj,                       // ID of object
                                                          size_t location, int32_t code, const char* layerPrefix,
@@ -220,26 +219,26 @@ namespace ce {
         return VK_FALSE;
     }
 
-    void Device::createSurface() {
+    void VWrapp::createSurface() {
 
         // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
 #ifdef SET_GLFW_ENABLE
-        VkResult result = glfwCreateWindowSurface(this->instance, window, nullptr, &this->surface);
+        VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #else
-        bool result = SDL_Vulkan_CreateSurface(this->window, this->instance, nullptr, &this->surface);
+        bool result = SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface);
         if (!result) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #endif
     }
 
-    void Device::getNewPhysicalDevice() {
+    void VWrapp::getNewPhysicalDevice() {
         // Enumerate Physical devices the vkInstance can access
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(this->instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
         // if no devices avaible, then none suport Vulkan!
         if (deviceCount == 0) {
@@ -248,24 +247,24 @@ namespace ce {
 
         // get List of Physical devices
         std::vector<VkPhysicalDevice> deviceList(deviceCount);
-        vkEnumeratePhysicalDevices(this->instance, &deviceCount, deviceList.data());
+        vkEnumeratePhysicalDevices(instance, &deviceCount, deviceList.data());
 
         // mainDevice.physicalDevice = deviceList[0];
         for (const auto& device : deviceList) {
-            if (this->checkDeviceSuitable(device)) {
-                this->physicalDevice = device;
+            if (checkDeviceSuitable(device, surface)) {
+                physicalDevice = device;
                 break;
             }
         }
 
         // Get properties of our new device
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(this->physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
-        // this->minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
+        // minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
     }
 
-    bool Device::checkDeviceSuitable(VkPhysicalDevice device) {
+    bool VWrapp::checkDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
         /*
         // Information abaout the device itself (ID, Name, Type Vendor, etc)
@@ -276,20 +275,20 @@ namespace ce {
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        QueueFamilyIndices indices = this->getQueueFamilies(device);
+        QueueFamilyIndices indices = getQueueFamilies(device, surface);
 
-        bool extensionsSupported = Device::checkDeviceExtensionSupport(device);
+        bool extensionsSupported = VWrapp::checkDeviceExtensionSupport(device);
 
         bool swapChainValid = false;
         if (extensionsSupported) {
-            SwapChainDetails swapChainDetails = this->getSwapChainDetails(device);
+            SwapChainDetails swapChainDetails = getSwapChainDetails(device, surface);
             swapChainValid = !swapChainDetails.presentationModes.empty() && !swapChainDetails.formats.empty();
         }
 
         return indices.isValid() && extensionsSupported && swapChainValid && (deviceFeatures.samplerAnisotropy == VK_TRUE);
     }
 
-    QueueFamilyIndices Device::getQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices VWrapp::getQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
         QueueFamilyIndices indices;
 
@@ -313,7 +312,7 @@ namespace ce {
 
             // Check if Queue Family support presentation
             VkBool32 presentationSupport = VK_FALSE;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, idx, this->surface,
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, idx, surface,
                                                  &presentationSupport); // TODO: validar se result OK
             // check if queue is presentation type (can bo boyh graphics and presentation)
             if ((queueFamily.queueCount > 0) && (presentationSupport == VK_TRUE)) {
@@ -331,7 +330,7 @@ namespace ce {
         return indices;
     }
 
-    bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    bool VWrapp::checkDeviceExtensionSupport(VkPhysicalDevice device) {
         // Get device extension count
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -363,40 +362,40 @@ namespace ce {
         return true;
     }
 
-    SwapChainDetails Device::getSwapChainDetails(VkPhysicalDevice device) {
+    SwapChainDetails VWrapp::getSwapChainDetails(VkPhysicalDevice device, VkSurfaceKHR surface) {
         SwapChainDetails swapChainDetails;
 
         // -- CAPABILITIES --
         // Get the surface capabilities for the given surface on the given physical device
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, this->surface, &swapChainDetails.surfaceCapabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &swapChainDetails.surfaceCapabilities);
 
         // -- FORMATS --
         uint32_t formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, this->surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
         // If formats returned, get list of formats
         if (formatCount != 0) {
             swapChainDetails.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, this->surface, &formatCount, swapChainDetails.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, swapChainDetails.formats.data());
         }
 
         // -- PRESENTATION MODES --
         uint32_t presentationCount = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, this->surface, &presentationCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, nullptr);
 
         // If presentation modes returned, get list of presentation modes
         if (presentationCount != 0) {
             swapChainDetails.presentationModes.resize(presentationCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, this->surface, &presentationCount, swapChainDetails.presentationModes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, swapChainDetails.presentationModes.data());
         }
 
         return swapChainDetails;
     }
 
-    void Device::createLogicalDevice() {
+    void VWrapp::createLogicalDevice() {
 
         // Get the queue family indices for the chosen Physical device
-        QueueFamilyIndices indices = this->getQueueFamilies(this->physicalDevice);
+        QueueFamilyIndices indices = getQueueFamilies(physicalDevice, surface);
 
         // vector for queue creation information, and set for family indices
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -440,11 +439,11 @@ namespace ce {
         // so we want handle to queues
         // From given logical device, of given Queue Family, of given Queue Index(0 since only one), place reference in
         // given Vkqueue
-        vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &this->graphicsQueue);
-        vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &this->presentationQueue);
+        vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
+        vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &presentationQueue);
     }
 
-    void Device::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
+    void VWrapp::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
         // get function pointer to requested function, then cast to function pointer for vkDestroyDebugReportCallbackEXT
         auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
 
@@ -454,7 +453,7 @@ namespace ce {
         }
     }
 
-    VkExtent2D Device::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
+    VkExtent2D VWrapp::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
 
         // If current extend!!!!!!!!!!!!
         if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
@@ -480,14 +479,14 @@ namespace ce {
         return newExtent;
     }
 
-    VkFormat Device::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) {
+    VkFormat VWrapp::chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags) {
 
         // Loop through options and find compatible one
         for (VkFormat format : formats) {
 
             // Get properties for give format on this device
             VkFormatProperties properties;
-            vkGetPhysicalDeviceFormatProperties(this->getPhysicalDevice(), format, &properties);
+            vkGetPhysicalDeviceFormatProperties(getPhysical(), format, &properties);
 
             // Depending on tiling choice, nned to check for difference bit flag
             if (tilling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags) {

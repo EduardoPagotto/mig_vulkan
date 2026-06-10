@@ -1,6 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "Device.hpp"
+#include "VWrapp.hpp"
 #include "VulkanRenderer.hpp"
 #include <cstdlib>
 #include <glm/ext/matrix_transform.hpp>
@@ -32,8 +32,8 @@ int main() {
 
     try {
 
-        std::shared_ptr<ce::Device> dev = std::make_shared<ce::Device>(window);
-        std::shared_ptr<VulkanRenderer> vulkanRenderer = std::make_shared<VulkanRenderer>(dev);
+        std::shared_ptr<ce::VWrapp> vwrapp = std::make_shared<ce::VWrapp>(window);
+        std::shared_ptr<VulkanRenderer> vulkanRenderer = std::make_shared<VulkanRenderer>(vwrapp);
 
         float angle = 0.0F;
         float deltaTime = 0.0F;

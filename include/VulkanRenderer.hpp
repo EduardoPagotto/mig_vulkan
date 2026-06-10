@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Device.hpp"
 #include "MeshModel.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
+#include "VWrapp.hpp"
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -16,7 +16,7 @@
 
 class VulkanRenderer {
   public:
-    explicit VulkanRenderer(std::shared_ptr<ce::Device> dev);
+    explicit VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp);
 
     virtual ~VulkanRenderer();
 
@@ -29,7 +29,7 @@ class VulkanRenderer {
   private:
     int currentFrame = 0;
 
-    std::shared_ptr<ce::Device> dev;
+    std::shared_ptr<ce::VWrapp> vwrapp;
     std::shared_ptr<ce::SwapChain> swc;
     std::shared_ptr<ce::Renderer> rederer;
 

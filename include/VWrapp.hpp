@@ -29,29 +29,30 @@ namespace ce {
         std::vector<VkPresentModeKHR> presentationModes; // How images should be presented to screen
     };
 
-    class Device {
+    class VWrapp {
       public:
 #ifdef SET_GLFW_ENABLE
-        explicit Device(GLFWwindow* window) {
+        explicit VWrapp(GLFWwindow* window) {
 #else
-        explicit Device(SDL_Window* window) {
+        explicit VWrapp(SDL_Window* window) {
 #endif
             this->window = window;
             init_device();
         }
 
-        virtual ~Device();
+        virtual ~VWrapp();
 
         VkDevice& getLogical() { return logicalDevice; }
-        VkPhysicalDevice& getPhysicalDevice() { return physicalDevice; }
+        VkPhysicalDevice& getPhysical() { return physicalDevice; }
         VkQueue& getGraphicsQueue() { return graphicsQueue; }
         VkQueue& getPresentationQueue() { return presentationQueue; }
         VkSurfaceKHR& getSurface() { return surface; }
 
-        SwapChainDetails getSwapChainDetails(VkPhysicalDevice device);
-        QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device);
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
         [[nodiscard]] VkFormat chooseSupportedFormat(const std::vector<VkFormat>& formats, VkImageTiling tilling, VkFormatFeatureFlags featureFlags);
+
+        static SwapChainDetails getSwapChainDetails(VkPhysicalDevice device, VkSurfaceKHR surface);
+        static QueueFamilyIndices getQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 
       private:
         // Vulkan components
@@ -80,7 +81,7 @@ namespace ce {
         void getNewPhysicalDevice();
         void createLogicalDevice();
 
-        bool checkDeviceSuitable(VkPhysicalDevice device);
+        bool static checkDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 
         bool static checkValidationLayerSupport(); // TODO: passar para PascalCase todos os estaticos depois de implementar em VulkanRender
         bool static checkInstanceExtensionSupport(std::vector<const char*>* checkExtentions);

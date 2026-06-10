@@ -1,17 +1,18 @@
 #include "SwapChain.hpp"
+#include "VWrapp.hpp"
 
 namespace ce {
 
-    SwapChain::SwapChain(std::shared_ptr<Device> dev) : dev(dev) { // NOLINT
+    SwapChain::SwapChain(std::shared_ptr<VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails = this->dev->getSwapChainDetails(dev->getPhysicalDevice()); // FIXME: alterar assinatura do metodo
+        SwapChainDetails swapchainDetails = VWrapp::getSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface()); // FIXME: alterar assinatura do metodo
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = SwapChain::chooseBestSurfaceFormat(swapchainDetails.formats);
 
         VkPresentModeKHR presentMode = SwapChain::chooseBestPresentationMode(swapchainDetails.presentationModes);
-        VkExtent2D extent = this->dev->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
+        VkExtent2D extent = vwrapp->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
 
         // how many images are in the swap chain? Get 1 more than the minimum to allow triple buffering
         uint32_t imageCount = swapchainDetails.surfaceCapabilities.minImageCount + 1;
@@ -25,7 +26,7 @@ namespace ce {
         // Create information for swap chain
         VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
         swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = this->dev->getSurface();                                    // Swapchain surface
+        swapchainCreateInfo.surface = vwrapp->getSurface();                                       // Swapchain surface
         swapchainCreateInfo.imageFormat = surrfaceFormat.format;                                  // Swapchain format
         swapchainCreateInfo.imageColorSpace = surrfaceFormat.colorSpace;                          // Swapchain color space
         swapchainCreateInfo.presentMode = presentMode;                                            // Swapchain presentation mode
@@ -38,7 +39,7 @@ namespace ce {
         swapchainCreateInfo.clipped = VK_TRUE; // Whether to clip parts of image not in view (e.g. behind another window, off screen, etc)
 
         // Get Queue Family indices
-        ce::QueueFamilyIndices indices = this->dev->getQueueFamilies(dev->getPhysicalDevice());
+        ce::QueueFamilyIndices indices = VWrapp::getQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
 
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
         if (indices.graphicsFamily != indices.presentationFamily) {
@@ -60,7 +61,7 @@ namespace ce {
         swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
         // Create Swapchain
-        VkResult result = vkCreateSwapchainKHR(dev->getLogical(), &swapchainCreateInfo, nullptr, &this->swapchain);
+        VkResult result = vkCreateSwapchainKHR(vwrapp->getLogical(), &swapchainCreateInfo, nullptr, &this->swapchain);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a Swapchain");
         }
@@ -71,16 +72,16 @@ namespace ce {
 
         // Get swap chain images (first count the values)
         uint32_t swapChainImageCount;
-        vkGetSwapchainImagesKHR(dev->getLogical(), this->swapchain, &swapChainImageCount, nullptr);
+        vkGetSwapchainImagesKHR(vwrapp->getLogical(), this->swapchain, &swapChainImageCount, nullptr);
 
         std::vector<VkImage> images(swapChainImageCount);
-        vkGetSwapchainImagesKHR(dev->getLogical(), this->swapchain, &swapChainImageCount, images.data());
+        vkGetSwapchainImagesKHR(vwrapp->getLogical(), this->swapchain, &swapChainImageCount, images.data());
 
         for (VkImage image : images) {
             // Store image handle
             SwapchainImage swapChainImage = {};
             swapChainImage.image = image;
-            swapChainImage.imageView = this->createImageView(image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+            swapChainImage.imageView = SwapChain::createImageView(vwrapp->getLogical(), image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
             // Add to swapchain image list
             this->swapchainImages.push_back(swapChainImage);
@@ -91,13 +92,13 @@ namespace ce {
     SwapChain::~SwapChain() {
 
         for (auto image : this->swapchainImages) {
-            vkDestroyImageView(dev->getLogical(), image.imageView, nullptr);
+            vkDestroyImageView(vwrapp->getLogical(), image.imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(dev->getLogical(), this->swapchain, nullptr);
+        vkDestroySwapchainKHR(vwrapp->getLogical(), this->swapchain, nullptr);
     }
 
-    VkImageView SwapChain::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const {
+    VkImageView SwapChain::createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         //
         VkImageViewCreateInfo viewCreateInfo = {};
         viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -118,7 +119,7 @@ namespace ce {
 
         // Create image view and return it
         VkImageView imageView;
-        VkResult result = vkCreateImageView(dev->getLogical(), &viewCreateInfo, nullptr, &imageView);
+        VkResult result = vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView);
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create an Image View!");
         }

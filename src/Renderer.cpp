@@ -3,14 +3,14 @@
 
 namespace ce {
 
-    Renderer::Renderer(std::shared_ptr<Device> dev, std::shared_ptr<ce::SwapChain> swc) : dev(dev), swc(swc) { // NOLINT
+    Renderer::Renderer(std::shared_ptr<VWrapp> vwrapp, std::shared_ptr<ce::SwapChain> swc) : vwrapp(vwrapp), swc(swc) { // NOLINT
         //
         createRenderPass();
     }
     Renderer::~Renderer() {
         //
 
-        vkDestroyRenderPass(dev->getLogical(), this->renderPass, nullptr);
+        vkDestroyRenderPass(vwrapp->getLogical(), this->renderPass, nullptr);
     }
 
     void Renderer::createRenderPass() {
@@ -32,9 +32,9 @@ namespace ce {
 
         // depth attachemnt of render pass
         VkAttachmentDescription depthAttachemnt = {};
-        depthAttachemnt.format = this->dev->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                                                  VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                                                  VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        depthAttachemnt.format = vwrapp->chooseSupportedFormat({VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+                                                               VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
+                                                               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         depthAttachemnt.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachemnt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -104,7 +104,7 @@ namespace ce {
         renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
         renderPassCreateInfo.pDependencies = subpassDependencies.data();
 
-        VkResult result = vkCreateRenderPass(dev->getLogical(), &renderPassCreateInfo, nullptr, &this->renderPass);
+        VkResult result = vkCreateRenderPass(vwrapp->getLogical(), &renderPassCreateInfo, nullptr, &this->renderPass);
 
         if (result != VK_SUCCESS) {
             throw std::runtime_error("Failed to create render pass!!!");
