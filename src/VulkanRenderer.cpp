@@ -252,61 +252,20 @@ void VulkanRenderer::createPushConstantRange() {
 void VulkanRenderer::createGraphicsPipeline() {
 
     // Read in SPIR-V code shaders, Vertex Stage creation information and Fragment Stage creation information
-    std::shared_ptr<ce::ShaderModule> vertexModule =
-        make_shared<ce::ShaderModule>(vwrapp->getLogical(), VK_SHADER_STAGE_VERTEX_BIT, readFile("./bin/vert.spv"));
-
-    std::shared_ptr<ce::ShaderModule> fragmentModule =
-        make_shared<ce::ShaderModule>(vwrapp->getLogical(), VK_SHADER_STAGE_FRAGMENT_BIT, readFile("./bin/frag.spv"));
-
-    // Put shader creation info in to array
-    // Graphics Pipeline creation info required array of shader stage creates
-    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {vertexModule->getShaderCreateInfo(),
-                                                                   fragmentModule->getShaderCreateInfo()};
+    std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(vwrapp->getLogical());
+    shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, readFile("./bin/vert.spv"));
+    shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, readFile("./bin/frag.spv"));
 
     // How the data for a sigle vertex (including info such as position, colour, texture coords, normals, etc..) is as a whole
-    VkVertexInputBindingDescription bindingDescription = {};
-    bindingDescription.binding = 0;                             // Cam bind multiple streams of data, thos defines which one
-    bindingDescription.stride = sizeof(Vertex);                 // Size of a single vertex object
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; // How to move between data after each vertex
-    ;                                                           // VK_VERTEX_INPUT_RATE_INDEX : Move on to the next vertex
-    ;                                                           // VK_VERTEX_INPUT_RATR_INSTANCE: Move to a vertex for the next instance
-    // How the data for an attribute is defined within a vertex
-    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions;
+    shaderModule->addBindingDescription(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
 
-    // Position Attribute
-    attributeDescriptions[0].binding = 0;                         // Which binding the data is at (should be sdame as above)
-    attributeDescriptions[0].location = 0;                        // Location in shader where data will be read from
-    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Forma the data will take (also helps define size of data)
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);      // Where this attribute is defined in the data for a single vertex
+    // Attributes of shader vertex
+    shaderModule->addAtribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)); // Position Attribute
+    shaderModule->addAtribute(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, col)); // Color Attribute
+    shaderModule->addAtribute(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex));    // Texture Atribute
 
-    // Color Attribute
-    attributeDescriptions[1].binding = 0;
-    attributeDescriptions[1].location = 1;
-    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, col);
-
-    // Texture Atribute
-    attributeDescriptions[2].binding = 0;
-    attributeDescriptions[2].location = 2;
-    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(Vertex, tex);
-
-    // -- VERTEX INPUT --
-    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
-    vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription; // List of vertex bind Descritions
-    ;                                                                       // (data spacing stride information)
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions = attributeDescriptions.data(); // List of Vertex Attribute Descriptions
-    ;                                                                                  // (data format and where to bind to/from)
-
-    //
-    // -- INPUT ASSEMBLY --
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; // Primitive type to assemple vertice as
-    inputAssembly.primitiveRestartEnable = VK_FALSE;              // Allow overiding of "strip" topology to start new primitive
+    // -- VERTEX INPUT  ASSEMBLY INPUT --
+    shaderModule->setVertexInput(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
     //
     // -- VIEWPORT & SCISSOR
@@ -428,10 +387,10 @@ void VulkanRenderer::createGraphicsPipeline() {
     // -- GRAPHICS PIPELINE CREATION
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
     pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size()); // numberr of shader stages
-    pipelineCreateInfo.pStages = shaderStages.data();                           // List of shader stages
-    pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;              // All the fixed function pipeline states
-    pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
+    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderModule->getShaderCreateInfos().size()); // numberr of shader stages
+    pipelineCreateInfo.pStages = shaderModule->getShaderCreateInfos().data();                           // List of shader stages
+    pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline states
+    pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly();
     pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
     pipelineCreateInfo.pDynamicState = nullptr;
     pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
