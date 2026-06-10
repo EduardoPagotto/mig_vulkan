@@ -114,15 +114,9 @@ class VulkanRenderer {
     // - Allocate functions
     // void allocateDynamicBufferTransferSpace();
 
-    // - Choose functions
-    // VkSurfaceFormatKHR static chooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-    // VkPresentModeKHR static chooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
-
     // -- Create Functions
-    VkImage createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags,
-                        VkDeviceMemory* imageMemory) const;
-    // VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const;
-    [[nodiscard]] VkShaderModule createShaderModule(const std::vector<char>& code) const;
+    VkImage createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags,
+                        VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) const;
 
     int createTextureImage(const std::string& filename);
     int createTexture(const std::string& filename);

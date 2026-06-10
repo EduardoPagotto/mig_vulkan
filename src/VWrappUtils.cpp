@@ -270,6 +270,112 @@ namespace ce {
 
     // --swapchain
 
+    uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
+        // get properties of physical device memory
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+
+            // Index of memory type must match corresponding bit in allowedTypes and desired property bit flag are part of memory type's
+            // property flags
+            if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+                // this memory type is valid, so return its index
+                return i;
+            }
+        }
+
+        throw std::runtime_error("Failed to find Memory!");
+    }
+
+    void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage,
+                      VkMemoryPropertyFlags bufferProperties, VkBuffer* buffer, VkDeviceMemory* bufferMemory) {
+
+        // CREATE VERTEX BUFFER
+        // information to create a buffer (dosen't include assigning memory)
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = bufferSize;                       // Size of buffer (size of 1 vertex * number of vertices)
+        bufferInfo.usage = bufferUsage;                     // Multiple types of buffer possible
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Similar to Swap Chain images, can share vertex buffers
+
+        VkResult result = vkCreateBuffer(device, &bufferInfo, nullptr, buffer);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to creaste a Vertex Buffer!");
+        }
+
+        // GET BUFFER MEMORY REQUIREMENTS
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
+
+        // ALLOCATE MEMORY TO BUFFER
+        VkMemoryAllocateInfo memoryAllocInfo = {};
+        memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocInfo.allocationSize = memRequirements.size;
+        memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(physicalDevice, memRequirements.memoryTypeBits, bufferProperties);
+        ; // VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT : CPU can interact with memory
+        ; // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : Allows placement of data straight into buffer mapping (otherwise would have to specify
+          // manually)
+
+        // Allocate memory to VkDebviceMemory
+        result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, bufferMemory);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to allocate Vertex Buffer Memory!!");
+        }
+
+        // Allocate memory to given vertex buffer
+        vkBindBufferMemory(device, *buffer, *bufferMemory, 0);
+    }
+
+    VkImage createImage(VkPhysicalDevice physical, VkDevice device, uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling,
+                        VkImageUsageFlags useFlags, VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) {
+        // CREATE IMAGE
+        // Image Create Info
+        VkImageCreateInfo imageCreateInfo = {};
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;              // Type of image (1D, 2D or 3D)
+        imageCreateInfo.extent.width = with;                       // Width of image extent
+        imageCreateInfo.extent.height = height;                    // Height of image extent
+        imageCreateInfo.extent.depth = 1;                          // Depth of image (just 1, no 3D aspect)
+        imageCreateInfo.mipLevels = 1;                             // Number of mipmaps levels
+        imageCreateInfo.arrayLayers = 1;                           // Number of levels in image array
+        imageCreateInfo.format = format;                           // Format type of image
+        imageCreateInfo.tiling = tiling;                           // How image data shoud be "tiled" (arranged for optima reading)
+        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout of image data on creation
+        imageCreateInfo.usage = useFlags;                          // Bit flags defined what image will be usage for
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;           // Number of samples for multi-sampling
+        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;   // Whether image cam be shared between queues
+
+        // Create Image
+        VkImage image;
+        VkResult result = vkCreateImage(device, &imageCreateInfo, nullptr, &image);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create an image!");
+        }
+
+        // CREATE MEMORY FOR IMAGE
+
+        // Get Memory requirement for a type of image
+        VkMemoryRequirements memoryRequirements;
+        vkGetImageMemoryRequirements(device, image, &memoryRequirements);
+
+        // Allocate memory using image requeirement and user define properties
+        VkMemoryAllocateInfo memoryAllocInfo = {};
+        memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocInfo.allocationSize = memoryRequirements.size;
+        memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(physical, memoryRequirements.memoryTypeBits, propFlags);
+
+        result = vkAllocateMemory(device, &memoryAllocInfo, nullptr, imageMemory);
+        if (result != VK_SUCCESS) {
+            throw std::runtime_error("Failed to Allocate Memory for Image");
+        }
+
+        // Connect memory to image
+        vkBindImageMemory(device, image, *imageMemory, 0);
+
+        return image;
+    }
+
     VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         //
         VkImageViewCreateInfo viewCreateInfo = {};

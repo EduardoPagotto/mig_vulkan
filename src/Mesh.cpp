@@ -1,5 +1,6 @@
 #include "Mesh.hpp"
 #include "Ultilities.hpp"
+#include "VWrappUtils.hpp"
 #include <cstring>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <vulkan/vulkan_core.h>
@@ -7,8 +8,8 @@
 Mesh::Mesh() {
     //
 }
-Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices,
-           std::vector<uint32_t>* indices, int newTexId) {
+Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
+           std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId) {
 
     this->physicalDevice = newPhysicalDevice;
     this->device = newDevice;
@@ -55,8 +56,8 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
     VkDeviceMemory stagingBufferMemory;
 
     // Create Staging Buffer and Allocate Memory to it
-    createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
+    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
 
     // MAP MEMORY TO VERTEX BUFFER
     void* data;                                                              // 1. Create pointer to point in normal memory
@@ -66,8 +67,8 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
 
     // Create buffer with TRANSFER_DST_BIT to mark as recipient of transfer data (also VERTEX_BUFFER)
     // Buffer memory is to be DEVICE_LOCAL_BIT meaning memory is on the GPU and only accessible by it and not CPU(host)
-    createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->vertexBuffer, &this->vertexBufferMemory);
+    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->vertexBuffer, &this->vertexBufferMemory);
 
     // Copy staging buffer to vertex buffer on GPU
     copyBuffer(this->device, transferQueue, transferCommandPool, staginBuffer, this->vertexBuffer, bufferSize);
@@ -85,8 +86,8 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
     // Temporary buffer to "stage" index data before transfering to GPU
     VkBuffer staginBuffer;
     VkDeviceMemory stagingBufferMemory;
-    createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
+    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
 
     // MAP MEMORY TO INDEX BUFFER
     void* data;                                                              // 1. Create pointer to point in normal memory
@@ -95,8 +96,8 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
     vkUnmapMemory(this->device, stagingBufferMemory);                        // 4. Unmap the vertex buffer memory
 
     // Create buffer for index data on GPU aceess only area
-    createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->indexBuffer, &indexBufferMemory);
+    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->indexBuffer, &indexBufferMemory);
 
     // Copy from staging buffer to GPU access buffer
     copyBuffer(this->device, transferQueue, transferCommandPool, staginBuffer, this->indexBuffer, bufferSize);

@@ -2,6 +2,7 @@
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
 #include "Renderer.hpp"
+#include "ShaderModule.hpp"
 #include "SwapChain.hpp"
 #include "Ultilities.hpp"
 #include "VWrapp.hpp"
@@ -250,32 +251,17 @@ void VulkanRenderer::createPushConstantRange() {
 
 void VulkanRenderer::createGraphicsPipeline() {
 
-    // Read in SPIR-V code shaders
-    auto vertexShadercode = readFile("./bin/vert.spv");
-    auto fragmentShadercode = readFile("./bin/frag.spv");
+    // Read in SPIR-V code shaders, Vertex Stage creation information and Fragment Stage creation information
+    std::shared_ptr<ce::ShaderModule> vertexModule =
+        make_shared<ce::ShaderModule>(vwrapp->getLogical(), VK_SHADER_STAGE_VERTEX_BIT, readFile("./bin/vert.spv"));
 
-    // Create shader modules
-    VkShaderModule vertexShaderModule = this->createShaderModule(vertexShadercode);
-    VkShaderModule fragmentShaderModule = this->createShaderModule(fragmentShadercode);
-
-    // -- SHADER STAGE CREATION INFORMATION --
-    // Vertex Stage creation information
-    VkPipelineShaderStageCreateInfo vertexShaderCreateInfo = {};
-    vertexShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertexShaderCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT; // Shader stage name
-    vertexShaderCreateInfo.module = vertexShaderModule;        // Shader module to be used by stage
-    vertexShaderCreateInfo.pName = "main";                     // Entry point in to shader
-
-    // Fragment Stage creation information
-    VkPipelineShaderStageCreateInfo fragmentShaderCreateInfo = {};
-    fragmentShaderCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragmentShaderCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT; // Shader stage name
-    fragmentShaderCreateInfo.module = fragmentShaderModule;        // Shader module to be used by stage
-    fragmentShaderCreateInfo.pName = "main";                       // Entry point in to shader
+    std::shared_ptr<ce::ShaderModule> fragmentModule =
+        make_shared<ce::ShaderModule>(vwrapp->getLogical(), VK_SHADER_STAGE_FRAGMENT_BIT, readFile("./bin/frag.spv"));
 
     // Put shader creation info in to array
     // Graphics Pipeline creation info required array of shader stage creates
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderCreateInfo, fragmentShaderCreateInfo};
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {vertexModule->getShaderCreateInfo(),
+                                                                   fragmentModule->getShaderCreateInfo()};
 
     // How the data for a sigle vertex (including info such as position, colour, texture coords, normals, etc..) is as a whole
     VkVertexInputBindingDescription bindingDescription = {};
@@ -309,11 +295,11 @@ void VulkanRenderer::createGraphicsPipeline() {
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = {};
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions =
-        &bindingDescription; // List of vertex bind Descritions (data spacing stride information)
+    vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription; // List of vertex bind Descritions
+    ;                                                                       // (data spacing stride information)
     vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions =
-        attributeDescriptions.data(); // List of Vertex Attribute Descriptions (data format and where to bind to/from)
+    vertexInputCreateInfo.pVertexAttributeDescriptions = attributeDescriptions.data(); // List of Vertex Attribute Descriptions
+    ;                                                                                  // (data format and where to bind to/from)
 
     //
     // -- INPUT ASSEMBLY --
@@ -442,9 +428,9 @@ void VulkanRenderer::createGraphicsPipeline() {
     // -- GRAPHICS PIPELINE CREATION
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
     pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineCreateInfo.stageCount = 2;                             // numberr of shader stages
-    pipelineCreateInfo.pStages = shaderStages;                     // List of shader stages
-    pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo; // All the fixed function pipeline states
+    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size()); // numberr of shader stages
+    pipelineCreateInfo.pStages = shaderStages.data();                           // List of shader stages
+    pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;              // All the fixed function pipeline states
     pipelineCreateInfo.pInputAssemblyState = &inputAssembly;
     pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
     pipelineCreateInfo.pDynamicState = nullptr;
@@ -466,10 +452,6 @@ void VulkanRenderer::createGraphicsPipeline() {
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a graphic pipeline");
     }
-    //
-    // Destroy Shader Module, no longer need after Pipeline create
-    vkDestroyShaderModule(vwrapp->getLogical(), fragmentShaderModule, nullptr);
-    vkDestroyShaderModule(vwrapp->getLogical(), vertexShaderModule, nullptr);
 }
 
 void VulkanRenderer::createDepthBufferImage() {
@@ -625,9 +607,9 @@ void VulkanRenderer::createUniformBuffers() {
 
     // Create Unifor buffers
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
-        createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->vpUniformBuffer[i],
-                     &this->vpUniformBufferMemory[i]);
+        ce::createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->vpUniformBuffer[i],
+                         &this->vpUniformBufferMemory[i]);
 
         // createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), modelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->modelDUniformBuffer[i],
@@ -907,7 +889,7 @@ VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat for
     VkMemoryAllocateInfo memoryAllocInfo = {};
     memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocInfo.allocationSize = memoryRequirements.size;
-    memoryAllocInfo.memoryTypeIndex = findMemoryTypeIndex(vwrapp->getPhysical(), memoryRequirements.memoryTypeBits, propFlags);
+    memoryAllocInfo.memoryTypeIndex = ce::findMemoryTypeIndex(vwrapp->getPhysical(), memoryRequirements.memoryTypeBits, propFlags);
 
     result = vkAllocateMemory(vwrapp->getLogical(), &memoryAllocInfo, nullptr, imageMemory);
     if (result != VK_SUCCESS) {
@@ -918,22 +900,6 @@ VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat for
     vkBindImageMemory(vwrapp->getLogical(), image, *imageMemory, 0);
 
     return image;
-}
-
-VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code) const {
-    //
-    VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
-    shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderModuleCreateInfo.codeSize = code.size();                                 // size of code
-    shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data()); // pointer to code(of uint32_t pointer type)
-
-    VkShaderModule shaderModule;
-    VkResult result = vkCreateShaderModule(vwrapp->getLogical(), &shaderModuleCreateInfo, nullptr, &shaderModule);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create a shader module");
-    }
-
-    return shaderModule;
 }
 
 int VulkanRenderer::createTexture(const std::string& filename) {
@@ -965,9 +931,9 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     // Create staging buffer to hold load data, redy to copy device
     VkBuffer imageStagingBuffer;
     VkDeviceMemory imageStagingBufferMemory;
-    createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer,
-                 &imageStagingBufferMemory);
+    ce::createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer,
+                     &imageStagingBufferMemory);
 
     // copy image data to staging buffer
     void* data;
