@@ -1,4 +1,5 @@
 #include "VulkanRenderer.hpp"
+#include "DescriptorSetLayout.hpp"
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
 #include "Renderer.hpp"
@@ -73,7 +74,7 @@ VulkanRenderer::~VulkanRenderer() {
     }
 
     vkDestroyDescriptorPool(vwrapp->getLogical(), this->samplerDescriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(vwrapp->getLogical(), this->samplerSetLayout, nullptr);
+    this->samplerSetLayout.reset();
 
     vkDestroySampler(vwrapp->getLogical(), this->textureSampler, nullptr);
 
@@ -88,7 +89,7 @@ VulkanRenderer::~VulkanRenderer() {
     vkFreeMemory(vwrapp->getLogical(), this->depthBufferImageMemory, nullptr);
 
     vkDestroyDescriptorPool(vwrapp->getLogical(), this->descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(vwrapp->getLogical(), this->descriptorSetLayout, nullptr);
+    this->descriptorSetLayout.reset();
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
         // destroy uniform
         vkDestroyBuffer(vwrapp->getLogical(), this->vpUniformBuffer[i], nullptr);
@@ -111,7 +112,7 @@ VulkanRenderer::~VulkanRenderer() {
     }
 
     vkDestroyPipeline(vwrapp->getLogical(), this->graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(vwrapp->getLogical(), this->pipelineLayout, nullptr);
+    this->pipelineLayout.reset();
 }
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
@@ -189,6 +190,8 @@ void VulkanRenderer::draw() {
 void VulkanRenderer::createDescriptorSetLayout() {
 
     // UNIFORM VALUES DESCRIPTOR SET LAYOUT
+    this->descriptorSetLayout = std::make_shared<ce::DescriptorSetLayout>(this->vwrapp->getLogical());
+
     // UboViewProjection Binding info
     VkDescriptorSetLayoutBinding vpLayoutBinding = {};
     vpLayoutBinding.binding = 0;                                        // Binding point in shader (designed by binding number in shader)
@@ -196,31 +199,21 @@ void VulkanRenderer::createDescriptorSetLayout() {
     vpLayoutBinding.descriptorCount = 1;                                // Number of descriptors for binding
     vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;            // Shade stage to bind to
     vpLayoutBinding.pImmutableSamplers = nullptr; // for Texture: can make sampler unchangeable (immutable) by specifying in layout
+    this->descriptorSetLayout->addBinding(vpLayoutBinding);
 
-    // // Model Binding Info
+    // Model Binding Info
     // VkDescriptorSetLayoutBinding mLayoutBinding = {};
     // mLayoutBinding.binding = 1;
     // mLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     // mLayoutBinding.descriptorCount = 1;
     // mLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     // mLayoutBinding.pImmutableSamplers = nullptr;
+    // this->descriptorSetLayout->addBinding(mLayoutBinding);
 
-    // std::vector<VkDescriptorSetLayoutBinding> layoutBinding = {vpLayoutBinding, mLayoutBinding};
-    std::vector<VkDescriptorSetLayoutBinding> layoutBinding = {vpLayoutBinding};
-
-    // Create Desciptor Set Layout with given bindingd
-    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
-    layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBinding.size()); // Number of binding infos
-    layoutCreateInfo.pBindings = layoutBinding.data();                           // Array of binding infos
-
-    // Create Descriptor Set Layout
-    VkResult result = vkCreateDescriptorSetLayout(vwrapp->getLogical(), &layoutCreateInfo, nullptr, &this->descriptorSetLayout);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create descriptor set Layout!");
-    }
+    this->descriptorSetLayout->create();
 
     // CREATE TEXTURE SAMPLER DESCRIPTOR SET LAYOUT
+    this->samplerSetLayout = std::make_shared<ce::DescriptorSetLayout>(this->vwrapp->getLogical());
     // Texture binding info
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.binding = 0;
@@ -228,18 +221,8 @@ void VulkanRenderer::createDescriptorSetLayout() {
     samplerLayoutBinding.descriptorCount = 1;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
-
-    // Create a Descriptor Set Layout with given binding for texture
-    VkDescriptorSetLayoutCreateInfo textureLayoutCreateInfo = {};
-    textureLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    textureLayoutCreateInfo.bindingCount = 1;
-    textureLayoutCreateInfo.pBindings = &samplerLayoutBinding;
-
-    // Create Descriptor Set Layout
-    result = vkCreateDescriptorSetLayout(vwrapp->getLogical(), &textureLayoutCreateInfo, nullptr, &this->samplerSetLayout);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Texture descriptor set Layout!");
-    }
+    this->samplerSetLayout->addBinding(samplerLayoutBinding);
+    this->samplerSetLayout->create();
 }
 
 void VulkanRenderer::createPushConstantRange() {
@@ -269,19 +252,15 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     //
     // -- VIEWPORT & SCISSOR
-    // Create a viewport info struct
-    VkViewport viewport = {};
-    viewport.x = 0.0F;                                               // x start coordinate
-    viewport.y = 0.0F;                                               // y start coordinate
-    viewport.width = (float)this->swc->getSwapchainExtent().width;   // width of viewport
-    viewport.height = (float)this->swc->getSwapchainExtent().height; // height of viewport
-    viewport.minDepth = 0.0F;                                        // min framebuffer depth
-    viewport.maxDepth = 1.0F;                                        // max framebuffer depth
+    auto viewport = VkViewport{.x = 0.0F,                                               // x start coordinate
+                               .y = 0.0F,                                               // y start coordinate
+                               .width = (float)this->swc->getSwapchainExtent().width,   // width of viewport
+                               .height = (float)this->swc->getSwapchainExtent().height, // height of viewport
+                               .minDepth = 0.0F,                                        // min framebuffer depth
+                               .maxDepth = 1.0F};                                       // max framebuffer depth
 
-    // Create a scissor info struct
-    VkRect2D scissor = {};
-    scissor.offset = {.x = 0, .y = 0};                // Offset to use region from
-    scissor.extent = this->swc->getSwapchainExtent(); // Extent to describe region to use, starting at offset
+    auto scissor = VkRect2D{.offset = VkOffset2D{.x = 0, .y = 0},       // Offset to use region from
+                            .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
 
     VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
     viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -358,22 +337,12 @@ void VulkanRenderer::createGraphicsPipeline() {
     colorBlendingCreateInfo.pAttachments = &colourState;
 
     // -- PIPELINE LAYOUT --
-
-    std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {this->descriptorSetLayout, this->samplerSetLayout};
-
-    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-    pipelineLayoutCreateInfo.pPushConstantRanges = &this->pushConstantRange;
-
-    // Create PipelineLayout
-    VkResult result = vkCreatePipelineLayout(vwrapp->getLogical(), &pipelineLayoutCreateInfo, nullptr, &this->pipelineLayout);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Pipeline Layout!");
-    }
+    this->pipelineLayout = std::make_shared<ce::PipelineLayout>(this->vwrapp->getLogical());
+    this->pipelineLayout->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
+    this->pipelineLayout->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
+    this->pipelineLayout->addPushRange(this->pushConstantRange);
+    this->pipelineLayout->create();
+    // FIXME: precisa adicionar o push range AQui
 
     // -- DEPTH STENCIL TESTING
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
@@ -397,16 +366,18 @@ void VulkanRenderer::createGraphicsPipeline() {
     pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
     pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;                     // Pipeline Layout pipeline shoud use
-    pipelineCreateInfo.renderPass = this->rederer->getRenderPass(); // Render pass description the pipelineis compatible whit
-    pipelineCreateInfo.subpass = 0;                                 // Subpass of render pass to use with pipeline
+    pipelineCreateInfo.layout = this->pipelineLayout->getPipelineLayout(); // pipelineLayout;                     // Pipeline Layout
+                                                                           // pipeline shoud use
+    pipelineCreateInfo.renderPass = this->rederer->getRenderPass();        // Render pass description the pipelineis compatible whit
+    pipelineCreateInfo.subpass = 0;                                        // Subpass of render pass to use with pipeline
 
     // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
     pipelineCreateInfo.basePipelineIndex = -1; // or index of pipeline being created to derive from (in case creating multiple at once)
 
     // Create Graphics Pipeline
-    result = vkCreateGraphicsPipelines(vwrapp->getLogical(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &this->graphicsPipeline);
+    VkResult result =
+        vkCreateGraphicsPipelines(vwrapp->getLogical(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &this->graphicsPipeline);
 
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a graphic pipeline");
@@ -422,9 +393,10 @@ void VulkanRenderer::createDepthBufferImage() {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                                // Depth
 
     // Create Depth Buffer Image
-    this->depthBufferImage = this->createImage(this->swc->getSwapchainExtent().width, this->swc->getSwapchainExtent().height, depthFormat,
-                                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->depthBufferImageMemory);
+    this->depthBufferImage =
+        ce::createImage(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), this->swc->getSwapchainExtent().width,
+                        this->swc->getSwapchainExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->depthBufferImageMemory);
 
     // Create Depth Buffer Image View
     this->depthBufferImageView =
@@ -631,7 +603,8 @@ void VulkanRenderer::createDescriptorSets() {
     // Resize Descriptor Set list so one for every buffer
     this->descriptorSets.resize(this->swc->getSwapchainImages().size());
 
-    std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(), this->descriptorSetLayout);
+    std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
+                                                  this->descriptorSetLayout->getDescriptorSetLayout());
 
     // Descriptor set allocation info
     VkDescriptorSetAllocateInfo setAllocInfo = {};
@@ -761,12 +734,12 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
             MeshModel thisModel = modelList[j];
 
             // "Push" constant to given shader stage directly (no buffer)
-            vkCmdPushConstants(this->commandBuffers[currentImage], //
-                               this->pipelineLayout,               //
-                               VK_SHADER_STAGE_VERTEX_BIT,         // Stage to push constant to
-                               0,                                  // offset of pushconstant to update
-                               sizeof(Model),                      // size of data being pushed
-                               &thisModel.getModel2());            // Actual data being pushed (cam be array)
+            vkCmdPushConstants(this->commandBuffers[currentImage],        //
+                               this->pipelineLayout->getPipelineLayout(), //
+                               VK_SHADER_STAGE_VERTEX_BIT,                // Stage to push constant to
+                               0,                                         // offset of pushconstant to update
+                               sizeof(Model),                             // size of data being pushed
+                               &thisModel.getModel2());                   // Actual data being pushed (cam be array)
 
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
                 //
@@ -785,8 +758,9 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->descriptorSets[currentImage],
                                                                      this->samplerDescriptorSets[thisModel.getMesh(k)->getTexId()]};
 
-                vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayout, 0,
-                                        static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                        this->pipelineLayout->getPipelineLayout(), 0, static_cast<uint32_t>(descriptorSetGroup.size()),
+                                        descriptorSetGroup.data(), 0, nullptr);
 
                 // Execute pipeline
                 vkCmdDrawIndexed(commandBuffers[currentImage], thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);
@@ -811,55 +785,6 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 //     // Create space in memory to hold dynamic byffer that is alignment and holds MAX_OBJECTS
 //     this->modelTransferSpace = (UboModel*)aligned_alloc(this->modelUniformAlignment, this->modelUniformAlignment * MAX_OBJECTS);
 // }
-
-VkImage VulkanRenderer::createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags,
-                                    VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) const {
-    // CREATE IMAGE
-    // Image Create Info
-    VkImageCreateInfo imageCreateInfo = {};
-    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;              // Type of image (1D, 2D or 3D)
-    imageCreateInfo.extent.width = with;                       // Width of image extent
-    imageCreateInfo.extent.height = height;                    // Height of image extent
-    imageCreateInfo.extent.depth = 1;                          // Depth of image (just 1, no 3D aspect)
-    imageCreateInfo.mipLevels = 1;                             // Number of mipmaps levels
-    imageCreateInfo.arrayLayers = 1;                           // Number of levels in image array
-    imageCreateInfo.format = format;                           // Format type of image
-    imageCreateInfo.tiling = tiling;                           // How image data shoud be "tiled" (arranged for optima reading)
-    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Layout of image data on creation
-    imageCreateInfo.usage = useFlags;                          // Bit flags defined what image will be usage for
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;           // Number of samples for multi-sampling
-    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;   // Whether image cam be shared between queues
-
-    // Create Image
-    VkImage image;
-    VkResult result = vkCreateImage(vwrapp->getLogical(), &imageCreateInfo, nullptr, &image);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create an image!");
-    }
-
-    // CREATE MEMORY FOR IMAGE
-
-    // Get Memory requirement for a type of image
-    VkMemoryRequirements memoryRequirements;
-    vkGetImageMemoryRequirements(vwrapp->getLogical(), image, &memoryRequirements);
-
-    // Allocate memory using image requeirement and user define properties
-    VkMemoryAllocateInfo memoryAllocInfo = {};
-    memoryAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memoryAllocInfo.allocationSize = memoryRequirements.size;
-    memoryAllocInfo.memoryTypeIndex = ce::findMemoryTypeIndex(vwrapp->getPhysical(), memoryRequirements.memoryTypeBits, propFlags);
-
-    result = vkAllocateMemory(vwrapp->getLogical(), &memoryAllocInfo, nullptr, imageMemory);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to Allocate Memory for Image");
-    }
-
-    // Connect memory to image
-    vkBindImageMemory(vwrapp->getLogical(), image, *imageMemory, 0);
-
-    return image;
-}
 
 int VulkanRenderer::createTexture(const std::string& filename) {
     //
@@ -906,9 +831,9 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     // create image to hold final texture
     VkImage texImage;
     VkDeviceMemory texImageMemory;
-    texImage = this->createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                 &texImageMemory);
+    texImage = ce::createImage(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), width, height, VK_FORMAT_R8G8B8A8_UNORM,
+                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
@@ -943,7 +868,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     setAllocInfo.descriptorPool = this->samplerDescriptorPool;
     setAllocInfo.descriptorSetCount = 1;
-    setAllocInfo.pSetLayouts = &this->samplerSetLayout;
+    setAllocInfo.pSetLayouts = &this->samplerSetLayout->getDescriptorSetLayout(); // samplerSetLayout;
 
     // Allocate descriptr sets
     VkResult result = vkAllocateDescriptorSets(vwrapp->getLogical(), &setAllocInfo, &descriptorSet);

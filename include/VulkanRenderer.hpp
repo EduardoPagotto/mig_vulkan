@@ -1,6 +1,8 @@
 #pragma once
 
+#include "DescriptorSetLayout.hpp"
 #include "MeshModel.hpp"
+#include "PipelineLayout.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
@@ -54,8 +56,9 @@ class VulkanRenderer {
     VkSampler textureSampler;
 
     // - Descriptors
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorSetLayout samplerSetLayout;
+    std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout; // VkDescriptorSetLayout descriptorSetLayout;
+    std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
+
     VkPushConstantRange pushConstantRange;
 
     VkDescriptorPool descriptorPool;
@@ -80,7 +83,7 @@ class VulkanRenderer {
 
     // - Pipeline
     VkPipeline graphicsPipeline;
-    VkPipelineLayout pipelineLayout;
+    std::shared_ptr<ce::PipelineLayout> pipelineLayout;
 
     // - Pools
     VkCommandPool graphicsCommandPool;
@@ -115,9 +118,6 @@ class VulkanRenderer {
     // void allocateDynamicBufferTransferSpace();
 
     // -- Create Functions
-    VkImage createImage(uint32_t with, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags useFlags,
-                        VkMemoryPropertyFlags propFlags, VkDeviceMemory* imageMemory) const;
-
     int createTextureImage(const std::string& filename);
     int createTexture(const std::string& filename);
     int createTextureDescriptor(VkImageView textureImage);
