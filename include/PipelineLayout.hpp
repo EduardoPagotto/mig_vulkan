@@ -20,6 +20,7 @@ namespace ce {
         void addPushRange(VkPushConstantRange& pushConstantRange) { this->pushConstantRanges.push_back(pushConstantRange); }
         void addViewport(const VkViewport& viewport) { this->viewports.push_back(viewport); }
         void addScissor(const VkRect2D scissor) { this->scissors.push_back(scissor); }
+        void addDynamicStateEnables(const VkDynamicState& state) { dynamicStateEnables.push_back(state); };
         void addColourState(const VkPipelineColorBlendAttachmentState& colourState) { this->colourStates.push_back(colourState); }
 
         void create(std::shared_ptr<ShaderModule> shaderModule, VkRenderPass renderPass) { // NOLINT
@@ -46,6 +47,12 @@ namespace ce {
             viewportStateCreateInfo.pViewports = this->viewports.data();
             viewportStateCreateInfo.scissorCount = static_cast<uint32_t>(this->scissors.size());
             viewportStateCreateInfo.pScissors = this->scissors.data();
+
+            // Dynamic State creation info
+            VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
+            dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+            dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+            dynamicStateCreateInfo.pDynamicStates = dynamicStateEnables.data();
 
             // -- RASTERIZER --
             VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
@@ -93,7 +100,7 @@ namespace ce {
             pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline states
             pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly();
             pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
-            pipelineCreateInfo.pDynamicState = nullptr;
+            pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo; // nullptr;
             pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
             pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
             pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
@@ -129,6 +136,7 @@ namespace ce {
         std::vector<VkPushConstantRange> pushConstantRanges;
         std::vector<VkViewport> viewports;
         std::vector<VkRect2D> scissors;
+        std::vector<VkDynamicState> dynamicStateEnables;
         std::vector<VkPipelineColorBlendAttachmentState> colourStates;
     };
 } // namespace ce

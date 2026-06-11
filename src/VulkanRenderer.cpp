@@ -265,21 +265,11 @@ void VulkanRenderer::createGraphicsPipeline() {
     this->pipelineLayout->addViewport(viewport);
     this->pipelineLayout->addScissor(scissor);
 
-    // //
     // // -- DYNAMIC STATES --
-    // // Dynamic states to enable
-    // std::vector<VkDynamicState> dynamicStateEnables;
-    // dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in command buffer with
-    //                                                           // vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
-
-    // dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR); // Dynamic Scissor: Can resize in command buffer with
-    //                                                          // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
-
-    // // Dynamic State creation info
-    // VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
-    // dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    // dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-    // dynamicStateCreateInfo.pDynamicStates = dynamicStateEnables.data();
+    // this->pipelineLayout->addDynamicStateEnables(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in command buffer with
+    // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+    // this->pipelineLayout->addDynamicStateEnables(VK_DYNAMIC_STATE_SCISSOR);  // Dynamic Scissor: Can resize in command buffer with
+    // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
 
     // Blend Attachment State (how blending is handled)
     VkPipelineColorBlendAttachmentState colourState = {};
