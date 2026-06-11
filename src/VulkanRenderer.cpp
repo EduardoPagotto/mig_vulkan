@@ -262,12 +262,10 @@ void VulkanRenderer::createGraphicsPipeline() {
     auto scissor = VkRect2D{.offset = VkOffset2D{.x = 0, .y = 0},       // Offset to use region from
                             .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
 
-    VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
-    viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportStateCreateInfo.viewportCount = 1;
-    viewportStateCreateInfo.pViewports = &viewport;
-    viewportStateCreateInfo.scissorCount = 1;
-    viewportStateCreateInfo.pScissors = &scissor;
+    // TODO: mudar o nome da classe
+    this->pipelineLayout = std::make_shared<ce::PipelineLayout>(this->vwrapp->getLogical());
+    this->pipelineLayout->addViewport(viewport);
+    this->pipelineLayout->addScissor(scissor);
 
     // //
     // // -- DYNAMIC STATES --
@@ -284,32 +282,6 @@ void VulkanRenderer::createGraphicsPipeline() {
     // dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     // dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
     // dynamicStateCreateInfo.pDynamicStates = dynamicStateEnables.data();
-
-    //
-    // -- RASTERIZER --
-    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
-    rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizationCreateInfo.depthClampEnable =
-        VK_FALSE; // Change if fragments beond near/far planes are clipped (default) of clamped to plane
-    rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE; // Whether to diacard data and skip rasterization. Never
-                                                                // create fragments, only suitable for pipeline without frambuffer output
-    rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // How to handle filling points beteen vertices
-    rasterizationCreateInfo.lineWidth = 1.0F;                   // How thick lines shoud be when draw
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;   // Whitch face of a tri to cull(nao desenha a backface)
-    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // kinding to determine side is front
-    rasterizationCreateInfo.depthBiasClamp =
-        VK_FALSE; // Whether to add depth bias to fragment (good for stopping "swadow acne" in shadow mapping)
-
-    //
-    // -- MULTISMAPLING --
-    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = {};
-    multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;               // Enable multisample shading or not
-    multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Number of sample to use per fragment
-
-    //
-    // -- BLENDING --
-    // Blending decide how to blend a new colour being written to a fragment, whit the old value
 
     // Blend Attachment State (how blending is handled)
     VkPipelineColorBlendAttachmentState colourState = {};
@@ -330,28 +302,14 @@ void VulkanRenderer::createGraphicsPipeline() {
     colourState.alphaBlendOp = VK_BLEND_OP_ADD;
     // Sumarized: (1 * new alpha) + (0 * old Alpha) = new alpha
 
-    VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo = {};
-    colorBlendingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendingCreateInfo.logicOpEnable = VK_FALSE; // alternative to calulation is use logical operations
-    colorBlendingCreateInfo.attachmentCount = 1;
-    colorBlendingCreateInfo.pAttachments = &colourState;
+    this->pipelineLayout->addColourState(colourState);
 
     // -- PIPELINE LAYOUT --
-    this->pipelineLayout = std::make_shared<ce::PipelineLayout>(this->vwrapp->getLogical());
     this->pipelineLayout->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
     this->pipelineLayout->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
     this->pipelineLayout->addPushRange(this->pushConstantRange);
     this->pipelineLayout->create();
     // FIXME: precisa adicionar o push range AQui
-
-    // -- DEPTH STENCIL TESTING
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
-    depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencilCreateInfo.depthTestEnable = VK_TRUE;           // Enable checking depth to determine fragment write
-    depthStencilCreateInfo.depthWriteEnable = VK_TRUE;          // Enable writing to depth buffer (to replace all values)
-    depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS; // Coparison operation that allows an overwrite (is in front)
-    depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;    // Depth Bonds test: Does the depth value exist between two bounds
-    depthStencilCreateInfo.stencilTestEnable = VK_FALSE;        // Enable stencil test
 
     // -- GRAPHICS PIPELINE CREATION
     VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
@@ -360,12 +318,12 @@ void VulkanRenderer::createGraphicsPipeline() {
     pipelineCreateInfo.pStages = shaderModule->getShaderCreateInfos().data();                           // List of shader stages
     pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline states
     pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly();
-    pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+    pipelineCreateInfo.pViewportState = this->pipelineLayout->getpViewportStateCreateInfo();
     pipelineCreateInfo.pDynamicState = nullptr;
-    pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
-    pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
+    pipelineCreateInfo.pRasterizationState = this->pipelineLayout->getpRasterizationCreateInfo();
+    pipelineCreateInfo.pMultisampleState = this->pipelineLayout->getpMultisamplingCreateInfo();
+    pipelineCreateInfo.pColorBlendState = this->pipelineLayout->getpColorBlendingCreateInfo();  //&colorBlendingCreateInfo;
+    pipelineCreateInfo.pDepthStencilState = this->pipelineLayout->getPDepthStencilCreateInfo(); //&depthStencilCreateInfo;
     pipelineCreateInfo.layout = this->pipelineLayout->getPipelineLayout(); // pipelineLayout;                     // Pipeline Layout
                                                                            // pipeline shoud use
     pipelineCreateInfo.renderPass = this->rederer->getRenderPass();        // Render pass description the pipelineis compatible whit
