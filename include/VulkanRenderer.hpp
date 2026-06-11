@@ -2,7 +2,7 @@
 
 #include "DescriptorSetLayout.hpp"
 #include "MeshModel.hpp"
-#include "PipelineLayout.hpp"
+#include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
@@ -82,7 +82,7 @@ class VulkanRenderer {
     std::vector<VkImageView> textureImageViews;
 
     // - Pipeline
-    std::shared_ptr<ce::PipelineLayout> pipelineLayout;
+    std::shared_ptr<ce::Pipeline> pipeline;
 
     // - Pools
     VkCommandPool graphicsCommandPool;

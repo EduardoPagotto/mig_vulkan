@@ -111,7 +111,7 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroyFramebuffer(vwrapp->getLogical(), framebuffer, nullptr);
     }
 
-    this->pipelineLayout.reset();
+    this->pipeline.reset();
 }
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
@@ -261,14 +261,14 @@ void VulkanRenderer::createGraphicsPipeline() {
                             .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
 
     // TODO: mudar o nome da classe
-    this->pipelineLayout = std::make_shared<ce::PipelineLayout>(this->vwrapp->getLogical());
-    this->pipelineLayout->addViewport(viewport);
-    this->pipelineLayout->addScissor(scissor);
+    this->pipeline = std::make_shared<ce::Pipeline>(this->vwrapp->getLogical());
+    this->pipeline->addViewport(viewport);
+    this->pipeline->addScissor(scissor);
 
     // // -- DYNAMIC STATES --
-    // this->pipelineLayout->addDynamicStateEnables(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in command buffer with
+    // this->pipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in command buffer with
     // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
-    // this->pipelineLayout->addDynamicStateEnables(VK_DYNAMIC_STATE_SCISSOR);  // Dynamic Scissor: Can resize in command buffer with
+    // this->pipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_SCISSOR);  // Dynamic Scissor: Can resize in command buffer with
     // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
 
     // Blend Attachment State (how blending is handled)
@@ -290,15 +290,15 @@ void VulkanRenderer::createGraphicsPipeline() {
     colourState.alphaBlendOp = VK_BLEND_OP_ADD;
     // Sumarized: (1 * new alpha) + (0 * old Alpha) = new alpha
 
-    this->pipelineLayout->addColourState(colourState);
+    this->pipeline->addColourState(colourState);
 
     // -- PIPELINE LAYOUT --
-    this->pipelineLayout->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
-    this->pipelineLayout->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
-    this->pipelineLayout->addPushRange(this->pushConstantRange);
+    this->pipeline->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
+    this->pipeline->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
+    this->pipeline->addPushRange(this->pushConstantRange);
 
     // -- GRAPHICS PIPELINE CREATION
-    this->pipelineLayout->create(shaderModule, this->rederer->getRenderPass());
+    this->pipeline->create(shaderModule, this->rederer->getRenderPass());
 }
 
 void VulkanRenderer::createDepthBufferImage() {
@@ -644,19 +644,19 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     vkCmdBeginRenderPass(this->commandBuffers[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     {
         // Bind Pipeline to be used  in render pass
-        vkCmdBindPipeline(this->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayout->getGraphicsPipeline());
+        vkCmdBindPipeline(this->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getGraphicsPipeline());
 
         for (size_t j = 0; j < this->modelList.size(); j++) { // 1:11:29
 
             MeshModel thisModel = modelList[j];
 
             // "Push" constant to given shader stage directly (no buffer)
-            vkCmdPushConstants(this->commandBuffers[currentImage],        //
-                               this->pipelineLayout->getPipelineLayout(), //
-                               VK_SHADER_STAGE_VERTEX_BIT,                // Stage to push constant to
-                               0,                                         // offset of pushconstant to update
-                               sizeof(Model),                             // size of data being pushed
-                               &thisModel.getModel2());                   // Actual data being pushed (cam be array)
+            vkCmdPushConstants(this->commandBuffers[currentImage],  //
+                               this->pipeline->getPipelineLayout(), //
+                               VK_SHADER_STAGE_VERTEX_BIT,          // Stage to push constant to
+                               0,                                   // offset of pushconstant to update
+                               sizeof(Model),                       // size of data being pushed
+                               &thisModel.getModel2());             // Actual data being pushed (cam be array)
 
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
                 //
@@ -675,9 +675,8 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->descriptorSets[currentImage],
                                                                      this->samplerDescriptorSets[thisModel.getMesh(k)->getTexId()]};
 
-                vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        this->pipelineLayout->getPipelineLayout(), 0, static_cast<uint32_t>(descriptorSetGroup.size()),
-                                        descriptorSetGroup.data(), 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
+                                        0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
 
                 // Execute pipeline
                 vkCmdDrawIndexed(commandBuffers[currentImage], thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);

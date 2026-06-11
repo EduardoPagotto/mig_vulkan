@@ -5,13 +5,13 @@
 
 namespace ce {
 
-    class PipelineLayout {
+    class Pipeline {
       public:
-        explicit PipelineLayout(VkDevice device) : device(device) {
+        explicit Pipeline(VkDevice device) : device(device) {
             //
         }
 
-        virtual ~PipelineLayout() {
+        virtual ~Pipeline() {
             vkDestroyPipeline(device, this->graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device, this->pipelineLayout, nullptr);
         }
