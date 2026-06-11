@@ -111,7 +111,6 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroyFramebuffer(vwrapp->getLogical(), framebuffer, nullptr);
     }
 
-    vkDestroyPipeline(vwrapp->getLogical(), this->graphicsPipeline, nullptr);
     this->pipelineLayout.reset();
 }
 
@@ -250,7 +249,6 @@ void VulkanRenderer::createGraphicsPipeline() {
     // -- VERTEX INPUT  ASSEMBLY INPUT --
     shaderModule->setVertexInput(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
-    //
     // -- VIEWPORT & SCISSOR
     auto viewport = VkViewport{.x = 0.0F,                                               // x start coordinate
                                .y = 0.0F,                                               // y start coordinate
@@ -308,38 +306,9 @@ void VulkanRenderer::createGraphicsPipeline() {
     this->pipelineLayout->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
     this->pipelineLayout->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
     this->pipelineLayout->addPushRange(this->pushConstantRange);
-    this->pipelineLayout->create();
-    // FIXME: precisa adicionar o push range AQui
 
     // -- GRAPHICS PIPELINE CREATION
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderModule->getShaderCreateInfos().size()); // numberr of shader stages
-    pipelineCreateInfo.pStages = shaderModule->getShaderCreateInfos().data();                           // List of shader stages
-    pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline states
-    pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly();
-    pipelineCreateInfo.pViewportState = this->pipelineLayout->getpViewportStateCreateInfo();
-    pipelineCreateInfo.pDynamicState = nullptr;
-    pipelineCreateInfo.pRasterizationState = this->pipelineLayout->getpRasterizationCreateInfo();
-    pipelineCreateInfo.pMultisampleState = this->pipelineLayout->getpMultisamplingCreateInfo();
-    pipelineCreateInfo.pColorBlendState = this->pipelineLayout->getpColorBlendingCreateInfo();  //&colorBlendingCreateInfo;
-    pipelineCreateInfo.pDepthStencilState = this->pipelineLayout->getPDepthStencilCreateInfo(); //&depthStencilCreateInfo;
-    pipelineCreateInfo.layout = this->pipelineLayout->getPipelineLayout(); // pipelineLayout;                     // Pipeline Layout
-                                                                           // pipeline shoud use
-    pipelineCreateInfo.renderPass = this->rederer->getRenderPass();        // Render pass description the pipelineis compatible whit
-    pipelineCreateInfo.subpass = 0;                                        // Subpass of render pass to use with pipeline
-
-    // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
-    pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
-    pipelineCreateInfo.basePipelineIndex = -1; // or index of pipeline being created to derive from (in case creating multiple at once)
-
-    // Create Graphics Pipeline
-    VkResult result =
-        vkCreateGraphicsPipelines(vwrapp->getLogical(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &this->graphicsPipeline);
-
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create a graphic pipeline");
-    }
+    this->pipelineLayout->create(shaderModule, this->rederer->getRenderPass());
 }
 
 void VulkanRenderer::createDepthBufferImage() {
@@ -685,7 +654,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     vkCmdBeginRenderPass(this->commandBuffers[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     {
         // Bind Pipeline to be used  in render pass
-        vkCmdBindPipeline(this->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->graphicsPipeline);
+        vkCmdBindPipeline(this->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipelineLayout->getGraphicsPipeline());
 
         for (size_t j = 0; j < this->modelList.size(); j++) { // 1:11:29
 

@@ -82,7 +82,6 @@ class VulkanRenderer {
     std::vector<VkImageView> textureImageViews;
 
     // - Pipeline
-    VkPipeline graphicsPipeline;
     std::shared_ptr<ce::PipelineLayout> pipelineLayout;
 
     // - Pools

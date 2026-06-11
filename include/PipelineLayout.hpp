@@ -1,8 +1,7 @@
 #pragma once
 
-#include <stdexcept>
-#include <vector>
-#include <vulkan/vulkan_core.h>
+#include "ShaderModule.hpp"
+#include <memory>
 
 namespace ce {
 
@@ -12,7 +11,10 @@ namespace ce {
             //
         }
 
-        virtual ~PipelineLayout() { vkDestroyPipelineLayout(device, this->pipelineLayout, nullptr); }
+        virtual ~PipelineLayout() {
+            vkDestroyPipeline(device, this->graphicsPipeline, nullptr);
+            vkDestroyPipelineLayout(device, this->pipelineLayout, nullptr);
+        }
 
         void addLayout(VkDescriptorSetLayout& descriptorSetLayout) { this->descriptorSetLayouts.push_back(descriptorSetLayout); }
         void addPushRange(VkPushConstantRange& pushConstantRange) { this->pushConstantRanges.push_back(pushConstantRange); }
@@ -20,7 +22,7 @@ namespace ce {
         void addScissor(const VkRect2D scissor) { this->scissors.push_back(scissor); }
         void addColourState(const VkPipelineColorBlendAttachmentState& colourState) { this->colourStates.push_back(colourState); }
 
-        void create() {
+        void create(std::shared_ptr<ShaderModule> shaderModule, VkRenderPass renderPass) { // NOLINT
 
             // PipelineLayout
             VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
@@ -38,6 +40,7 @@ namespace ce {
             }
 
             // -- VIEWPORT & SCISSOR
+            VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
             viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
             viewportStateCreateInfo.viewportCount = static_cast<uint32_t>(this->viewports.size());
             viewportStateCreateInfo.pViewports = this->viewports.data();
@@ -45,6 +48,7 @@ namespace ce {
             viewportStateCreateInfo.pScissors = this->scissors.data();
 
             // -- RASTERIZER --
+            VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
             rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
             rasterizationCreateInfo.depthClampEnable =
                 VK_FALSE; // Change if fragments beond near/far planes are clipped (default) of clamped to plane
@@ -59,18 +63,21 @@ namespace ce {
                 VK_FALSE; // Whether to add depth bias to fragment (good for stopping "swadow acne" in shadow mapping)
 
             // -- MULTISMAPLING --
+            VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = {};
             multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
             multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;               // Enable multisample shading or not
             multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Number of sample to use per fragment
 
             // -- BLENDING --
             // Blending decide how to blend a new colour being written to a fragment, whit the old value
+            VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo = {};
             colorBlendingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
             colorBlendingCreateInfo.logicOpEnable = VK_FALSE; // alternative to calulation is use logical operations
             colorBlendingCreateInfo.attachmentCount = static_cast<uint32_t>(this->colourStates.size()); // 1;
             colorBlendingCreateInfo.pAttachments = this->colourStates.data();
 
             // -- DEPTH STENCIL TESTING
+            VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
             depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depthStencilCreateInfo.depthTestEnable = VK_TRUE;           // Enable checking depth to determine fragment write
             depthStencilCreateInfo.depthWriteEnable = VK_TRUE;          // Enable writing to depth buffer (to replace all values)
@@ -78,69 +85,50 @@ namespace ce {
             depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;    // Depth Bonds test: Does the depth value exist between two bounds
             depthStencilCreateInfo.stencilTestEnable = VK_FALSE;        // Enable stencil test
 
-            // // -- GRAPHICS PIPELINE CREATION
-            // VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-            // pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            // pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderModule->getShaderCreateInfos().size()); // numberr of shader
-            // stages pipelineCreateInfo.pStages = shaderModule->getShaderCreateInfos().data();                           // List of shader
-            // stages pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline
-            // states pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly(); pipelineCreateInfo.pViewportState =
-            // this->pipelineLayout->getpViewportStateCreateInfo(); pipelineCreateInfo.pDynamicState = nullptr;
-            // pipelineCreateInfo.pRasterizationState = this->pipelineLayout->getpRasterizationCreateInfo();
-            // pipelineCreateInfo.pMultisampleState = this->pipelineLayout->getpMultisamplingCreateInfo();
-            // pipelineCreateInfo.pColorBlendState = this->pipelineLayout->getpColorBlendingCreateInfo();  //&colorBlendingCreateInfo;
-            // pipelineCreateInfo.pDepthStencilState = this->pipelineLayout->getPDepthStencilCreateInfo(); //&depthStencilCreateInfo;
-            // pipelineCreateInfo.layout = this->pipelineLayout->getPipelineLayout(); // pipelineLayout;                     // Pipeline
-            // Layout
-            //                                                                        // pipeline shoud use
-            // pipelineCreateInfo.renderPass = this->rederer->getRenderPass();        // Render pass description the pipelineis compatible
-            // whit pipelineCreateInfo.subpass = 0;                                        // Subpass of render pass to use with pipeline
+            // -- GRAPHICS PIPELINE CREATION
+            VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+            pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderModule->getShaderCreateInfos().size()); // numberr of shader stages
+            pipelineCreateInfo.pStages = shaderModule->getShaderCreateInfos().data();                           // List of shader stages
+            pipelineCreateInfo.pVertexInputState = shaderModule->getpVertexInputCreateInfo(); // All the fixed function pipeline states
+            pipelineCreateInfo.pInputAssemblyState = shaderModule->getpInputAssembly();
+            pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+            pipelineCreateInfo.pDynamicState = nullptr;
+            pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+            pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+            pipelineCreateInfo.pColorBlendState = &colorBlendingCreateInfo;
+            pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
+            pipelineCreateInfo.layout = pipelineLayout; // Pipeline Layout
+                                                        // pipeline shoud use
+            pipelineCreateInfo.renderPass = renderPass; // Render pass description the
+            ;                                           // pipelineis compatible whit
+            pipelineCreateInfo.subpass = 0;             // Subpass of render pass to use with pipeline
 
-            // // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
-            // pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
-            // pipelineCreateInfo.basePipelineIndex =
-            //     -1; // or index of pipeline being created to derive from (in case creating multiple at once)
+            // Pipeline Derivatives : Can create multiple pipelines that derive from one another for optimisation
+            pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE; // Existing pipeline to derive from...
+            pipelineCreateInfo.basePipelineIndex = -1;              // or index of pipeline being created to derive from
+            ;                                                       // (in case creating multiple at once)
 
-            // // Create Graphics Pipeline
-            // result =
-            //     vkCreateGraphicsPipelines(vwrapp->getLogical(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr,
-            //     &this->graphicsPipeline);
+            // Create Graphics Pipeline
+            result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &this->graphicsPipeline);
 
-            // if (result != VK_SUCCESS) {
-            //     throw std::runtime_error("Failed to create a graphic pipeline");
-            // }
+            if (result != VK_SUCCESS) {
+                throw std::runtime_error("Failed to create a graphic pipeline");
+            }
         }
 
         VkPipelineLayout& getPipelineLayout() { return this->pipelineLayout; }
-
-        std::vector<VkViewport>& getViewports() { return this->viewports; }
-        std::vector<VkRect2D>& getScissors() { return this->scissors; }
-        VkPipelineViewportStateCreateInfo* getpViewportStateCreateInfo() { return &viewportStateCreateInfo; }
-
-        VkPipelineRasterizationStateCreateInfo* getpRasterizationCreateInfo() { return &rasterizationCreateInfo; }
-        VkPipelineMultisampleStateCreateInfo* getpMultisamplingCreateInfo() { return &multisamplingCreateInfo; }
-
-        VkPipelineColorBlendStateCreateInfo* getpColorBlendingCreateInfo() { return &colorBlendingCreateInfo; }
-
-        VkPipelineDepthStencilStateCreateInfo* getPDepthStencilCreateInfo() { return &depthStencilCreateInfo; }
+        VkPipeline& getGraphicsPipeline() { return this->graphicsPipeline; }
 
       private:
         VkDevice device;
         VkPipelineLayout pipelineLayout;
+        VkPipeline graphicsPipeline;
+
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
         std::vector<VkPushConstantRange> pushConstantRanges;
-
         std::vector<VkViewport> viewports;
         std::vector<VkRect2D> scissors;
-        VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
-
-        VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo = {};
-
-        VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = {};
-
         std::vector<VkPipelineColorBlendAttachmentState> colourStates;
-        VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo = {};
-
-        VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {};
     };
 } // namespace ce
