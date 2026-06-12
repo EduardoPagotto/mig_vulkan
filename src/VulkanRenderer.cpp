@@ -755,9 +755,9 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Descriptor Set Allocation info
     VkDescriptorSetAllocateInfo setAllocInfo = {};
     setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    setAllocInfo.descriptorPool = this->samplerDescriptorPool->getDescriptorPool(); // this->samplerDescriptorPool;
+    setAllocInfo.descriptorPool = this->samplerDescriptorPool->getDescriptorPool();
     setAllocInfo.descriptorSetCount = 1;
-    setAllocInfo.pSetLayouts = &this->samplerSetLayout->getDescriptorSetLayout(); // samplerSetLayout;
+    setAllocInfo.pSetLayouts = &this->samplerSetLayout->getDescriptorSetLayout();
 
     // Allocate descriptr sets
     VkResult result = vkAllocateDescriptorSets(vwrapp->getLogical(), &setAllocInfo, &descriptorSet);

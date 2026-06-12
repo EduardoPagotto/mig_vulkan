@@ -57,7 +57,7 @@ class VulkanRenderer {
     VkSampler textureSampler;
 
     // - Descriptors
-    std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout; // VkDescriptorSetLayout descriptorSetLayout;
+    std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout;
     std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
 
     VkPushConstantRange pushConstantRange;
