@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DescriptorPool.hpp"
+#include "DescriptorSet.hpp"
 #include "DescriptorSetLayout.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
@@ -64,7 +65,7 @@ class VulkanRenderer {
 
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
     std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::shared_ptr<ce::DescriptorSet> dddescriptorSets;
     std::vector<VkDescriptorSet> samplerDescriptorSets;
 
     std::vector<VkBuffer> vpUniformBuffer;

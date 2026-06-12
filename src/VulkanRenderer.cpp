@@ -490,24 +490,14 @@ void VulkanRenderer::createDescriptorPool() {
 }
 
 void VulkanRenderer::createDescriptorSets() {
-    // Resize Descriptor Set list so one for every buffer
-    this->descriptorSets.resize(this->swc->getSwapchainImages().size());
+    // create smart pointer of Descripor set collection and Resize Descriptor Set list so one for every buffer
+    this->dddescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
+    this->dddescriptorSets->getDescriptorSets().resize(this->swc->getSwapchainImages().size());
 
     std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
                                                   this->descriptorSetLayout->getDescriptorSetLayout());
 
-    // Descriptor set allocation info
-    VkDescriptorSetAllocateInfo setAllocInfo = {};
-    setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    setAllocInfo.descriptorPool = this->descriptorPool->getDescriptorPool();                         // Pool to allocate Descriptor Set from
-    setAllocInfo.descriptorSetCount = static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Number of sets to allocate
-    setAllocInfo.pSetLayouts = setLayouts.data(); // Layouts to use to allocate sets (1:1 relationship)
-
-    // Allocate descriptor sets (multiple)
-    VkResult result = vkAllocateDescriptorSets(vwrapp->getLogical(), &setAllocInfo, this->descriptorSets.data());
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to Allocate Descriptor sets!");
-    }
+    this->dddescriptorSets->allocate(this->descriptorPool->getDescriptorPool(), setLayouts);
 
     // Update all of descriptor set buffer bindings
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
@@ -522,12 +512,12 @@ void VulkanRenderer::createDescriptorSets() {
         // Data about connection between binding and buffer
         VkWriteDescriptorSet vpSetWrite = {};
         vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vpSetWrite.dstSet = this->descriptorSets[i];                   // Descriptor Set to update
-        vpSetWrite.dstBinding = 0;                                     // Binding to update (matches with binding on layout/shader)
-        vpSetWrite.dstArrayElement = 0;                                // index in array to update
-        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // type of Descriptor
-        vpSetWrite.descriptorCount = 1;                                // Amount to update
-        vpSetWrite.pBufferInfo = &vpBufferInfo;                        // Information about buffer data to bind
+        vpSetWrite.dstSet = this->dddescriptorSets->getDescriptorSets()[i]; // Descriptor Set to update
+        vpSetWrite.dstBinding = 0;                                          // Binding to update (matches with binding on layout/shader)
+        vpSetWrite.dstArrayElement = 0;                                     // index in array to update
+        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;      // type of Descriptor
+        vpSetWrite.descriptorCount = 1;                                     // Amount to update
+        vpSetWrite.pBufferInfo = &vpBufferInfo;                             // Information about buffer data to bind
 
         // // MODEL DESCRIPTOR
         // // Model buffer binding info
@@ -645,7 +635,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 // Dynamic offset Amount
                 // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
 
-                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->descriptorSets[currentImage],
+                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->dddescriptorSets->getDescriptorSets()[currentImage],
                                                                      this->samplerDescriptorSets[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
