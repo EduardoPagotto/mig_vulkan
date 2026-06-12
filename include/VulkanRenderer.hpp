@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DescriptorPool.hpp"
 #include "DescriptorSetLayout.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
@@ -61,8 +62,8 @@ class VulkanRenderer {
 
     VkPushConstantRange pushConstantRange;
 
-    VkDescriptorPool descriptorPool;
-    VkDescriptorPool samplerDescriptorPool;
+    std::shared_ptr<ce::DescriptorPool> descriptorPool;
+    std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
     std::vector<VkDescriptorSet> samplerDescriptorSets;
 

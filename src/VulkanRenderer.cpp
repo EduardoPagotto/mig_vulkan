@@ -73,7 +73,7 @@ VulkanRenderer::~VulkanRenderer() {
         model.destroyMeshModel();
     }
 
-    vkDestroyDescriptorPool(vwrapp->getLogical(), this->samplerDescriptorPool, nullptr);
+    this->samplerDescriptorPool.reset();
     this->samplerSetLayout.reset();
 
     vkDestroySampler(vwrapp->getLogical(), this->textureSampler, nullptr);
@@ -88,7 +88,7 @@ VulkanRenderer::~VulkanRenderer() {
     vkDestroyImage(vwrapp->getLogical(), this->depthBufferImage, nullptr);
     vkFreeMemory(vwrapp->getLogical(), this->depthBufferImageMemory, nullptr);
 
-    vkDestroyDescriptorPool(vwrapp->getLogical(), this->descriptorPool, nullptr);
+    this->descriptorPool.reset();
     this->descriptorSetLayout.reset();
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
         // destroy uniform
@@ -467,53 +467,26 @@ void VulkanRenderer::createUniformBuffers() {
 
 void VulkanRenderer::createDescriptorPool() {
 
+    // CREATE DESCRIPTOR POOL
     // CREATE UNIFORM DESCRIPTOR POOL
-
+    this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->vwrapp->getLogical());
     // Type of Descriptors + how many DESCRIPTORS, not Descriptor Sets (combined makes the pool size)
     // ViewProjection Pool
-    VkDescriptorPoolSize vpPoolSize = {};
-    vpPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    vpPoolSize.descriptorCount = static_cast<uint32_t>(this->vpUniformBuffer.size());
+    this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(this->vpUniformBuffer.size()));
 
     // // Model Pool (Dynamic)
-    // VkDescriptorPoolSize modelPoolSize = {};
-    // modelPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    // modelPoolSize.descriptorCount = static_cast<uint32_t>(this->modelDUniformBuffer.size());
-
-    // List of pool sizes
-    // std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {vpPoolSize, modelPoolSize};
-    std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {vpPoolSize};
-
-    // Data to create Descriptor Pool
-    VkDescriptorPoolCreateInfo poolCreateInfo = {};
-    poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolCreateInfo.maxSets =
-        static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Maximum number of descriptor Sets that cam be create from pool
-    poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size()); // Amount of Pool Sizes being passed
-    poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();                           // Pool Sizes to create pool with
+    // this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, //
+    //                                    static_cast<uint32_t>(this->modelDUniformBuffer.size());//
 
     // Create Descriptor Pool
-    VkResult result = vkCreateDescriptorPool(vwrapp->getLogical(), &poolCreateInfo, nullptr, &this->descriptorPool);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Descriptor pool");
-    }
+    this->descriptorPool->create(static_cast<uint32_t>(this->swc->getSwapchainImages().size())); // Maximum number of descriptor Sets
+    ;
 
-    // CREATE UNIFORM DESCRIPTOR POOL
+    // -- CREATE UNIFORM DESCRIPTOR POOL
     // Texture sampler pool
-    VkDescriptorPoolSize samplerPoolSize = {};
-    samplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerPoolSize.descriptorCount = MAX_OBJECTS;
-
-    VkDescriptorPoolCreateInfo samplerPoolCreateInfo = {};
-    samplerPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    samplerPoolCreateInfo.maxSets = MAX_OBJECTS;
-    samplerPoolCreateInfo.poolSizeCount = 1;
-    samplerPoolCreateInfo.pPoolSizes = &samplerPoolSize;
-
-    result = vkCreateDescriptorPool(vwrapp->getLogical(), &samplerPoolCreateInfo, nullptr, &this->samplerDescriptorPool);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Sampler Descriptor pool");
-    }
+    this->samplerDescriptorPool = std::make_shared<ce::DescriptorPool>(this->vwrapp->getLogical());
+    this->samplerDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_OBJECTS);
+    this->samplerDescriptorPool->create(MAX_OBJECTS);
 }
 
 void VulkanRenderer::createDescriptorSets() {
@@ -526,7 +499,7 @@ void VulkanRenderer::createDescriptorSets() {
     // Descriptor set allocation info
     VkDescriptorSetAllocateInfo setAllocInfo = {};
     setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    setAllocInfo.descriptorPool = this->descriptorPool;                                              // Pool to allocate Descriptor Set from
+    setAllocInfo.descriptorPool = this->descriptorPool->getDescriptorPool();                         // Pool to allocate Descriptor Set from
     setAllocInfo.descriptorSetCount = static_cast<uint32_t>(this->swc->getSwapchainImages().size()); // Number of sets to allocate
     setAllocInfo.pSetLayouts = setLayouts.data(); // Layouts to use to allocate sets (1:1 relationship)
 
@@ -782,7 +755,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Descriptor Set Allocation info
     VkDescriptorSetAllocateInfo setAllocInfo = {};
     setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    setAllocInfo.descriptorPool = this->samplerDescriptorPool;
+    setAllocInfo.descriptorPool = this->samplerDescriptorPool->getDescriptorPool(); // this->samplerDescriptorPool;
     setAllocInfo.descriptorSetCount = 1;
     setAllocInfo.pSetLayouts = &this->samplerSetLayout->getDescriptorSetLayout(); // samplerSetLayout;
 
