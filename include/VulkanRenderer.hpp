@@ -65,8 +65,10 @@ class VulkanRenderer {
 
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
     std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
-    std::shared_ptr<ce::DescriptorSet> dddescriptorSets;
-    std::vector<VkDescriptorSet> samplerDescriptorSets;
+    std::shared_ptr<ce::DescriptorSet> descriptorSets;
+    std::shared_ptr<ce::DescriptorSet> sssamplerDescriptorSets;
+
+    // std::vector<VkDescriptorSet> samplerDescriptorSets;
 
     std::vector<VkBuffer> vpUniformBuffer;
     std::vector<VkDeviceMemory> vpUniformBufferMemory;

@@ -491,13 +491,15 @@ void VulkanRenderer::createDescriptorPool() {
 
 void VulkanRenderer::createDescriptorSets() {
     // create smart pointer of Descripor set collection and Resize Descriptor Set list so one for every buffer
-    this->dddescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
-    this->dddescriptorSets->getDescriptorSets().resize(this->swc->getSwapchainImages().size());
+    this->descriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
+    this->sssamplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
+
+    this->descriptorSets->getDescriptorSets().resize(this->swc->getSwapchainImages().size());
 
     std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
                                                   this->descriptorSetLayout->getDescriptorSetLayout());
 
-    this->dddescriptorSets->allocate(this->descriptorPool->getDescriptorPool(), setLayouts);
+    this->descriptorSets->allocate(this->descriptorPool->getDescriptorPool(), setLayouts);
 
     // Update all of descriptor set buffer bindings
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
@@ -512,12 +514,12 @@ void VulkanRenderer::createDescriptorSets() {
         // Data about connection between binding and buffer
         VkWriteDescriptorSet vpSetWrite = {};
         vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vpSetWrite.dstSet = this->dddescriptorSets->getDescriptorSets()[i]; // Descriptor Set to update
-        vpSetWrite.dstBinding = 0;                                          // Binding to update (matches with binding on layout/shader)
-        vpSetWrite.dstArrayElement = 0;                                     // index in array to update
-        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;      // type of Descriptor
-        vpSetWrite.descriptorCount = 1;                                     // Amount to update
-        vpSetWrite.pBufferInfo = &vpBufferInfo;                             // Information about buffer data to bind
+        vpSetWrite.dstSet = this->descriptorSets->getDescriptorSets()[i]; // Descriptor Set to update
+        vpSetWrite.dstBinding = 0;                                        // Binding to update (matches with binding on layout/shader)
+        vpSetWrite.dstArrayElement = 0;                                   // index in array to update
+        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;    // type of Descriptor
+        vpSetWrite.descriptorCount = 1;                                   // Amount to update
+        vpSetWrite.pBufferInfo = &vpBufferInfo;                           // Information about buffer data to bind
 
         // // MODEL DESCRIPTOR
         // // Model buffer binding info
@@ -635,8 +637,9 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 // Dynamic offset Amount
                 // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
 
-                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->dddescriptorSets->getDescriptorSets()[currentImage],
-                                                                     this->samplerDescriptorSets[thisModel.getMesh(k)->getTexId()]};
+                std::array<VkDescriptorSet, 2> descriptorSetGroup = {
+                    this->descriptorSets->getDescriptorSets()[currentImage],
+                    this->sssamplerDescriptorSets->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
                                         0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
@@ -775,9 +778,9 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);
 
     // Add descriptor set to list
-    samplerDescriptorSets.push_back(descriptorSet);
+    this->sssamplerDescriptorSets->getDescriptorSets().push_back(descriptorSet);
 
-    return samplerDescriptorSets.size() - 1;
+    return this->sssamplerDescriptorSets->getDescriptorSets().size() - 1;
 }
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {
