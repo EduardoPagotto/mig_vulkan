@@ -492,7 +492,7 @@ void VulkanRenderer::createDescriptorPool() {
 void VulkanRenderer::createDescriptorSets() {
     // create smart pointer of Descripor set collection and Resize Descriptor Set list so one for every buffer
     this->descriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
-    this->sssamplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
+    this->samplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
 
     std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
                                                   this->descriptorSetLayout->getDescriptorSetLayout());
@@ -637,7 +637,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
                 std::array<VkDescriptorSet, 2> descriptorSetGroup = {
                     this->descriptorSets->getDescriptorSets()[currentImage],
-                    this->sssamplerDescriptorSets->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
+                    this->samplerDescriptorSets->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
                                         0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
@@ -765,9 +765,9 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);
 
     // Add descriptor set to list
-    this->sssamplerDescriptorSets->getDescriptorSets().push_back(descriptorSet.getDescriptorSets()[0]);
+    this->samplerDescriptorSets->getDescriptorSets().push_back(descriptorSet.getDescriptorSets()[0]);
 
-    return this->sssamplerDescriptorSets->getDescriptorSets().size() - 1;
+    return this->samplerDescriptorSets->getDescriptorSets().size() - 1;
 }
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {
