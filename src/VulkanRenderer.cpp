@@ -494,8 +494,6 @@ void VulkanRenderer::createDescriptorSets() {
     this->descriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
     this->sssamplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
 
-    this->descriptorSets->getDescriptorSets().resize(this->swc->getSwapchainImages().size());
-
     std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
                                                   this->descriptorSetLayout->getDescriptorSetLayout());
 
@@ -743,20 +741,9 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
 int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     //
-    VkDescriptorSet descriptorSet;
-
-    // Descriptor Set Allocation info
-    VkDescriptorSetAllocateInfo setAllocInfo = {};
-    setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    setAllocInfo.descriptorPool = this->samplerDescriptorPool->getDescriptorPool();
-    setAllocInfo.descriptorSetCount = 1;
-    setAllocInfo.pSetLayouts = &this->samplerSetLayout->getDescriptorSetLayout();
-
-    // Allocate descriptr sets
-    VkResult result = vkAllocateDescriptorSets(vwrapp->getLogical(), &setAllocInfo, &descriptorSet);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate Texture descriptor set");
-    }
+    ce::DescriptorSet descriptorSet = ce::DescriptorSet(this->vwrapp->getLogical());
+    std::vector<VkDescriptorSetLayout> layouts = {this->samplerSetLayout->getDescriptorSetLayout()};
+    auto [start, position] = descriptorSet.allocate(this->samplerDescriptorPool->getDescriptorPool(), layouts);
 
     // Texture Image info
     VkDescriptorImageInfo imageInfo = {};
@@ -767,7 +754,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Descriptor Write info
     VkWriteDescriptorSet descriptorWrite = {};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet;
+    descriptorWrite.dstSet = descriptorSet.getDescriptorSets()[0];
     descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -778,7 +765,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);
 
     // Add descriptor set to list
-    this->sssamplerDescriptorSets->getDescriptorSets().push_back(descriptorSet);
+    this->sssamplerDescriptorSets->getDescriptorSets().push_back(descriptorSet.getDescriptorSets()[0]);
 
     return this->sssamplerDescriptorSets->getDescriptorSets().size() - 1;
 }
