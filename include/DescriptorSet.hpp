@@ -19,20 +19,18 @@ namespace ce {
         std::pair<size_t, size_t> allocate(VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
 
             // Reserve new spaces in descriptorSet
-            size_t startPosition = this->descriptorSets.size();
-            size_t increment = descriptorSetLayouts.size(); // Total of descriptors to allocate increment
-            // size_t finalTot = startPosition + increment;        // incrize total alocation of  descriptorSets
-            //  this->descriptorSets.resize(finalTot);          // new size of descriptorSets
+            size_t index = this->descriptorSets.size();
+            size_t size = descriptorSetLayouts.size(); // Total of descriptors to allocate size
 
             // Reserve space to temprary desciptor
-            std::vector<VkDescriptorSet> localSets(increment);
+            std::vector<VkDescriptorSet> localSets(size);
 
             // Descriptor Set Allocation info
             VkDescriptorSetAllocateInfo setAllocInfo = {};
             setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            setAllocInfo.descriptorPool = descriptorPool;                       // Pool to allocate Descriptor Set
-            setAllocInfo.descriptorSetCount = static_cast<uint32_t>(increment); // Number of sets to allocate
-            setAllocInfo.pSetLayouts = descriptorSetLayouts.data();             // Layouts to use to allocate sets (1:1 relationship)
+            setAllocInfo.descriptorPool = descriptorPool;                  // Pool to allocate Descriptor Set
+            setAllocInfo.descriptorSetCount = static_cast<uint32_t>(size); // Number of sets to allocate
+            setAllocInfo.pSetLayouts = descriptorSetLayouts.data();        // Layouts to use to allocate sets (1:1 relationship)
 
             // Allocate descriptor sets (multiple)
             VkResult result = vkAllocateDescriptorSets(device, &setAllocInfo, localSets.data());
@@ -43,7 +41,7 @@ namespace ce {
             // copy localSets sets to descriptorSets
             this->descriptorSets.insert(this->descriptorSets.end(), localSets.begin(), localSets.end());
 
-            return {startPosition, increment}; // start position, total new allocate
+            return {index, size}; // start position, total new allocate
         }
 
         std::vector<VkDescriptorSet>& getDescriptorSets() { return this->descriptorSets; }

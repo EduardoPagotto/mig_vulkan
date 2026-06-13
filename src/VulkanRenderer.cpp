@@ -741,9 +741,8 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
 int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     //
-    ce::DescriptorSet descriptorSet = ce::DescriptorSet(this->vwrapp->getLogical());
     std::vector<VkDescriptorSetLayout> layouts = {this->samplerSetLayout->getDescriptorSetLayout()};
-    auto [start, position] = descriptorSet.allocate(this->samplerDescriptorPool->getDescriptorPool(), layouts);
+    auto [index, size] = this->samplerDescriptorSets->allocate(this->samplerDescriptorPool->getDescriptorPool(), layouts);
 
     // Texture Image info
     VkDescriptorImageInfo imageInfo = {};
@@ -754,7 +753,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Descriptor Write info
     VkWriteDescriptorSet descriptorWrite = {};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet.getDescriptorSets()[0];
+    descriptorWrite.dstSet = this->samplerDescriptorSets->getDescriptorSets()[index];
     descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -763,9 +762,6 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
 
     // Update new descriptor set
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);
-
-    // Add descriptor set to list
-    this->samplerDescriptorSets->getDescriptorSets().push_back(descriptorSet.getDescriptorSets()[0]);
 
     return this->samplerDescriptorSets->getDescriptorSets().size() - 1;
 }
