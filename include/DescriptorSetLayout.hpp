@@ -8,37 +8,39 @@ namespace ce {
 
     class DescriptorSetLayout {
       public:
-        explicit DescriptorSetLayout(VkDevice device) : device(device) {
-            //
-        }
+        explicit DescriptorSetLayout(VkDevice device) : device(device) {}
 
-        virtual ~DescriptorSetLayout() { vkDestroyDescriptorSetLayout(device, this->descriptorSetLayout, nullptr); }
+        virtual ~DescriptorSetLayout() {
+            if (handle != VK_NULL_HANDLE && device != VK_NULL_HANDLE) {
+                vkDestroyDescriptorSetLayout(device, this->handle, nullptr);
+            }
+        }
 
         void addBinding(const VkDescriptorSetLayoutBinding& vpLayoutBinding) { this->layoutBinding.push_back(vpLayoutBinding); }
 
         void create() {
 
             // Create Desciptor Set Layout with given bindingd
-            VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {};
-            layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutCreateInfo.bindingCount = static_cast<uint32_t>(layoutBinding.size()); // Number of binding infos
-            layoutCreateInfo.pBindings = layoutBinding.data();                           // Array of binding infos
+            VkDescriptorSetLayoutCreateInfo layoutCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = static_cast<uint32_t>(layoutBinding.size()), // Number of binding infos
+                .pBindings = layoutBinding.data()                            // Array of binding infos
+            };
 
             // Create Descriptor Set Layout
-            VkResult result = vkCreateDescriptorSetLayout(this->device, &layoutCreateInfo, nullptr, &this->descriptorSetLayout);
-            if (result != VK_SUCCESS) {
+            if (vkCreateDescriptorSetLayout(this->device, &layoutCreateInfo, nullptr, &this->handle) != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create descriptor set Layout!");
             }
+
+            layoutBinding.clear();
+            layoutBinding.shrink_to_fit();
         }
 
-        VkDescriptorSetLayout& getDescriptorSetLayout() { return this->descriptorSetLayout; }
-
-        // std::vector<VkDescriptorSetLayoutBinding>& getLayoutBinding() { return layoutBinding; }
+        [[nodiscard]] VkDescriptorSetLayout& get() { return this->handle; }
 
       private:
-        VkDevice device;
-        VkDescriptorSetLayout descriptorSetLayout;
-
+        VkDevice device{VK_NULL_HANDLE};
+        VkDescriptorSetLayout handle{VK_NULL_HANDLE};
         std::vector<VkDescriptorSetLayoutBinding> layoutBinding;
     };
 } // namespace ce

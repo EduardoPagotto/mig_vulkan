@@ -293,8 +293,8 @@ void VulkanRenderer::createGraphicsPipeline() {
     this->pipeline->addColourState(colourState);
 
     // -- PIPELINE LAYOUT --
-    this->pipeline->addLayout(this->descriptorSetLayout->getDescriptorSetLayout());
-    this->pipeline->addLayout(this->samplerSetLayout->getDescriptorSetLayout());
+    this->pipeline->addLayout(this->descriptorSetLayout->get());
+    this->pipeline->addLayout(this->samplerSetLayout->get());
     this->pipeline->addPushRange(this->pushConstantRange);
 
     // -- GRAPHICS PIPELINE CREATION
@@ -494,10 +494,9 @@ void VulkanRenderer::createDescriptorSets() {
     this->descriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
     this->samplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
 
-    std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(),
-                                                  this->descriptorSetLayout->getDescriptorSetLayout());
+    std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(), this->descriptorSetLayout->get());
 
-    this->descriptorSets->allocate(this->descriptorPool->getDescriptorPool(), setLayouts);
+    this->descriptorSets->allocate(this->descriptorPool->get(), setLayouts);
 
     // Update all of descriptor set buffer bindings
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
@@ -512,12 +511,12 @@ void VulkanRenderer::createDescriptorSets() {
         // Data about connection between binding and buffer
         VkWriteDescriptorSet vpSetWrite = {};
         vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vpSetWrite.dstSet = this->descriptorSets->getDescriptorSets()[i]; // Descriptor Set to update
-        vpSetWrite.dstBinding = 0;                                        // Binding to update (matches with binding on layout/shader)
-        vpSetWrite.dstArrayElement = 0;                                   // index in array to update
-        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;    // type of Descriptor
-        vpSetWrite.descriptorCount = 1;                                   // Amount to update
-        vpSetWrite.pBufferInfo = &vpBufferInfo;                           // Information about buffer data to bind
+        vpSetWrite.dstSet = this->descriptorSets->get()[i];            // Descriptor Set to update
+        vpSetWrite.dstBinding = 0;                                     // Binding to update (matches with binding on layout/shader)
+        vpSetWrite.dstArrayElement = 0;                                // index in array to update
+        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // type of Descriptor
+        vpSetWrite.descriptorCount = 1;                                // Amount to update
+        vpSetWrite.pBufferInfo = &vpBufferInfo;                        // Information about buffer data to bind
 
         // // MODEL DESCRIPTOR
         // // Model buffer binding info
@@ -635,9 +634,8 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 // Dynamic offset Amount
                 // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
 
-                std::array<VkDescriptorSet, 2> descriptorSetGroup = {
-                    this->descriptorSets->getDescriptorSets()[currentImage],
-                    this->samplerDescriptorSets->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
+                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->descriptorSets->get()[currentImage],
+                                                                     this->samplerDescriptorSets->get()[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
                                         0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
@@ -741,8 +739,8 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
 int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     //
-    std::vector<VkDescriptorSetLayout> layouts = {this->samplerSetLayout->getDescriptorSetLayout()};
-    auto [index, size] = this->samplerDescriptorSets->allocate(this->samplerDescriptorPool->getDescriptorPool(), layouts);
+    std::vector<VkDescriptorSetLayout> layouts = {this->samplerSetLayout->get()};
+    auto [index, size] = this->samplerDescriptorSets->allocate(this->samplerDescriptorPool->get(), layouts);
 
     // Texture Image info
     VkDescriptorImageInfo imageInfo = {};
@@ -753,7 +751,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Descriptor Write info
     VkWriteDescriptorSet descriptorWrite = {};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = this->samplerDescriptorSets->getDescriptorSets()[index];
+    descriptorWrite.dstSet = this->samplerDescriptorSets->get()[index];
     descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = 0;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -763,7 +761,7 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     // Update new descriptor set
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);
 
-    return this->samplerDescriptorSets->getDescriptorSets().size() - 1;
+    return this->samplerDescriptorSets->get().size() - 1;
 }
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {

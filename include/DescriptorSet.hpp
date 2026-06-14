@@ -8,15 +8,11 @@ namespace ce {
 
     class DescriptorSet {
       public:
-        explicit DescriptorSet(VkDevice device) : device(device) {
-            //
-        }
+        explicit DescriptorSet(VkDevice device) : device(device) {}
+        virtual ~DescriptorSet() = default;
 
-        virtual ~DescriptorSet() {
-            //
-        }
-
-        std::pair<size_t, size_t> allocate(VkDescriptorPool& descriptorPool, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+        std::pair<size_t, size_t> allocate(const VkDescriptorPool& descriptorPool,
+                                           std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
 
             // Reserve new spaces in descriptorSet
             size_t index = this->descriptorSets.size();
@@ -26,15 +22,15 @@ namespace ce {
             std::vector<VkDescriptorSet> localSets(size);
 
             // Descriptor Set Allocation info
-            VkDescriptorSetAllocateInfo setAllocInfo = {};
-            setAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            setAllocInfo.descriptorPool = descriptorPool;                  // Pool to allocate Descriptor Set
-            setAllocInfo.descriptorSetCount = static_cast<uint32_t>(size); // Number of sets to allocate
-            setAllocInfo.pSetLayouts = descriptorSetLayouts.data();        // Layouts to use to allocate sets (1:1 relationship)
+            VkDescriptorSetAllocateInfo setAllocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = descriptorPool,                  // Pool to allocate Descriptor Set
+                .descriptorSetCount = static_cast<uint32_t>(size), // Number of sets to allocate
+                .pSetLayouts = descriptorSetLayouts.data()         // Layouts to use to allocate sets (1:1 relationship)
+            };
 
             // Allocate descriptor sets (multiple)
-            VkResult result = vkAllocateDescriptorSets(device, &setAllocInfo, localSets.data());
-            if (result != VK_SUCCESS) {
+            if (vkAllocateDescriptorSets(device, &setAllocInfo, localSets.data()) != VK_SUCCESS) {
                 throw std::runtime_error("Failed to allocate Texture descriptor set");
             }
 
@@ -44,7 +40,7 @@ namespace ce {
             return {index, size}; // start position, total new allocate
         }
 
-        std::vector<VkDescriptorSet>& getDescriptorSets() { return this->descriptorSets; }
+        [[nodiscard]] std::vector<VkDescriptorSet>& get() { return this->descriptorSets; }
 
       private:
         VkDevice device;
