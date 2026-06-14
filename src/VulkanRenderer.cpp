@@ -136,44 +136,43 @@ void VulkanRenderer::draw() {
                           this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
-
     this->updateUniformBuffers(imageIndex);
 
     // -- SUBMIT COMMAND BUFFER TO RENDER
     // Queue submission information
-    VkSemaphore waitSemaphores[] = {this->imageAvailable[this->currentFrame]};
-    VkSemaphore signalSemaphores[] = {this->renderFinished[this->currentFrame]};
+    std::array<VkSemaphore, 1> waitSemaphores{this->imageAvailable[this->currentFrame]};
+    std::array<VkSemaphore, 1> signalSemaphores{this->renderFinished[this->currentFrame]};
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.waitSemaphoreCount = 1;                                                   // Number of semaphores to wait on
-    submitInfo.pWaitSemaphores = waitSemaphores;                                         //
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; //
-    submitInfo.pWaitDstStageMask = waitStages;                                           // Stagegs to check semaphores at
-    submitInfo.commandBufferCount = 1;                                                   // Number of command buffers to submit
-    submitInfo.pCommandBuffers = &this->commandBuffers[imageIndex];                      // Command buffer to submit
-    submitInfo.signalSemaphoreCount = 1;                                                 // Number of semaphore to signal
-    submitInfo.pSignalSemaphores = signalSemaphores;                                     // Semaphore to signal when command buffer finishes
+    std::array<VkPipelineStageFlags, 1> waitStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),     // Number of semaphores to wait on
+        .pWaitSemaphores = waitSemaphores.data(),                               //
+        .pWaitDstStageMask = waitStages.data(),                                 // Stagegs to check semaphores at
+        .commandBufferCount = 1,                                                // Number of command buffers to submit FIXME: é isto mesmo?
+        .pCommandBuffers = &this->commandBuffers[imageIndex],                   // Command buffer to submit
+        .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphore to signal
+        .pSignalSemaphores = signalSemaphores.data(),                           // Semaphore to signal when command buffer finishes
+    };
 
     // Submit command buffer to queue
-    VkResult result = vkQueueSubmit(vwrapp->getGraphicsQueue(), 1, &submitInfo, this->drawFences[this->currentFrame]);
-    if (result != VK_SUCCESS) {
+    if (vkQueueSubmit(vwrapp->getGraphicsQueue(), 1, &submitInfo, this->drawFences[this->currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit Command Buffer to Queue!");
     }
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
-    VkPresentInfoKHR presentInfo = {};
-    VkSwapchainKHR swapChains[] = {this->swc->getSwapchain()};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;             // Number of semaphores to wait on
-    presentInfo.pWaitSemaphores = signalSemaphores; // Semaphores to wait on
-    presentInfo.swapchainCount = 1;                 // Number of swapchains to present to
-    presentInfo.pSwapchains = swapChains;           // Swapchais to present images to
-    presentInfo.pImageIndices = &imageIndex;        // Index of Images in swapchains to present
+    std::array<VkSwapchainKHR, 1> swapChains{this->swc->getSwapchain()};
+    VkPresentInfoKHR presentInfo{
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphores to wait on
+        .pWaitSemaphores = signalSemaphores.data(),                           // Semaphores to wait on
+        .swapchainCount = static_cast<uint32_t>(swapChains.size()),           // Number of swapchains to present to
+        .pSwapchains = swapChains.data(),                                     // Swapchais to present images to
+        .pImageIndices = &imageIndex,                                         // Index of Images in swapchains to present
+    };
 
     // Present Image
-    result = vkQueuePresentKHR(vwrapp->getPresentationQueue(), &presentInfo);
-    if (result != VK_SUCCESS) {
+    if (vkQueuePresentKHR(vwrapp->getPresentationQueue(), &presentInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to present Image!");
     }
 
@@ -192,35 +191,33 @@ void VulkanRenderer::createDescriptorSetLayout() {
     this->descriptorSetLayout = std::make_shared<ce::DescriptorSetLayout>(this->vwrapp->getLogical());
 
     // UboViewProjection Binding info
-    VkDescriptorSetLayoutBinding vpLayoutBinding = {};
-    vpLayoutBinding.binding = 0;                                        // Binding point in shader (designed by binding number in shader)
-    vpLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // Type of descriptor (uniform, dynamic, image sampler, etc)
-    vpLayoutBinding.descriptorCount = 1;                                // Number of descriptors for binding
-    vpLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;            // Shade stage to bind to
-    vpLayoutBinding.pImmutableSamplers = nullptr; // for Texture: can make sampler unchangeable (immutable) by specifying in layout
-    this->descriptorSetLayout->addBinding(vpLayoutBinding);
+    this->descriptorSetLayout->addBinding({
+        .binding = 0,                                        // Binding point in shader (designed by binding number in shader)
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // Type of descriptor (uniform, dynamic, image sampler, etc)
+        .descriptorCount = 1,                                // Number of descriptors for binding
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,            // Shade stage to bind to
+        .pImmutableSamplers = nullptr, // for Texture: can make sampler unchangeable (immutable) by specifying in layout
+    });
 
-    // Model Binding Info
-    // VkDescriptorSetLayoutBinding mLayoutBinding = {};
-    // mLayoutBinding.binding = 1;
-    // mLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    // mLayoutBinding.descriptorCount = 1;
-    // mLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    // mLayoutBinding.pImmutableSamplers = nullptr;
-    // this->descriptorSetLayout->addBinding(mLayoutBinding);
+    // // Model Binding Info
+    // this->descriptorSetLayout->addBinding({.binding = 1,
+    //                                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+    //                                        .descriptorCount = 1,
+    //                                        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+    //                                        .pImmutableSamplers = nullptr});
 
     this->descriptorSetLayout->create();
 
     // CREATE TEXTURE SAMPLER DESCRIPTOR SET LAYOUT
     this->samplerSetLayout = std::make_shared<ce::DescriptorSetLayout>(this->vwrapp->getLogical());
+
     // Texture binding info
-    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.binding = 0;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    this->samplerSetLayout->addBinding(samplerLayoutBinding);
+    this->samplerSetLayout->addBinding({.binding = 0,
+                                        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                        .descriptorCount = 1,
+                                        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                                        .pImmutableSamplers = nullptr});
+
     this->samplerSetLayout->create();
 }
 
@@ -330,18 +327,17 @@ void VulkanRenderer::createFramebuffers() {
         std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i].imageView,
                                                   this->depthBufferImageView}; // order important same as upper
 
-        VkFramebufferCreateInfo framebufferCreateInfo = {};
-        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.renderPass = this->rederer->getRenderPass(); // Render Pass layout the framebuffer will be used with
-        framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-        framebufferCreateInfo.pAttachments = attachments.data();               // List of attachments (1:1 with Render Pass)
-        framebufferCreateInfo.width = this->swc->getSwapchainExtent().width;   // Framebuffer width
-        framebufferCreateInfo.height = this->swc->getSwapchainExtent().height; // Framebuffer height
-        framebufferCreateInfo.layers = 1;                                      // Framebuffer layers
+        VkFramebufferCreateInfo framebufferCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .renderPass = this->rederer->getRenderPass(),                 // Render Pass layout the framebuffer will be used with
+            .attachmentCount = static_cast<uint32_t>(attachments.size()), //
+            .pAttachments = attachments.data(),                           // List of attachments (1:1 with Render Pass)
+            .width = this->swc->getSwapchainExtent().width,               // Framebuffer width
+            .height = this->swc->getSwapchainExtent().height,             // Framebuffer height
+            .layers = 1                                                   // Framebuffer layers
+        };
 
-        VkResult result = vkCreateFramebuffer(vwrapp->getLogical(), &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]);
-
-        if (result != VK_SUCCESS) {
+        if (vkCreateFramebuffer(vwrapp->getLogical(), &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("Faleid to create a frambuffer");
         }
     }
@@ -358,9 +354,7 @@ void VulkanRenderer::createCommandPool() {
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily; // Queue Family type that buffers from this command pool will use
 
     // Create a Graphics Queue Family Command Pool
-    VkResult result = vkCreateCommandPool(vwrapp->getLogical(), &poolInfo, nullptr, &this->graphicsCommandPool);
-
-    if (result != VK_SUCCESS) {
+    if (vkCreateCommandPool(vwrapp->getLogical(), &poolInfo, nullptr, &this->graphicsCommandPool) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create Commnad Pool");
     }
 }
@@ -381,9 +375,7 @@ void VulkanRenderer::createCommandBuffers() {
     cbAllocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
     // Allocate command buffers and place handles in array of buffers
-    VkResult result = vkAllocateCommandBuffers(vwrapp->getLogical(), &cbAllocInfo, this->commandBuffers.data());
-
-    if (result != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(vwrapp->getLogical(), &cbAllocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("Failed to Allocate Command buffers!");
     }
 }
@@ -395,13 +387,12 @@ void VulkanRenderer::createSynchronisation() {
     this->drawFences.resize(MAX_FRAME_DRAWS);
 
     // Semaphore creation information
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VkSemaphoreCreateInfo semaphoreCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
 
     // Fence creation information
-    VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    VkFenceCreateInfo fenceCreateInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
@@ -416,24 +407,24 @@ void VulkanRenderer::createSynchronisation() {
 
 void VulkanRenderer::createTextureSampler() {
     // Sampler create info
-    VkSamplerCreateInfo samplerCreateInfo = {};
-    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;                   // How torender when image is magnified on screen
-    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;                   // How to render when image is minifield on screen
-    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;  // How to handle texture wrap in U(x) direction
-    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;  // How to handle texture wrap in V(y) direction
-    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;  // How to handle texture wrap in W(z) direction
-    samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // Border beond texture (only works for border clamp)
-    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;             // Wheter coords should be normalized (between 0 and 1)
-    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;     // Mipmap interpolation mode
-    samplerCreateInfo.mipLodBias = 0.0F;                              // Level of detail of bias for mip level
-    samplerCreateInfo.minLod = 0.0F;                                  // Minimum Level Detail ro pick mip level
-    samplerCreateInfo.maxLod = 0.0F;                                  // Maximum Level Detail ro pick mip level
-    samplerCreateInfo.anisotropyEnable = VK_TRUE;                     // Enable anisotropy
-    samplerCreateInfo.maxAnisotropy = 16;                             // Anisotropy sample level
+    const VkSamplerCreateInfo samplerCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = VK_FILTER_LINEAR,                   // How torender when image is magnified on screen
+        .minFilter = VK_FILTER_LINEAR,                   // How to render when image is minifield on screen
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,     // Mipmap interpolation mode
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in U(x) direction
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in V(y) direction
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in W(z) direction
+        .mipLodBias = 0.0F,                              // Level of detail of bias for mip level
+        .anisotropyEnable = VK_TRUE,                     // Enable anisotropy
+        .maxAnisotropy = 16,                             // Anisotropy sample level
+        .minLod = 0.0F,                                  // Minimum Level Detail ro pick mip level
+        .maxLod = 0.0F,                                  // Maximum Level Detail ro pick mip level
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // Border beond texture (only works for border clamp)
+        .unnormalizedCoordinates = VK_FALSE,             // Wheter coords should be normalized (between 0 and 1)
+    };
 
-    VkResult result = vkCreateSampler(vwrapp->getLogical(), &samplerCreateInfo, nullptr, &this->textureSampler);
-    if (result != VK_SUCCESS) {
+    if (vkCreateSampler(vwrapp->getLogical(), &samplerCreateInfo, nullptr, &this->textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a Sampler");
     }
 }
@@ -503,37 +494,41 @@ void VulkanRenderer::createDescriptorSets() {
 
         // VIEW PROJECTION DESCRIPTOR
         // Buffer info and data offset info
-        VkDescriptorBufferInfo vpBufferInfo = {};
-        vpBufferInfo.buffer = this->vpUniformBuffer[i]; // Buffer get data from
-        vpBufferInfo.offset = 0;                        // Position of star of data
-        vpBufferInfo.range = sizeof(UboViewProjection); // Size of data
+        VkDescriptorBufferInfo vpBufferInfo{
+            .buffer = this->vpUniformBuffer[i], // Buffer get data from
+            .offset = 0,                        // Position of star of data
+            .range = sizeof(UboViewProjection)  // Size of data
+        };
 
         // Data about connection between binding and buffer
-        VkWriteDescriptorSet vpSetWrite = {};
-        vpSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        vpSetWrite.dstSet = this->descriptorSets->get()[i];            // Descriptor Set to update
-        vpSetWrite.dstBinding = 0;                                     // Binding to update (matches with binding on layout/shader)
-        vpSetWrite.dstArrayElement = 0;                                // index in array to update
-        vpSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; // type of Descriptor
-        vpSetWrite.descriptorCount = 1;                                // Amount to update
-        vpSetWrite.pBufferInfo = &vpBufferInfo;                        // Information about buffer data to bind
+        VkWriteDescriptorSet vpSetWrite{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = this->descriptorSets->get()[i],            // Descriptor Set to update
+            .dstBinding = 0,                                     // Binding to update (matches with binding on layout/shader)
+            .dstArrayElement = 0,                                // index in array to update
+            .descriptorCount = 1,                                // type of Descriptor
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // Amount to update
+            .pBufferInfo = &vpBufferInfo                         // Information about buffer data to bind
+        };
 
-        // // MODEL DESCRIPTOR
-        // // Model buffer binding info
-        // VkDescriptorBufferInfo modelBufferInfo = {};
-        // modelBufferInfo.buffer = this->modelDUniformBuffer[i];
-        // modelBufferInfo.offset = 0;
-        // modelBufferInfo.range = this->modelUniformAlignment;
+        // MODEL DESCRIPTOR
+        // Model buffer binding info
+        // VkDescriptorBufferInfo modelBufferInfo {
+        //     .buffer = this->modelDUniformBuffer[i],
+        //     .offset = 0,
+        //     .range = this->modelUniformAlignment
+        // };
 
         // // Data about connection between binding and buffer
-        // VkWriteDescriptorSet modelSetWrite = {};
-        // modelSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // modelSetWrite.dstSet = this->descriptorSets[i];
-        // modelSetWrite.dstBinding = 1;
-        // modelSetWrite.dstArrayElement = 0;
-        // modelSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        // modelSetWrite.descriptorCount = 1;
-        // modelSetWrite.pBufferInfo = &modelBufferInfo;
+        // VkWriteDescriptorSet modelSetWrite {
+        //     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        //     .dstSet = this->descriptorSets[i],
+        //     .dstBinding = 1,
+        //     .dstArrayElement = 0,
+        //     .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+        //     .descriptorCount = 1,
+        //     .pBufferInfo = &modelBufferInfo
+        // };
 
         // List of descriptor set writes
         // std::vector<VkWriteDescriptorSet> setWrites = {vpSetWrite, modelSetWrite};
@@ -571,25 +566,23 @@ void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
 void VulkanRenderer::recordCommands(uint32_t currentImage) {
     // Information abaout how to begin each command buffer
 
-    VkCommandBufferBeginInfo bufferBeginInfo = {};
-    bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    bufferBeginInfo.flags =
-        VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT; // Buffer can be resubmitted when it has alredy been submited and is awaiting
-    // execution
+    VkCommandBufferBeginInfo bufferBeginInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT // Buffer can be resubmitted when it has alredy been submited and is awaiting
+                                                              // execution
+    };
 
     // Information about how to begin a render pass (only need for graphical application)
-    VkRenderPassBeginInfo renderPassBeginInfo = {};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = this->rederer->getRenderPass();
-    ;                                                                        // Render pass to begin
-    renderPassBeginInfo.renderArea.offset = {.x = 0, .y = 0};                // Start point of render pass in pixels
-    renderPassBeginInfo.renderArea.extent = this->swc->getSwapchainExtent(); // Size of region to run render pass on (starting at offset)
-
     std::array<VkClearValue, 2> clearValues = {};
     clearValues[0].color = {{0.6F, 0.65F, 0.4F, 1.0F}}; // NOLINT(readability-magic-numbers)
     clearValues[1].depthStencil.depth = 1.0F;
 
-    renderPassBeginInfo.pClearValues = clearValues.data(); // List of clear values
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = this->rederer->getRenderPass();         // Render pass to begin
+    renderPassBeginInfo.renderArea.offset = {.x = 0, .y = 0};                // Start point of render pass in pixels
+    renderPassBeginInfo.renderArea.extent = this->swc->getSwapchainExtent(); // Size of region to run render pass on (starting at offset)
+    renderPassBeginInfo.pClearValues = clearValues.data();                   // List of clear values
     renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 
     // for (size_t i = 0; i < this->commandBuffers.size(); i++) {
@@ -597,8 +590,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     renderPassBeginInfo.framebuffer = this->swapChainFrameBuffers[currentImage];
 
     // Start recording command to command buffer!
-    VkResult result = vkBeginCommandBuffer(this->commandBuffers[currentImage], &bufferBeginInfo);
-    if (result != VK_SUCCESS) {
+    if (vkBeginCommandBuffer(this->commandBuffers[currentImage], &bufferBeginInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to start recording a Command Buffer!");
     }
 
@@ -648,8 +640,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     // End Render Pass
     vkCmdEndRenderPass(this->commandBuffers[currentImage]);
 
-    result = vkEndCommandBuffer(this->commandBuffers[currentImage]);
-    if (result != VK_SUCCESS) {
+    if (vkEndCommandBuffer(this->commandBuffers[currentImage]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to stop recording a Command Buffer!");
     }
     //}
@@ -743,20 +734,20 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     auto [index, size] = this->samplerDescriptorSets->allocate(this->samplerDescriptorPool->get(), layouts);
 
     // Texture Image info
-    VkDescriptorImageInfo imageInfo = {};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // Image layout when in use
-    imageInfo.imageView = textureImage;                               // Image to bind to set
-    imageInfo.sampler = this->textureSampler;                         // Sampler to use for set
+    VkDescriptorImageInfo imageInfo{
+        .sampler = this->textureSampler,                        // Image layout when in use
+        .imageView = textureImage,                              // Sampler to use for set
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // Image to bind to set
+    };
 
     // Descriptor Write info
-    VkWriteDescriptorSet descriptorWrite = {};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = this->samplerDescriptorSets->get()[index];
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pImageInfo = &imageInfo;
+    VkWriteDescriptorSet descriptorWrite{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                         .dstSet = this->samplerDescriptorSets->get()[index],
+                                         .dstBinding = 0,
+                                         .dstArrayElement = 0,
+                                         .descriptorCount = 1,
+                                         .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                         .pImageInfo = &imageInfo};
 
     // Update new descriptor set
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);

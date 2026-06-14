@@ -8,12 +8,12 @@ namespace ce {
 
     void Pipeline::create(std::shared_ptr<ShaderModule> shaderModule, VkRenderPass renderPass) { // NOLINT
         // PipelineLayout
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
-        pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
-        pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(this->pushConstantRanges.size());
-        pipelineLayoutCreateInfo.pPushConstantRanges = this->pushConstantRanges.data();
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+                                                            .pSetLayouts = descriptorSetLayouts.data(),
+                                                            .pushConstantRangeCount =
+                                                                static_cast<uint32_t>(this->pushConstantRanges.size()),
+                                                            .pPushConstantRanges = this->pushConstantRanges.data()};
 
         // Create PipelineLayout
         VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &this->pipelineLayout);
