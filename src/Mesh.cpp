@@ -35,15 +35,13 @@ VkBuffer Mesh::getVertexBuffer() { return this->vertexBuffer->getBuffer(); }
 
 int Mesh::getIndexCount() const { return this->indexCount; }
 
-VkBuffer Mesh::getIndexBuffer() { return this->indexBuffer; }
+VkBuffer Mesh::getIndexBuffer() { return this->indexBuffer->getBuffer(); }
 
 int Mesh::getTexId() const { return this->texId; }
 
 void Mesh::destroyBuffers() {
-    //
     this->vertexBuffer.reset();
-    vkDestroyBuffer(this->device, this->indexBuffer, nullptr);
-    vkFreeMemory(this->device, this->indexBufferMemory, nullptr);
+    this->indexBuffer.reset();
 }
 
 void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices) {
@@ -75,27 +73,20 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
     VkDeviceSize bufferSize = sizeof(uint32_t) * indices->size();
 
     // Temporary buffer to "stage" index data before transfering to GPU
-    VkBuffer staginBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
+    ce::BufferObject stagingBuffer(physicalDevice, device);
+    stagingBuffer.create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     // MAP MEMORY TO INDEX BUFFER
-    void* data;                                                              // 1. Create pointer to point in normal memory
-    vkMapMemory(this->device, stagingBufferMemory, 0, bufferSize, 0, &data); // 2. "Map" the index buffer memory to that point
-    memcpy(data, indices->data(), (size_t)bufferSize);                       // 3. Copy memory from indices vector to the point
-    vkUnmapMemory(this->device, stagingBufferMemory);                        // 4. Unmap the vertex buffer memory
+    stagingBuffer.mapper(indices->data());
 
     // Create buffer for index data on GPU aceess only area
-    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->indexBuffer, &indexBufferMemory);
+    this->indexBuffer = std::make_shared<ce::BufferObject>(physicalDevice, device);
+    this->indexBuffer->create(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Copy from staging buffer to GPU access buffer
-    copyBuffer(this->device, transferQueue, transferCommandPool, staginBuffer, this->indexBuffer, bufferSize);
-
-    // Destroy + release Staging Buffer resources
-    vkDestroyBuffer(this->device, staginBuffer, nullptr);
-    vkFreeMemory(this->device, stagingBufferMemory, nullptr);
+    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->indexBuffer->getBuffer(), bufferSize);
 }
 
 void Mesh::setModel(glm::mat4 newModel) { this->model.model = newModel; }

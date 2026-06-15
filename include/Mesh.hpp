@@ -43,8 +43,7 @@ class Mesh {
     std::shared_ptr<ce::BufferObject> vertexBuffer;
 
     int indexCount;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    std::shared_ptr<ce::BufferObject> indexBuffer;
 
     VkPhysicalDevice physicalDevice;
     VkDevice device;
