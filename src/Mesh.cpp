@@ -1,4 +1,5 @@
 #include "Mesh.hpp"
+#include "BufferObject.hpp"
 #include "Ultilities.hpp"
 #include "VWrappUtils.hpp"
 #include <cstring>
@@ -52,18 +53,12 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
     VkDeviceSize bufferSize = sizeof(Vertex) * vertices->size();
 
     // Temporary buffer to "stage" vertex data before transfering to GPU
-    VkBuffer staginBuffer;
-    VkDeviceMemory stagingBufferMemory;
+    ce::BufferObject stagingBuffer(physicalDevice, device);
 
-    // Create Staging Buffer and Allocate Memory to it
-    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staginBuffer, &stagingBufferMemory);
+    stagingBuffer.create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    // MAP MEMORY TO VERTEX BUFFER
-    void* data;                                                              // 1. Create pointer to point in normal memory
-    vkMapMemory(this->device, stagingBufferMemory, 0, bufferSize, 0, &data); // 2. "Map" the vertex buffer memory to that point
-    memcpy(data, vertices->data(), (size_t)bufferSize);                      // 3. Copy memory from vertices vector to the point
-    vkUnmapMemory(this->device, stagingBufferMemory);                        // 4. Unmap the vertex buffer memory
+    stagingBuffer.mapper(vertices->data());
 
     // Create buffer with TRANSFER_DST_BIT to mark as recipient of transfer data (also VERTEX_BUFFER)
     // Buffer memory is to be DEVICE_LOCAL_BIT meaning memory is on the GPU and only accessible by it and not CPU(host)
@@ -71,11 +66,7 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->vertexBuffer, &this->vertexBufferMemory);
 
     // Copy staging buffer to vertex buffer on GPU
-    copyBuffer(this->device, transferQueue, transferCommandPool, staginBuffer, this->vertexBuffer, bufferSize);
-
-    // Clean up staging buffer parts
-    vkDestroyBuffer(this->device, staginBuffer, nullptr);
-    vkFreeMemory(this->device, stagingBufferMemory, nullptr);
+    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->vertexBuffer, bufferSize);
 }
 
 void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices) {

@@ -279,7 +279,7 @@ namespace ce {
 
             // Index of memory type must match corresponding bit in allowedTypes and desired property bit flag are part of memory type's
             // property flags
-            if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { // NOLINT
                 // this memory type is valid, so return its index
                 return i;
             }
