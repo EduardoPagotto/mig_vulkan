@@ -1,4 +1,5 @@
 #include "VulkanRenderer.hpp"
+#include "BufferObject.hpp"
 #include "DescriptorSetLayout.hpp"
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
@@ -682,17 +683,12 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     stbi_uc* imageData = VulkanRenderer::loadTextureFile(filename, &width, &height, &imageSize);
 
     // Create staging buffer to hold load data, redy to copy device
-    VkBuffer imageStagingBuffer;
-    VkDeviceMemory imageStagingBufferMemory;
-    ce::createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &imageStagingBuffer,
-                     &imageStagingBufferMemory);
+    ce::BufferObject imageStagingBuffer(vwrapp->getPhysical(), vwrapp->getLogical());
+    imageStagingBuffer.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     // copy image data to staging buffer
-    void* data;
-    vkMapMemory(vwrapp->getLogical(), imageStagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, imageData, static_cast<size_t>(imageSize));
-    vkUnmapMemory(vwrapp->getLogical(), imageStagingBufferMemory);
+    imageStagingBuffer.mapper(imageData);
 
     // Free original image data
     stbi_image_free(imageData);
@@ -710,7 +706,8 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy image data
-    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer, texImage, width, height);
+    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer.getBuffer(), texImage, width,
+                    height);
 
     // Transition image to be shader readable for shader
     transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImage,
@@ -719,10 +716,6 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     // add texture data to vector for reference
     this->textureImages.push_back(texImage);
     this->textureImageMemory.push_back(texImageMemory);
-
-    // Destroy staging buffers
-    vkDestroyBuffer(vwrapp->getLogical(), imageStagingBuffer, nullptr);
-    vkFreeMemory(vwrapp->getLogical(), imageStagingBufferMemory, nullptr);
 
     // Return index of new texture image
     return this->textureImages.size() - 1;
