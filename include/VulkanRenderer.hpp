@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BufferObject.hpp"
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
 #include "DescriptorSetLayout.hpp"
@@ -68,8 +69,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::DescriptorSet> descriptorSets;
     std::shared_ptr<ce::DescriptorSet> samplerDescriptorSets;
 
-    std::vector<VkBuffer> vpUniformBuffer;
-    std::vector<VkDeviceMemory> vpUniformBufferMemory;
+    std::vector<std::shared_ptr<ce::BufferObject>> vpUniformBuffer;
 
     // std::vector<VkBuffer> modelDUniformBuffer;
     // std::vector<VkDeviceMemory> modelDUniformBufferMemory;

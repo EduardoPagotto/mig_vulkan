@@ -93,8 +93,7 @@ VulkanRenderer::~VulkanRenderer() {
     this->descriptorSetLayout.reset();
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
         // destroy uniform
-        vkDestroyBuffer(vwrapp->getLogical(), this->vpUniformBuffer[i], nullptr);
-        vkFreeMemory(vwrapp->getLogical(), this->vpUniformBufferMemory[i], nullptr);
+        this->vpUniformBuffer[i].reset();
         // // destroy dynamic uniform
         // vkDestroyBuffer(vwrapp->getLogical(), this->modelDUniformBuffer[i], nullptr);
         // vkFreeMemory(vwrapp->getLogical(), this->modelDUniformBufferMemory[i], nullptr);
@@ -440,16 +439,15 @@ void VulkanRenderer::createUniformBuffers() {
 
     // One uniform buffer for each image (and by extention, command buffer)
     this->vpUniformBuffer.resize(this->swc->getSwapchainImages().size());
-    this->vpUniformBufferMemory.resize(this->swc->getSwapchainImages().size());
 
     // this->modelDUniformBuffer.resize(this->swc->getSwapchainImages().size());
     // this->modelDUniformBufferMemory.resize(this->swc->getSwapchainImages().size());
 
     // Create Unifor buffers
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
-        ce::createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->vpUniformBuffer[i],
-                         &this->vpUniformBufferMemory[i]);
+        this->vpUniformBuffer[i] = std::make_shared<ce::BufferObject>(vwrapp->getPhysical(), vwrapp->getLogical());
+        this->vpUniformBuffer[i]->create(vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         // createBuffer(vwrapp->getPhysical(), vwrapp->getLogical(), modelBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &this->modelDUniformBuffer[i],
@@ -496,9 +494,9 @@ void VulkanRenderer::createDescriptorSets() {
         // VIEW PROJECTION DESCRIPTOR
         // Buffer info and data offset info
         VkDescriptorBufferInfo vpBufferInfo{
-            .buffer = this->vpUniformBuffer[i], // Buffer get data from
-            .offset = 0,                        // Position of star of data
-            .range = sizeof(UboViewProjection)  // Size of data
+            .buffer = this->vpUniformBuffer[i]->getBuffer(), // Buffer get data from
+            .offset = 0,                                     // Position of star of data
+            .range = sizeof(UboViewProjection)               // Size of data
         };
 
         // Data about connection between binding and buffer
@@ -543,10 +541,7 @@ void VulkanRenderer::createDescriptorSets() {
 void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
 
     // Copy VP data
-    void* data;
-    vkMapMemory(vwrapp->getLogical(), this->vpUniformBufferMemory[imageIndex], 0, sizeof(UboViewProjection), 0, &data);
-    memcpy(data, &this->uboViewProjection, sizeof(UboViewProjection));
-    vkUnmapMemory(vwrapp->getLogical(), this->vpUniformBufferMemory[imageIndex]);
+    this->vpUniformBuffer[imageIndex]->mapper(&this->uboViewProjection);
 
     // // Copy Model data
     // for (size_t i = 0; i < this->meshList.size(); i++) {
