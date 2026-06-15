@@ -4,6 +4,7 @@
 #include "VWrappUtils.hpp"
 #include <cstring>
 #include <glm/ext/matrix_float4x4.hpp>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 Mesh::Mesh() {
@@ -30,7 +31,7 @@ Mesh::~Mesh() {
 
 int Mesh::getVertexCount() const { return this->vertexCount; }
 
-VkBuffer Mesh::getVertexBuffer() { return this->vertexBuffer; }
+VkBuffer Mesh::getVertexBuffer() { return this->vertexBuffer->getBuffer(); }
 
 int Mesh::getIndexCount() const { return this->indexCount; }
 
@@ -40,9 +41,7 @@ int Mesh::getTexId() const { return this->texId; }
 
 void Mesh::destroyBuffers() {
     //
-    vkDestroyBuffer(this->device, this->vertexBuffer, nullptr);
-    vkFreeMemory(this->device, this->vertexBufferMemory, nullptr);
-    //
+    this->vertexBuffer.reset();
     vkDestroyBuffer(this->device, this->indexBuffer, nullptr);
     vkFreeMemory(this->device, this->indexBufferMemory, nullptr);
 }
@@ -60,13 +59,14 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
 
     stagingBuffer.mapper(vertices->data());
 
+    this->vertexBuffer = std::make_shared<ce::BufferObject>(physicalDevice, device);
     // Create buffer with TRANSFER_DST_BIT to mark as recipient of transfer data (also VERTEX_BUFFER)
     // Buffer memory is to be DEVICE_LOCAL_BIT meaning memory is on the GPU and only accessible by it and not CPU(host)
-    ce::createBuffer(this->physicalDevice, this->device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->vertexBuffer, &this->vertexBufferMemory);
+    this->vertexBuffer->create(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Copy staging buffer to vertex buffer on GPU
-    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->vertexBuffer, bufferSize);
+    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->vertexBuffer->getBuffer(), bufferSize);
 }
 
 void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices) {

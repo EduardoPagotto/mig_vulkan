@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BufferObject.hpp"
+#include <memory>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "Ultilities.hpp"
@@ -13,8 +15,8 @@ struct Model {
 class Mesh {
   public:
     Mesh();
-    Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices,
-         std::vector<uint32_t>* indices, int newTexId);
+    Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
+         std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId);
     ~Mesh();
 
     void setModel(glm::mat4 newModel);
@@ -38,8 +40,7 @@ class Mesh {
     int texId;
 
     int vertexCount;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+    std::shared_ptr<ce::BufferObject> vertexBuffer;
 
     int indexCount;
     VkBuffer indexBuffer;
