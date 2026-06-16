@@ -1,6 +1,7 @@
 #include "VulkanRenderer.hpp"
 #include "BufferObject.hpp"
 #include "DescriptorSetLayout.hpp"
+#include "ImageObject.hpp"
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
 #include "Renderer.hpp"
@@ -79,10 +80,8 @@ VulkanRenderer::~VulkanRenderer() {
 
     vkDestroySampler(vwrapp->getLogical(), this->textureSampler, nullptr);
 
-    for (size_t i = 0; i < this->textureImages.size(); i++) {
-        vkDestroyImageView(vwrapp->getLogical(), this->textureImageViews[i], nullptr); // FIXME: ????
-        vkDestroyImage(vwrapp->getLogical(), this->textureImages[i], nullptr);
-        vkFreeMemory(vwrapp->getLogical(), this->textureImageMemory[i], nullptr);
+    for (size_t i = 0; i < this->textureImageObjects.size(); i++) {
+        this->textureImageObjects[i].reset();
     }
 
     this->depthBufferObject.reset();
@@ -648,18 +647,12 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 // }
 
 int VulkanRenderer::createTexture(const std::string& filename) {
-    //
-
     // Create Texture image and get its location in array
     int textureImageLoc = this->createTextureImage(filename);
+    this->textureImageObjects[textureImageLoc]->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
-    // Create image view and add list
-    VkImageView imageView = ce::CreateImageView(this->vwrapp->getLogical(), this->textureImages[textureImageLoc], VK_FORMAT_R8G8B8A8_UNORM,
-                                                VK_IMAGE_ASPECT_COLOR_BIT);
-    textureImageViews.push_back(imageView);
-
-    // TCreate Texture Descriptor
-    int descritorLoc = this->createTextureDescriptor(imageView);
+    // Create Texture Descriptor
+    int descritorLoc = this->createTextureDescriptor(this->textureImageObjects[textureImageLoc]->getImageView());
 
     // Return location of set with texture
     return descritorLoc;
@@ -685,31 +678,29 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
     stbi_image_free(imageData);
 
     // create image to hold final texture
-    VkImage texImage;
-    VkDeviceMemory texImageMemory;
-    texImage = ce::createImage(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), width, height, VK_FORMAT_R8G8B8A8_UNORM,
-                               VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &texImageMemory);
+    std::shared_ptr<ce::ImageObject> texImageObj =
+        std::make_shared<ce::ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+
+    texImageObj->createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImageObj->getImage(),
+                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy image data
-    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer.getBuffer(), texImage, width,
-                    height);
+    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer.getBuffer(),
+                    texImageObj->getImage(), width, height);
 
     // Transition image to be shader readable for shader
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImage,
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImageObj->getImage(),
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     // add texture data to vector for reference
-    this->textureImages.push_back(texImage);
-    this->textureImageMemory.push_back(texImageMemory);
+    this->textureImageObjects.push_back(texImageObj);
 
-    // Return index of new texture image
-    return this->textureImages.size() - 1;
+    return this->textureImageObjects.size() - 1;
 }
 
 int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {

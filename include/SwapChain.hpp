@@ -6,7 +6,7 @@
 
 namespace ce {
 
-    struct SwapchainImage {
+    struct SwapchainImage { // FIXME: transformar em ImageObject!!!
         VkImage image;
         VkImageView imageView;
     };

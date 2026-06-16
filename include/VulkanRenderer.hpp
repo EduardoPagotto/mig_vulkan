@@ -78,9 +78,7 @@ class VulkanRenderer {
     // UboModel* modelTransferSpace;
 
     // - Assets
-    std::vector<VkImage> textureImages;
-    std::vector<VkDeviceMemory> textureImageMemory;
-    std::vector<VkImageView> textureImageViews;
+    std::vector<std::shared_ptr<ce::ImageObject>> textureImageObjects;
 
     // - Pipeline
     std::shared_ptr<ce::Pipeline> pipeline;
