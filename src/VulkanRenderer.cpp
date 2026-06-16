@@ -85,10 +85,7 @@ VulkanRenderer::~VulkanRenderer() {
         vkFreeMemory(vwrapp->getLogical(), this->textureImageMemory[i], nullptr);
     }
 
-    vkDestroyImageView(vwrapp->getLogical(), this->depthBufferImageView, nullptr);
-    vkDestroyImage(vwrapp->getLogical(), this->depthBufferImage, nullptr);
-    vkFreeMemory(vwrapp->getLogical(), this->depthBufferImageMemory, nullptr);
-
+    this->depthBufferObject.reset();
     this->descriptorPool.reset();
     this->descriptorSetLayout.reset();
     for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
@@ -307,14 +304,13 @@ void VulkanRenderer::createDepthBufferImage() {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                                // Depth
 
     // Create Depth Buffer Image
-    this->depthBufferImage =
-        ce::createImage(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), this->swc->getSwapchainExtent().width,
-                        this->swc->getSwapchainExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &this->depthBufferImageMemory);
+    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+    this->depthBufferObject->createImage(this->swc->getSwapchainExtent().width, this->swc->getSwapchainExtent().height, depthFormat,
+                                         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Create Depth Buffer Image View
-    this->depthBufferImageView =
-        ce::CreateImageView(this->vwrapp->getLogical(), this->depthBufferImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    this->depthBufferObject->CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanRenderer::createFramebuffers() {
@@ -325,7 +321,7 @@ void VulkanRenderer::createFramebuffers() {
     for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
         std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i].imageView,
-                                                  this->depthBufferImageView}; // order important same as upper
+                                                  this->depthBufferObject->getImageView()}; // order important same as upper
 
         VkFramebufferCreateInfo framebufferCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,

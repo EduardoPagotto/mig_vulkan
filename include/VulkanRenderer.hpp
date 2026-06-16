@@ -4,6 +4,7 @@
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
 #include "DescriptorSetLayout.hpp"
+#include "ImageObject.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
@@ -52,9 +53,7 @@ class VulkanRenderer {
     std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkImage depthBufferImage;
-    VkDeviceMemory depthBufferImageMemory;
-    VkImageView depthBufferImageView;
+    std::shared_ptr<ce::ImageObject> depthBufferObject;
 
     VkSampler textureSampler;
 
