@@ -58,9 +58,18 @@ namespace ce {
 
             // Connect memory to image
             vkBindImageMemory(this->device, this->image, this->imageMemory, 0);
+
+            this->isImported = false;
         }
 
-        void CreateImageView(VkImageAspectFlags aspectFlags) {
+        void createImageViewImportedImage(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+            this->image = image;
+            this->format = format;
+            this->isImported = true;
+            this->createImageView(aspectFlags);
+        }
+
+        void createImageView(VkImageAspectFlags aspectFlags) {
             //
             VkImageViewCreateInfo viewCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  //
@@ -101,7 +110,7 @@ namespace ce {
                 this->imageView = VK_NULL_HANDLE;
             }
 
-            if (this->image != VK_NULL_HANDLE) {
+            if ((this->image != VK_NULL_HANDLE) && (!this->isImported)) {
                 vkDestroyImage(this->device, this->image, nullptr);
                 this->image = {VK_NULL_HANDLE};
             }
@@ -114,6 +123,7 @@ namespace ce {
             device = VK_NULL_HANDLE;
         }
 
+        bool isImported{false};
         VkFormat format;
         VkPhysicalDevice physical{VK_NULL_HANDLE};
         VkDevice device{VK_NULL_HANDLE};

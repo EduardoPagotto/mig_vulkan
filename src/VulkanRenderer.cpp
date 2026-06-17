@@ -309,7 +309,7 @@ void VulkanRenderer::createDepthBufferImage() {
                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Create Depth Buffer Image View
-    this->depthBufferObject->CreateImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
+    this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanRenderer::createFramebuffers() {
@@ -319,7 +319,7 @@ void VulkanRenderer::createFramebuffers() {
     // Create a framebuffer for eache swap chain image
     for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
-        std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i].imageView,
+        std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i]->getImageView(),
                                                   this->depthBufferObject->getImageView()}; // order important same as upper
 
         VkFramebufferCreateInfo framebufferCreateInfo = {
@@ -649,7 +649,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 int VulkanRenderer::createTexture(const std::string& filename) {
     // Create Texture image and get its location in array
     int textureImageLoc = this->createTextureImage(filename);
-    this->textureImageObjects[textureImageLoc]->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+    this->textureImageObjects[textureImageLoc]->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
     // Create Texture Descriptor
     int descritorLoc = this->createTextureDescriptor(this->textureImageObjects[textureImageLoc]->getImageView());

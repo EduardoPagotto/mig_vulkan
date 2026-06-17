@@ -1,13 +1,15 @@
 #include "SwapChain.hpp"
+#include "ImageObject.hpp"
 #include "VWrappUtils.hpp"
+#include <array>
+#include <memory>
 
 namespace ce {
 
     SwapChain::SwapChain(std::shared_ptr<VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails =
-            GetSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface()); // FIXME: alterar assinatura do metodo
+        SwapChainDetails swapchainDetails = GetSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface());
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = ChooseBestSurfaceFormat(swapchainDetails.formats);
@@ -24,48 +26,48 @@ namespace ce {
             imageCount = swapchainDetails.surfaceCapabilities.maxImageCount;
         }
 
-        // Create information for swap chain
-        VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
-        swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreateInfo.surface = vwrapp->getSurface();                   // Swapchain surface
-        swapchainCreateInfo.imageFormat = surrfaceFormat.format;              // Swapchain format
-        swapchainCreateInfo.imageColorSpace = surrfaceFormat.colorSpace;      // Swapchain color space
-        swapchainCreateInfo.presentMode = presentMode;                        // Swapchain presentation mode
-        swapchainCreateInfo.imageExtent = extent;                             // Swapchain image extents
-        swapchainCreateInfo.minImageCount = imageCount;                       // Minimum image in swapchain
-        swapchainCreateInfo.imageArrayLayers = 1;                             // Number of layers for each image in chain
-        swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // What attachement image will be used as
-        swapchainCreateInfo.preTransform =
-            swapchainDetails.surfaceCapabilities.currentTransform; // Transform to perform on swap chain images
-        swapchainCreateInfo.compositeAlpha =
-            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // How to handle blending images with external graphics(e.g. other windows)
-        swapchainCreateInfo.clipped = VK_TRUE; // Whether to clip parts of image not in view (e.g. behind another window, off screen, etc)
-
         // Get Queue Family indices
         ce::QueueFamilyIndices indices = GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
+        // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
+
+        // indices.graphicsFamily == indices.presentationFamily
+        VkSharingMode imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        uint32_t queueFamilyIndexCount = 0;
+        const uint32_t* pQueueFamilyIndices = nullptr;
 
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
         if (indices.graphicsFamily != indices.presentationFamily) {
-
             // Queue to share between
-            uint32_t queueFamilyIndices[] = {(uint32_t)indices.graphicsFamily, (uint32_t)indices.presentationFamily};
+            std::array<uint32_t, 2> queueFamilyIndices = {static_cast<uint32_t>(indices.graphicsFamily),
+                                                          static_cast<uint32_t>(indices.presentationFamily)};
 
-            swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // Image share handling
-            swapchainCreateInfo.queueFamilyIndexCount = 2;                     // Number of queues to share images between
-            swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;      // Array of queues to share between
-        } else {
-            swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            swapchainCreateInfo.queueFamilyIndexCount = 0;
-            swapchainCreateInfo.pQueueFamilyIndices = nullptr;
+            imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+            pQueueFamilyIndices = queueFamilyIndices.data();
         }
 
-        // If old swap chain been destroyed and this one replaces it, then link old one to quickly hand over
-        // responsabilities
-        swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+        // Create information for swap chain
+        VkSwapchainCreateInfoKHR swapchainCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .surface = vwrapp->getSurface(),                                       // Swapchain surface
+            .minImageCount = imageCount,                                           // Minimum image in swapchain
+            .imageFormat = surrfaceFormat.format,                                  // Swapchain format
+            .imageColorSpace = surrfaceFormat.colorSpace,                          // Swapchain color space
+            .imageExtent = extent,                                                 // Swapchain image extents
+            .imageArrayLayers = 1,                                                 // Number of layers for each image in chain
+            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                     // What attachement image will be used as
+            .imageSharingMode = imageSharingMode,                                  // Image share handling
+            .queueFamilyIndexCount = queueFamilyIndexCount,                        // Number of queues to share images between
+            .pQueueFamilyIndices = pQueueFamilyIndices,                            // Array of queues to share between
+            .preTransform = swapchainDetails.surfaceCapabilities.currentTransform, // Transform to perform on swap chain images
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, // How to handle blending images with external graphics(e.g. other windows)
+            .presentMode = presentMode,                          // Swapchain presentation mode
+            .clipped = VK_TRUE,              // Whether to clip parts of image not in view (e.g. behind another window, off screen, etc)
+            .oldSwapchain = VK_NULL_HANDLE}; //  If old swap chain been destroyed and this one replaces it, then link old one to quickly
+                                             //  hand over  responsabilities
 
         // Create Swapchain
-        VkResult result = vkCreateSwapchainKHR(vwrapp->getLogical(), &swapchainCreateInfo, nullptr, &this->swapchain);
-        if (result != VK_SUCCESS) {
+        if (vkCreateSwapchainKHR(vwrapp->getLogical(), &swapchainCreateInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a Swapchain");
         }
 
@@ -81,20 +83,17 @@ namespace ce {
         vkGetSwapchainImagesKHR(vwrapp->getLogical(), this->swapchain, &swapChainImageCount, images.data());
 
         for (VkImage image : images) {
-            // Store image handle
-            SwapchainImage swapChainImage = {};
-            swapChainImage.image = image;
-            swapChainImage.imageView = CreateImageView(vwrapp->getLogical(), image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-            // Add to swapchain image list
-            this->swapchainImages.push_back(swapChainImage);
+            auto imgObj = std::make_shared<ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+            imgObj->createImageViewImportedImage(image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT); // CreateImageView
+            this->swapchainImages.push_back(imgObj);
         }
     }
 
     SwapChain::~SwapChain() {
 
-        for (auto image : this->swapchainImages) {
-            vkDestroyImageView(vwrapp->getLogical(), image.imageView, nullptr);
+        for (auto& image : this->swapchainImages) {
+            image.reset();
         }
 
         vkDestroySwapchainKHR(vwrapp->getLogical(), this->swapchain, nullptr);
