@@ -52,7 +52,6 @@ namespace ce_new {
         VkDevice logicalDevice{VK_NULL_HANDLE};
         VkQueue graphicsQueue{VK_NULL_HANDLE};
         VkQueue presentationQueue{VK_NULL_HANDLE};
-
         bool validationEnabled{false};
 
         inline static std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -74,11 +73,23 @@ namespace ce_new {
 
         static VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
                                                      const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
+        static void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback,
+                                                  const VkAllocationCallbacks* pAllocator);
+
         static bool CheckValidationLayerSupport();
         static bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtentions);
         static bool CheckDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
         static QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
         static bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
         static SwapChainDetails GetSwapChainDetails(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+        static VkFormat ChooseSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& formats, VkImageTiling tilling,
+                                              VkFormatFeatureFlags featureFlags);
+
+        // -- Swapchain
+
+        static uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties);
+        static VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+        static VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     };
 } // namespace ce_new

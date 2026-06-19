@@ -330,6 +330,17 @@ namespace ce_new {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
+    void Hardware::DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback,
+                                                 const VkAllocationCallbacks* pAllocator) {
+        // get function pointer to requested function, then cast to function pointer for vkDestroyDebugReportCallbackEXT
+        auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+
+        // If function found, execute
+        if (func != nullptr) {
+            func(instance, callback, pAllocator);
+        }
+    }
+
     VKAPI_ATTR VkBool32 VKAPI_CALL Hardware::DebugCallback(VkDebugReportFlagsEXT flags,        // Type of error
                                                            VkDebugReportObjectTypeEXT objType, // Type of object causing error
                                                            uint64_t obj,                       // ID of object
@@ -477,6 +488,83 @@ namespace ce_new {
         }
 
         return indices;
+    }
+
+    VkFormat Hardware::ChooseSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& formats, VkImageTiling tilling,
+                                             VkFormatFeatureFlags featureFlags) {
+
+        // Loop through options and find compatible one
+        for (VkFormat format : formats) {
+
+            // Get properties for give format on this device
+            VkFormatProperties properties;
+            vkGetPhysicalDeviceFormatProperties(device, format, &properties);
+
+            // Depending on tiling choice, nned to check for difference bit flag
+            if (tilling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags) {
+                //
+                return format;
+            }
+            if (tilling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & featureFlags) == featureFlags) {
+                //
+                return format;
+            }
+        }
+
+        throw std::runtime_error("Failed to find a matching format!");
+    }
+
+    // --swapchain
+
+    uint32_t Hardware::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
+        // get properties of physical device memory
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+
+            // Index of memory type must match corresponding bit in allowedTypes and desired property bit flag are part of memory type's
+            // property flags
+            if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { // NOLINT
+                // this memory type is valid, so return its index
+                return i;
+            }
+        }
+
+        throw std::runtime_error("Failed to find Memory!");
+    }
+
+    // Best format is subjective, but ours will be:
+    // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
+    // colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+    VkSurfaceFormatKHR Hardware::ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+
+        // If only 1 format avaible and is undefined, them this means ALL formats ase avaible (no restricion)
+        if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
+            return {.format = VK_FORMAT_R8G8B8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+        }
+
+        // If restriced, searche for optimal format
+        for (const auto& format : formats) {
+            if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
+                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                return format;
+            }
+        }
+
+        // If can't find optimal format, then just return first format
+        return formats[0]; // FIXME: pade data pau aqui
+    }
+
+    VkPresentModeKHR Hardware::ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes) {
+        // Look for Mailbox presentation mode
+        for (const auto& presentationMode : presentationModes) {
+            if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+                return presentationMode;
+            }
+        }
+
+        return VK_PRESENT_MODE_FIFO_KHR; // allways avaible by vulkan
     }
 
 } // namespace ce_new
