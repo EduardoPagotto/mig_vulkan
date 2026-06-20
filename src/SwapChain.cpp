@@ -12,9 +12,9 @@ namespace ce {
         SwapChainDetails swapchainDetails = GetSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface());
 
         // Find optimal surface value for our swap chain
-        VkSurfaceFormatKHR surrfaceFormat = ChooseBestSurfaceFormat(swapchainDetails.formats);
+        VkSurfaceFormatKHR surrfaceFormat = SwapChain::ChooseBestSurfaceFormat(swapchainDetails.formats);
 
-        VkPresentModeKHR presentMode = ChooseBestPresentationMode(swapchainDetails.presentationModes);
+        VkPresentModeKHR presentMode = SwapChain::ChooseBestPresentationMode(swapchainDetails.presentationModes);
         VkExtent2D extent = vwrapp->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
 
         // how many images are in the swap chain? Get 1 more than the minimum to allow triple buffering

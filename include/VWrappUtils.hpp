@@ -1,12 +1,5 @@
 #pragma once
 
-#ifdef SET_GLFW_ENABLE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#else
-#include <SDL3/SDL_vulkan.h>
-#endif
-
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
