@@ -31,7 +31,7 @@ namespace ce_new {
       public:
         explicit Hardware(const std::string& wName = "Test window", const int& width = 800, const int& height = 600,
                           bool validationEnabled = false);
-        virtual ~Hardware() = default;
+        virtual ~Hardware();
 
         VkDevice& getLogical() { return logicalDevice; }
         VkPhysicalDevice& getPhysical() { return physicalDevice; }
@@ -39,6 +39,12 @@ namespace ce_new {
         VkQueue& getPresentationQueue() { return presentationQueue; }
         VkSurfaceKHR& getSurface() { return surface; }
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+
+#ifdef SET_GLFW_ENABLE
+        GLFWwindow* getWindow() { return this->window; }
+#else
+        SDL_Window* getWindow() { return this->window; }
+#endif
 
       private:
 #ifdef SET_GLFW_ENABLE

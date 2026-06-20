@@ -30,6 +30,26 @@ namespace ce_new {
         createLogicalDevice();
     }
 
+    Hardware::~Hardware() {
+        // cleanup
+        vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
+        vkDestroyDevice(this->logicalDevice, nullptr);
+
+        if (this->validationEnabled) {
+            DestroyDebugReportCallbackEXT(this->instance, callback, nullptr);
+        }
+
+        vkDestroyInstance(this->instance, nullptr);
+
+#ifdef SET_GLFW_ENABLE
+        // Destroy GLFW window and stop GLFW
+        glfwDestroyWindow(window);
+        glfwTerminate();
+#else
+        // TODO: SDL fazer
+#endif
+    }
+
     void Hardware::createInstance() {
 
         if (this->validationEnabled && !Hardware::CheckValidationLayerSupport()) {
