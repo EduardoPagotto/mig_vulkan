@@ -24,5 +24,8 @@ namespace ce {
         std::vector<std::shared_ptr<ImageObject>> swapchainImages;
 
         std::shared_ptr<VWrapp> vwrapp;
+
+        static VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+        static VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);
     };
 } // namespace ce

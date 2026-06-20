@@ -1,6 +1,5 @@
 #include "VWrappUtils.hpp"
-#include <cstring>
-#include <iostream>
+#include <stdexcept>
 
 namespace ce {
 
@@ -119,38 +118,4 @@ namespace ce {
 
         throw std::runtime_error("Failed to find Memory!");
     }
-
-    // Best format is subjective, but ours will be:
-    // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
-    // colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
-    VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
-
-        // If only 1 format avaible and is undefined, them this means ALL formats ase avaible (no restricion)
-        if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
-            return {.format = VK_FORMAT_R8G8B8A8_UNORM, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
-        }
-
-        // If restriced, searche for optimal format
-        for (const auto& format : formats) {
-            if ((format.format == VK_FORMAT_R8G8B8A8_UNORM || format.format == VK_FORMAT_B8G8R8A8_UNORM) &&
-                format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-                return format;
-            }
-        }
-
-        // If can't find optimal format, then just return first format
-        return formats[0]; // FIXME: pade data pau aqui
-    }
-
-    VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes) {
-        // Look for Mailbox presentation mode
-        for (const auto& presentationMode : presentationModes) {
-            if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                return presentationMode;
-            }
-        }
-
-        return VK_PRESENT_MODE_FIFO_KHR; // allways avaible by vulkan
-    }
-
 } // namespace ce
