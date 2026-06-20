@@ -1,6 +1,8 @@
 #include "VWrapp.hpp"
 #include "VWrappUtils.hpp"
+#include "debug.hpp"
 #include <cstring>
+#include <iostream>
 #include <set>
 #include <stdexcept>
 
@@ -27,7 +29,7 @@ namespace ce {
 
     void VWrapp::createInstance() {
 
-        if (validationEnabled && !CheckValidationLayerSupport()) {
+        if (validationEnabled && !VWrapp::CheckValidationLayerSupport()) {
             throw std::runtime_error("Required Validation Layers not supported!");
         }
 
@@ -76,7 +78,7 @@ namespace ce {
         }
 
         // check Instance Extentions suppoted..
-        if (!CheckInstanceExtensionSupport(&instanceExtensions)) {
+        if (!VWrapp::CheckInstanceExtensionSupport(&instanceExtensions)) {
             throw std::runtime_error("vkInstance does no suport requerid extentions!");
         }
 
@@ -150,7 +152,7 @@ namespace ce {
 
         // mainDevice.physicalDevice = deviceList[0];
         for (const auto& device : deviceList) {
-            if (CheckDeviceSuitable(device, surface)) {
+            if (VWrapp::CheckDeviceSuitable(device, surface)) {
                 physicalDevice = device;
                 break;
             }
@@ -243,4 +245,130 @@ namespace ce {
 
         return newExtent;
     }
+
+    // --utils
+    bool VWrapp::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+        // Get device extension count
+        uint32_t extensionCount = 0;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        // If no extensions found, return failure
+        if (extensionCount == 0) {
+            return false;
+        }
+
+        // Populate list of extensions
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
+
+        // Check for extension
+        for (const auto& deviceExtension : deviceExtensions) {
+            bool hasExtension = false;
+            for (const auto& extension : extensions) {
+                if (std::strcmp(deviceExtension, extension.extensionName) == 0) {
+                    hasExtension = true;
+                    break;
+                }
+            }
+
+            if (!hasExtension) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool VWrapp::CheckDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+
+        /*
+        // Information abaout the device itself (ID, Name, Type Vendor, etc)
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        */
+        // information about what the device can do (geo, Shader, tess, shader, wide lines, etc)
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        QueueFamilyIndices indices = GetQueueFamilies(device, surface);
+
+        bool extensionsSupported = VWrapp::CheckDeviceExtensionSupport(device);
+
+        bool swapChainValid = false;
+        if (extensionsSupported) {
+            SwapChainDetails swapChainDetails = GetSwapChainDetails(device, surface);
+            swapChainValid = !swapChainDetails.presentationModes.empty() && !swapChainDetails.formats.empty();
+        }
+
+        return indices.isValid() && extensionsSupported && swapChainValid && (deviceFeatures.samplerAnisotropy == VK_TRUE);
+    }
+
+    bool VWrapp::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtentions) {
+        // need to get number of extentions to create array of correct size to hold extentions
+        uint32_t extentionsCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extentionsCount, nullptr);
+
+        // Create list of vKExtentionsProperties using count
+        std::vector<VkExtensionProperties> extentions(extentionsCount);
+        vkEnumerateInstanceExtensionProperties(nullptr, &extentionsCount, extentions.data());
+
+        // check if give extentions are list of avaible extentins
+        for (const auto& checkExtention : *checkExtentions) {
+            bool hasExtentions = false;
+            for (const auto& extention : extentions) {
+                if (std::strcmp(checkExtention, extention.extensionName) == 0) {
+                    std::cout << "Extenções: " << checkExtention << '\n';
+                    hasExtentions = true;
+                    break;
+                }
+            }
+
+            if (!hasExtentions) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool VWrapp::CheckValidationLayerSupport() {
+        // Get number of validation layers to create vector of appropriate size
+        uint32_t validationLayerCount = 0;
+        vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+
+        // Check if no validation layers found AND we want at least 1 layer
+        if (validationLayerCount == 0 && validationLayers.size() > 0) {
+            return false;
+        }
+
+        std::vector<VkLayerProperties> availableLayers(validationLayerCount);
+        vkEnumerateInstanceLayerProperties(&validationLayerCount, availableLayers.data());
+
+        std::cout << "Camadas Vulkan Disponiveis (" << validationLayerCount << "):" << '\n';
+        for (const auto& layerProperties : availableLayers) {
+            std::cout << "\tLayer Name: " << layerProperties.layerName << '\n';
+            std::cout << "\tDescription: " << layerProperties.description << '\n';
+            std::cout << "\tImplementation Version: " << layerProperties.implementationVersion << '\n';
+            std::cout << "\tSpec Version: " << layerProperties.specVersion << '\n';
+            std::cout << "\t-----------------------------------" << '\n';
+        }
+
+        // Check if given Validation Layer is in list of given Validation Layers
+        for (const auto& validationLayer : validationLayers) {
+            bool hasLayer = false;
+            for (const auto& availableLayer : availableLayers) {
+                if (std::strcmp(validationLayer, availableLayer.layerName) == 0) {
+                    hasLayer = true;
+                    break;
+                }
+            }
+
+            if (!hasLayer) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 } // namespace ce

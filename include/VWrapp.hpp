@@ -6,10 +6,13 @@
 #else
 #include <SDL3/SDL_vulkan.h>
 #endif
-
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace ce {
+
+    inline std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    inline std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
     class VWrapp {
       public:
@@ -58,5 +61,11 @@ namespace ce {
         void createSurface();
         void getNewPhysicalDevice();
         void createLogicalDevice();
+
+        // utils
+        static bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+        static bool CheckDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
+        static bool CheckInstanceExtensionSupport(std::vector<const char*>* checkExtentions);
+        static bool CheckValidationLayerSupport();
     };
 } // namespace ce
