@@ -11,9 +11,6 @@
 
 namespace ce {
 
-    inline std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    inline std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
-
     class VWrapp {
       public:
 #ifdef SET_GLFW_ENABLE
@@ -53,6 +50,9 @@ namespace ce {
 #else
         SDL_Window* window;
 #endif
+
+        inline static std::vector<const char*> deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        inline static std::vector<const char*> validationLayers{"VK_LAYER_KHRONOS_validation"};
 
         // - Create functions
         void init_device();

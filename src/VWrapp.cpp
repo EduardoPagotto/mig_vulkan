@@ -20,35 +20,18 @@ namespace ce {
     }
 
     void VWrapp::init_device() {
-        createInstance();
-        createDebugCallback();
-        createSurface();        // create before physical
-        getNewPhysicalDevice(); // now need see if support surface
-        createLogicalDevice();
+        this->createInstance();
+        this->createDebugCallback();
+        this->createSurface();        // create before physical
+        this->getNewPhysicalDevice(); // now need see if support surface
+        this->createLogicalDevice();
     }
 
     void VWrapp::createInstance() {
 
-        if (validationEnabled && !VWrapp::CheckValidationLayerSupport()) {
+        if (this->validationEnabled && !VWrapp::CheckValidationLayerSupport()) {
             throw std::runtime_error("Required Validation Layers not supported!");
         }
-
-        // Information about the aplication itself
-        // Most data here doesn't affect program and is for developer convinience
-        VkApplicationInfo appInfo = {};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Vulkan app Teste";         // Custom name of the aplication
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0); // Version app
-        appInfo.pEngineName = "No engine";                     // Engine name
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);      // engine version
-        appInfo.apiVersion = VK_API_VERSION_1_0;               // the version of vulkan
-
-        // Create information for a VkInstance
-        VkInstanceCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        // createInfo.pNext = nullptr;
-        // createInfo.flags = VK_WHATEVER | WHAT_EVER2
-        createInfo.pApplicationInfo = &appInfo;
 
         // Create a List to hold instance extencios
         std::vector<const char*> instanceExtensions = std::vector<const char*>();
@@ -73,7 +56,7 @@ namespace ce {
         }
 
         // If validation enabled, add extension to report validation debug info
-        if (validationEnabled) {
+        if (this->validationEnabled) {
             instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         }
 
@@ -82,40 +65,56 @@ namespace ce {
             throw std::runtime_error("vkInstance does no suport requerid extentions!");
         }
 
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
-        createInfo.ppEnabledExtensionNames = instanceExtensions.data();
+        // MoInformation about the aplication itself
+        // st data here doesn't affect program and is for developer convinience
+        const VkApplicationInfo appInfo{
+            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            .pApplicationName = "Vulkan app Teste",         // Custom name of the aplication
+            .applicationVersion = VK_MAKE_VERSION(1, 0, 0), // Version app
+            .pEngineName = "No engine",                     // Engine name
+            .engineVersion = VK_MAKE_VERSION(1, 0, 0),      // engine version
+            .apiVersion = VK_API_VERSION_1_0                // the version of vulkan
+        };
 
         // Set a validation layer tha instace will use
-        if (validationEnabled) {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
-        } else {
-            createInfo.enabledLayerCount = 0;
-            createInfo.ppEnabledLayerNames = nullptr;
+        uint32_t enabledLayerCount = 0;
+        const char* const* ppEnabledLayerNames = nullptr;
+        if (this->validationEnabled && validationLayers.size() > 0) {
+            enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            ppEnabledLayerNames = validationLayers.data();
         }
 
+        // Create information for a VkInstance
+        const VkInstanceCreateInfo createInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                                              // .pNext = nullptr,
+                                              // .flags = VK_WHATEVER | WHAT_EVER2,
+                                              .pApplicationInfo = &appInfo,
+                                              .enabledLayerCount = enabledLayerCount,
+                                              .ppEnabledLayerNames = ppEnabledLayerNames,
+                                              .enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size()),
+                                              .ppEnabledExtensionNames = instanceExtensions.data()};
+
         // Create instance
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-        if (result != VK_SUCCESS) {
+        if (vkCreateInstance(&createInfo, nullptr, &this->instance) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Vulkan Instance");
         }
     }
 
     void VWrapp::createDebugCallback() {
         // Only create callback if validation enabled
-        if (!validationEnabled) {
+        if (!this->validationEnabled) {
             return;
         }
 
-        VkDebugReportCallbackCreateInfoEXT callbackCreateInfo = {};
-        callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-        callbackCreateInfo.flags =
-            VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT; // Which validation reports should initiate callback
-        callbackCreateInfo.pfnCallback = DebugCallback;                      // Pointer to callback function itself
+        const VkDebugReportCallbackCreateInfoEXT callbackCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT, // Which validation reports should initiate callback
+            .pfnCallback = DebugCallback                                              // Pointer to callback function itself
+        };
 
         // Create debug callback with custom create function
-        VkResult result = CreateDebugReportCallbackEXT(instance, &callbackCreateInfo, nullptr, &callback);
-        if (result != VK_SUCCESS) {
+
+        if (CreateDebugReportCallbackEXT(this->instance, &callbackCreateInfo, nullptr, &this->callback) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Debug Callback!");
         }
     }
@@ -193,8 +192,8 @@ namespace ce {
         deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data(); // List of queueCreateInfos so device can create required queues
 
         deviceCreateInfo.enabledExtensionCount =
-            static_cast<uint32_t>(deviceExtensions.size());                 // Number of enable logical device extentions
-        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data(); // List of enable logical device extentions
+            static_cast<uint32_t>(VWrapp::deviceExtensions.size());                 // Number of enable logical device extentions
+        deviceCreateInfo.ppEnabledExtensionNames = VWrapp::deviceExtensions.data(); // List of enable logical device extentions
 
         // Physical Device Features the Logical Device will be using
         VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -259,7 +258,7 @@ namespace ce {
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
 
         // Check for extension
-        for (const auto& deviceExtension : deviceExtensions) {
+        for (const auto& deviceExtension : VWrapp::deviceExtensions) {
             bool hasExtension = false;
             for (const auto& extension : extensions) {
                 if (std::strcmp(deviceExtension, extension.extensionName) == 0) {

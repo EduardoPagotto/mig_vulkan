@@ -6,6 +6,7 @@
 
 namespace ce {
 
+    // physical, logical, surface, window
     SwapChain::SwapChain(std::shared_ptr<VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
