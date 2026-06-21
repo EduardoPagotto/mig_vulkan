@@ -99,6 +99,35 @@ namespace ce {
         vkDestroySwapchainKHR(vwrapp->getLogical(), this->swapchain, nullptr);
     }
 
+    //     VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
+
+    //         // If current extend!!!!!!!!!!!!
+    //         if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    //             return surfaceCapabilities.currentExtent;
+    //         }
+
+    //         int witdh;
+    //         int height;
+    // #ifdef SET_GLFW_ENABLE
+    //         glfwGetFramebufferSize(this->window, &witdh, &height);
+    // #else
+    //         SDL_GetWindowSizeInPixels(this->window, &witdh, &height); // TODO: Testar
+    // #endif
+    //         VkExtent2D newExtent = {};
+    //         newExtent.width = static_cast<uint32_t>(witdh);
+    //         newExtent.height = static_cast<uint32_t>(height);
+
+    //         // surface also defie max and min, so make sure within bondaries by clamping value
+    //         newExtent.width =
+    //             std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, newExtent.width));
+
+    //         newExtent.height =
+    //             std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height,
+    //             newExtent.height));
+
+    //         return newExtent;
+    //     }
+
     // Best format is subjective, but ours will be:
     // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
     // colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR

@@ -9,14 +9,14 @@
 namespace ce {
     VWrapp::~VWrapp() {
         // cleanup
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyDevice(logicalDevice, nullptr);
+        vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
+        vkDestroyDevice(this->logicalDevice, nullptr);
 
-        if (validationEnabled) {
-            DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+        if (this->validationEnabled) {
+            DestroyDebugReportCallbackEXT(this->instance, this->callback, nullptr);
         }
 
-        vkDestroyInstance(instance, nullptr);
+        vkDestroyInstance(this->instance, nullptr);
     }
 
     void VWrapp::init_device() {
@@ -124,13 +124,11 @@ namespace ce {
 
         // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
 #ifdef SET_GLFW_ENABLE
-        VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
-        if (result != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(this->instance, this->window, nullptr, &this->surface) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #else
-        bool result = SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface);
-        if (!result) {
+        if (!SDL_Vulkan_CreateSurface(this->window, this->instance, nullptr, &this->surface)) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #endif
@@ -139,7 +137,7 @@ namespace ce {
     void VWrapp::getNewPhysicalDevice() {
         // Enumerate Physical devices the vkInstance can access
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(this->instance, &deviceCount, nullptr);
 
         // if no devices avaible, then none suport Vulkan!
         if (deviceCount == 0) {
@@ -148,11 +146,11 @@ namespace ce {
 
         // get List of Physical devices
         std::vector<VkPhysicalDevice> deviceList(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, deviceList.data());
+        vkEnumeratePhysicalDevices(this->instance, &deviceCount, deviceList.data());
 
         // mainDevice.physicalDevice = deviceList[0];
         for (const auto& device : deviceList) {
-            if (VWrapp::CheckDeviceSuitable(device, surface)) {
+            if (VWrapp::CheckDeviceSuitable(device, this->surface)) {
                 physicalDevice = device;
                 break;
             }
@@ -160,7 +158,7 @@ namespace ce {
 
         // Get properties of our new device
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(this->physicalDevice, &deviceProperties);
 
         // minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
     }
@@ -168,7 +166,7 @@ namespace ce {
     void VWrapp::createLogicalDevice() {
 
         // Get the queue family indices for the chosen Physical device
-        QueueFamilyIndices indices = GetQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices indices = GetQueueFamilies(this->physicalDevice, surface);
 
         // vector for queue creation information, and set for family indices
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -205,8 +203,7 @@ namespace ce {
         deviceCreateInfo.pEnabledFeatures = &deviceFeatures; // Physica device features logica device will use
 
         // Create the Logical device for the givem physical device
-        VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
-        if (result != VK_SUCCESS) {
+        if (vkCreateDevice(this->physicalDevice, &deviceCreateInfo, nullptr, &this->logicalDevice) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a logical device");
         }
 
@@ -214,8 +211,8 @@ namespace ce {
         // so we want handle to queues
         // From given logical device, of given Queue Family, of given Queue Index(0 since only one), place reference in
         // given Vkqueue
-        vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
-        vkGetDeviceQueue(logicalDevice, indices.presentationFamily, 0, &presentationQueue);
+        vkGetDeviceQueue(this->logicalDevice, indices.graphicsFamily, 0, &this->graphicsQueue);
+        vkGetDeviceQueue(this->logicalDevice, indices.presentationFamily, 0, &this->presentationQueue);
     }
 
     VkExtent2D VWrapp::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
@@ -228,9 +225,9 @@ namespace ce {
         int witdh;
         int height;
 #ifdef SET_GLFW_ENABLE
-        glfwGetFramebufferSize(window, &witdh, &height);
+        glfwGetFramebufferSize(this->window, &witdh, &height);
 #else
-        SDL_GetWindowSizeInPixels(window, &witdh, &height); // TODO: Testar
+        SDL_GetWindowSizeInPixels(this->window, &witdh, &height);
 #endif
         VkExtent2D newExtent = {};
         newExtent.width = static_cast<uint32_t>(witdh);
