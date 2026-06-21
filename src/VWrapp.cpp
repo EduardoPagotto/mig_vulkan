@@ -172,15 +172,15 @@ namespace ce {
         std::set<int> queueFamilyIndices = {indices.graphicsFamily, indices.presentationFamily};
 
         // Queues the logical device needs to create and info to do so
-        for (int queueFamiyIndex : queueFamilyIndices) {
+        for (const int queueFamiyIndex : queueFamilyIndices) {
 
-            VkDeviceQueueCreateInfo queueCreateInfo = {};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamiyIndex; // The index of the family to create a from
-            queueCreateInfo.queueCount = 1;                     // Numbers of queues to create
-            float priority = 1.0F;                              //
-            queueCreateInfo.pQueuePriorities =
-                &priority; // Vulkan needs to know how to handle multiple queues, so decide priority (1 is hight)
+            const float priority = 1.0F;
+            const VkDeviceQueueCreateInfo queueCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                .queueFamilyIndex = static_cast<uint32_t>(queueFamiyIndex), // The index of the family to create a from
+                .queueCount = 1,                                            // Numbers of queues to create
+                .pQueuePriorities = &priority, // Vulkan needs to know how to handle multiple queues, so decide priority (1 is hight)
+            };
 
             queueCreateInfos.push_back(queueCreateInfo);
         }
