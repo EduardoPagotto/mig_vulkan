@@ -158,7 +158,6 @@ namespace ce {
         // Get properties of our new device
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(this->physicalDevice, &deviceProperties);
-
         // minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
     }
 
@@ -186,20 +185,19 @@ namespace ce {
         }
 
         // Information to create logical device (sometimes called "device")
-        VkDeviceCreateInfo deviceCreateInfo = {};
-        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()); // Number queueCreateInfos
-        deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data(); // List of queueCreateInfos so device can create required queues
-
-        deviceCreateInfo.enabledExtensionCount =
-            static_cast<uint32_t>(VWrapp::deviceExtensions.size());                 // Number of enable logical device extentions
-        deviceCreateInfo.ppEnabledExtensionNames = VWrapp::deviceExtensions.data(); // List of enable logical device extentions
-
         // Physical Device Features the Logical Device will be using
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-        deviceFeatures.samplerAnisotropy = VK_TRUE; // enable Anisotropy
+        const VkPhysicalDeviceFeatures deviceFeatures{
+            .samplerAnisotropy = VK_TRUE // enable Anisotropy
+        };
 
-        deviceCreateInfo.pEnabledFeatures = &deviceFeatures; // Physica device features logica device will use
+        const VkDeviceCreateInfo deviceCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()), // Number queueCreateInfos
+            .pQueueCreateInfos = queueCreateInfos.data(), // List of queueCreateInfos so device can create required queues
+            .enabledExtensionCount = static_cast<uint32_t>(VWrapp::deviceExtensions.size()), // Number of enable logical device extentions
+            .ppEnabledExtensionNames = VWrapp::deviceExtensions.data(),                      // List of enable logical device extentions
+            .pEnabledFeatures = &deviceFeatures // Physica device features logica device will use
+        };
 
         // Create the Logical device for the givem physical device
         if (vkCreateDevice(this->physicalDevice, &deviceCreateInfo, nullptr, &this->logicalDevice) != VK_SUCCESS) {
@@ -228,9 +226,10 @@ namespace ce {
 #else
         SDL_GetWindowSizeInPixels(this->window, &witdh, &height);
 #endif
-        VkExtent2D newExtent = {};
-        newExtent.width = static_cast<uint32_t>(witdh);
-        newExtent.height = static_cast<uint32_t>(height);
+        VkExtent2D newExtent{
+            .width = static_cast<uint32_t>(witdh),  //
+            .height = static_cast<uint32_t>(height) //
+        };
 
         // surface also defie max and min, so make sure within bondaries by clamping value
         newExtent.width =
