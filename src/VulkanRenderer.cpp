@@ -32,7 +32,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
 
     this->swapchain =
         std::make_shared<ce::SwapChain>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface(), vwrapp->getWindow());
-    this->rederer = std::make_shared<ce::Renderer>(vwrapp, swapchain); // this->createRenderPass();
+
+    this->rederer = std::make_shared<ce::Renderer>(vwrapp->getPhysical(), vwrapp->getLogical(), this->swapchain->getImageFormat());
+
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();

@@ -1,20 +1,21 @@
 #pragma once
-#include "SwapChain.hpp"
+#include <vulkan/vulkan_core.h>
 
 namespace ce {
 
     class Renderer {
       public:
-        explicit Renderer(std::shared_ptr<VWrapp> vwrapp, std::shared_ptr<ce::SwapChain> swc);
+        explicit Renderer(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const VkFormat& format);
         virtual ~Renderer();
 
         VkRenderPass& getRenderPass() { return renderPass; }
 
       private:
-        std::shared_ptr<ce::VWrapp> vwrapp;
-        std::shared_ptr<ce::SwapChain> swc;
+        VkPhysicalDevice physicalDevice;
+        VkDevice logicalDevice;
+
         VkRenderPass renderPass;
 
-        void createRenderPass();
+        void createRenderPass(const VkFormat& format);
     };
 } // namespace ce

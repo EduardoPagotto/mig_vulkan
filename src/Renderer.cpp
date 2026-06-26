@@ -1,27 +1,25 @@
 #include "Renderer.hpp"
 #include "VWrappUtils.hpp"
 #include <array>
+#include <stdexcept>
 
 namespace ce {
 
-    Renderer::Renderer(std::shared_ptr<VWrapp> vwrapp, std::shared_ptr<ce::SwapChain> swc) : vwrapp(vwrapp), swc(swc) { // NOLINT
+    Renderer::Renderer(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const VkFormat& format)
+        : physicalDevice(physicalDevice), logicalDevice(logicalDevice) { // NOLINT
         //
-        createRenderPass();
+        createRenderPass(format);
     }
-    Renderer::~Renderer() {
-        //
+    Renderer::~Renderer() { vkDestroyRenderPass(this->logicalDevice, this->renderPass, nullptr); }
 
-        vkDestroyRenderPass(vwrapp->getLogical(), this->renderPass, nullptr);
-    }
-
-    void Renderer::createRenderPass() {
+    void Renderer::createRenderPass(const VkFormat& format) {
 
         // ATTACHEMNTS
         // Colour attachment of render pass
         // Framebuffer data will be storage as an image, but images can be given different data layouts
         // to give optimal use for certan operations
         const VkAttachmentDescription colourAttachemnt{
-            .format = this->swc->getImageFormat(),              // Format to use for attachment
+            .format = format,                                   // Format to use for attachment
             .samples = VK_SAMPLE_COUNT_1_BIT,                   // Number of samples to write for multisampling
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,              // Describes what to do with attachemnt before rendering
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,            // Describes what todo with attachment after rendering
@@ -33,7 +31,7 @@ namespace ce {
 
         // Depth attachemnt of render pass
         const VkAttachmentDescription depthAttachemnt{
-            .format = ChooseSupportedFormat(this->vwrapp->getPhysical(),
+            .format = ChooseSupportedFormat(this->physicalDevice,
                                             {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
                                             VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
                                             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
@@ -100,7 +98,7 @@ namespace ce {
                                                           .dependencyCount = static_cast<uint32_t>(subpassDependencies.size()),
                                                           .pDependencies = subpassDependencies.data()};
 
-        if (vkCreateRenderPass(vwrapp->getLogical(), &renderPassCreateInfo, nullptr, &this->renderPass) != VK_SUCCESS) {
+        if (vkCreateRenderPass(this->logicalDevice, &renderPassCreateInfo, nullptr, &this->renderPass) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create render pass!!!");
         }
     }

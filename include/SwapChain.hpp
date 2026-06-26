@@ -1,14 +1,13 @@
 #pragma once
 
 // FIXME: removendo builtins e usando apenas VK
-// #ifdef SET_GLFW_ENABLE
-// #define GLFW_INCLUDE_VULKAN
-// #include <GLFW/glfw3.h>
-// #else
-// #include <SDL3/SDL_vulkan.h>
-// #endif
+#ifdef SET_GLFW_ENABLE
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#else
+#include <SDL3/SDL_vulkan.h>
+#endif
 #include "ImageObject.hpp"
-#include "VWrapp.hpp"
 #include <memory>
 #include <vector>
 
