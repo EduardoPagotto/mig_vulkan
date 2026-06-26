@@ -30,7 +30,13 @@ namespace ce {
         VkQueue& getPresentationQueue() { return presentationQueue; }
         VkSurfaceKHR& getSurface() { return surface; }
 
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
+#ifdef SET_GLFW_ENABLE
+        GLFWwindow* getWindow() {
+#else
+        SDL_Window* getWindow() {
+#endif
+            return this->window;
+        }
 
       private:
         // Vulkan components

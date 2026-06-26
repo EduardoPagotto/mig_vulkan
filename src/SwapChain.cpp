@@ -6,17 +6,21 @@
 
 namespace ce {
 
-    // physical, logical, surface, window
-    SwapChain::SwapChain(std::shared_ptr<VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
+#ifdef SET_GLFW_ENABLE
+    SwapChain::SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, GLFWwindow* window)
+#else
+    SwapChain::SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, SDL_Window* window)
+#endif
+        : logicalDevice(logicalDevice), window(window) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails = GetSwapChainDetails(vwrapp->getPhysical(), vwrapp->getSurface());
+        SwapChainDetails swapchainDetails = GetSwapChainDetails(physicalDevice, surface);
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = SwapChain::ChooseBestSurfaceFormat(swapchainDetails.formats);
 
         VkPresentModeKHR presentMode = SwapChain::ChooseBestPresentationMode(swapchainDetails.presentationModes);
-        VkExtent2D extent = vwrapp->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
+        VkExtent2D extent = this->chooseSwapExtent(swapchainDetails.surfaceCapabilities);
 
         // how many images are in the swap chain? Get 1 more than the minimum to allow triple buffering
         uint32_t imageCount = swapchainDetails.surfaceCapabilities.minImageCount + 1;
@@ -28,7 +32,7 @@ namespace ce {
         }
 
         // Get Queue Family indices
-        ce::QueueFamilyIndices indices = GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
+        ce::QueueFamilyIndices indices = GetQueueFamilies(physicalDevice, surface);
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
 
         // indices.graphicsFamily == indices.presentationFamily
@@ -50,7 +54,7 @@ namespace ce {
         // Create information for swap chain
         VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .surface = vwrapp->getSurface(),                                       // Swapchain surface
+            .surface = surface,                                                    // Swapchain surface
             .minImageCount = imageCount,                                           // Minimum image in swapchain
             .imageFormat = surrfaceFormat.format,                                  // Swapchain format
             .imageColorSpace = surrfaceFormat.colorSpace,                          // Swapchain color space
@@ -68,7 +72,7 @@ namespace ce {
                                              //  hand over  responsabilities
 
         // Create Swapchain
-        if (vkCreateSwapchainKHR(vwrapp->getLogical(), &swapchainCreateInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
+        if (vkCreateSwapchainKHR(logicalDevice, &swapchainCreateInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a Swapchain");
         }
 
@@ -78,14 +82,14 @@ namespace ce {
 
         // Get swap chain images (first count the values)
         uint32_t swapChainImageCount;
-        vkGetSwapchainImagesKHR(vwrapp->getLogical(), this->swapchain, &swapChainImageCount, nullptr);
+        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, nullptr);
 
         std::vector<VkImage> images(swapChainImageCount);
-        vkGetSwapchainImagesKHR(vwrapp->getLogical(), this->swapchain, &swapChainImageCount, images.data());
+        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, images.data());
 
         for (VkImage image : images) {
 
-            auto imgObj = std::make_shared<ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+            auto imgObj = std::make_shared<ImageObject>(physicalDevice, logicalDevice);
             imgObj->createImageViewImportedImage(image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT); // CreateImageView
             this->swapchainImages.push_back(imgObj);
         }
@@ -97,37 +101,37 @@ namespace ce {
             image.reset();
         }
 
-        vkDestroySwapchainKHR(vwrapp->getLogical(), this->swapchain, nullptr);
+        vkDestroySwapchainKHR(logicalDevice, this->swapchain, nullptr);
     }
 
-    //     VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
+    VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
 
-    //         // If current extend!!!!!!!!!!!!
-    //         if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-    //             return surfaceCapabilities.currentExtent;
-    //         }
+        // If current extend!!!!!!!!!!!!
+        if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return surfaceCapabilities.currentExtent;
+        }
 
-    //         int witdh;
-    //         int height;
-    // #ifdef SET_GLFW_ENABLE
-    //         glfwGetFramebufferSize(this->window, &witdh, &height);
-    // #else
-    //         SDL_GetWindowSizeInPixels(this->window, &witdh, &height); // TODO: Testar
-    // #endif
-    //         VkExtent2D newExtent = {};
-    //         newExtent.width = static_cast<uint32_t>(witdh);
-    //         newExtent.height = static_cast<uint32_t>(height);
+        int witdh;
+        int height;
+#ifdef SET_GLFW_ENABLE
+        glfwGetFramebufferSize(this->window, &witdh, &height);
+#else
+        SDL_GetWindowSizeInPixels(this->window, &witdh, &height);
+#endif
+        VkExtent2D newExtent{
+            .width = static_cast<uint32_t>(witdh),  //
+            .height = static_cast<uint32_t>(height) //
+        };
 
-    //         // surface also defie max and min, so make sure within bondaries by clamping value
-    //         newExtent.width =
-    //             std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, newExtent.width));
+        // surface also defie max and min, so make sure within bondaries by clamping value
+        newExtent.width =
+            std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, newExtent.width));
 
-    //         newExtent.height =
-    //             std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height,
-    //             newExtent.height));
+        newExtent.height =
+            std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, newExtent.height));
 
-    //         return newExtent;
-    //     }
+        return newExtent;
+    }
 
     // Best format is subjective, but ours will be:
     // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)

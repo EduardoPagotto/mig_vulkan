@@ -212,35 +212,6 @@ namespace ce {
         vkGetDeviceQueue(this->logicalDevice, indices.presentationFamily, 0, &this->presentationQueue);
     }
 
-    VkExtent2D VWrapp::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
-
-        // If current extend!!!!!!!!!!!!
-        if (surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            return surfaceCapabilities.currentExtent;
-        }
-
-        int witdh;
-        int height;
-#ifdef SET_GLFW_ENABLE
-        glfwGetFramebufferSize(this->window, &witdh, &height);
-#else
-        SDL_GetWindowSizeInPixels(this->window, &witdh, &height);
-#endif
-        VkExtent2D newExtent{
-            .width = static_cast<uint32_t>(witdh),  //
-            .height = static_cast<uint32_t>(height) //
-        };
-
-        // surface also defie max and min, so make sure within bondaries by clamping value
-        newExtent.width =
-            std::max(surfaceCapabilities.minImageExtent.width, std::min(surfaceCapabilities.maxImageExtent.width, newExtent.width));
-
-        newExtent.height =
-            std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, newExtent.height));
-
-        return newExtent;
-    }
-
     // --utils
     bool VWrapp::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
         // Get device extension count

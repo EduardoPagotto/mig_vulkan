@@ -9,7 +9,12 @@ namespace ce {
 
     class SwapChain {
       public:
-        explicit SwapChain(std::shared_ptr<VWrapp> vwrapp);
+#ifdef SET_GLFW_ENABLE
+        explicit SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, GLFWwindow* window);
+#else
+        explicit SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, SDL_Window* window);
+#endif
+
         virtual ~SwapChain();
 
         VkSwapchainKHR& getSwapchain() { return this->swapchain; }
@@ -22,8 +27,14 @@ namespace ce {
         VkFormat swapchainImageFormat;
         VkExtent2D swapchainExtent;
         std::vector<std::shared_ptr<ImageObject>> swapchainImages;
+        VkDevice logicalDevice;
 
-        std::shared_ptr<VWrapp> vwrapp;
+#ifdef SET_GLFW_ENABLE
+        GLFWwindow* window;
+#else
+        SDL_Window* window;
+#endif
+        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
 
         static VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
         static VkPresentModeKHR ChooseBestPresentationMode(const std::vector<VkPresentModeKHR>& presentationModes);

@@ -30,7 +30,7 @@
 
 VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
-    this->swc = std::make_shared<ce::SwapChain>(vwrapp);         // this->createSwapChain();
+    this->swc = std::make_shared<ce::SwapChain>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface(), vwrapp->getWindow());
     this->rederer = std::make_shared<ce::Renderer>(vwrapp, swc); // this->createRenderPass();
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
