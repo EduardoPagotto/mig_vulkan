@@ -15,48 +15,49 @@ namespace ce {
 
         shaderModules.push_back(shaderModule);
 
-        VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
-        shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        shaderModuleCreateInfo.codeSize = code.size();                                 // size of code
-        shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code.data()); // pointer to code(of uint32_t pointer type)
+        const VkShaderModuleCreateInfo shaderModuleCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = code.size(),                                // size of code
+            .pCode = reinterpret_cast<const uint32_t*>(code.data()) // pointer to code(of uint32_t pointer type)
+        };
 
-        VkResult result = vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModules[pos]);
-        if (result != VK_SUCCESS) {
+        if (vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModules[pos]) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a shader module");
         }
 
-        VkPipelineShaderStageCreateInfo shaderCreateInfo;
-        shaderCreateInfos.push_back(shaderCreateInfo);
+        const VkPipelineShaderStageCreateInfo shaderCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage = stage,               // Shader stage name
+            .module = shaderModules[pos], // Shader module to be used by stage
+            .pName = "main",              // Entry point in to shader
+        };
 
-        shaderCreateInfos[pos].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderCreateInfos[pos].stage = stage;               // Shader stage name
-        shaderCreateInfos[pos].module = shaderModules[pos]; // Shader module to be used by stage
-        shaderCreateInfos[pos].pName = "main";              // Entry point in to shader
+        shaderCreateInfos.push_back(shaderCreateInfo);
     }
 
     void ShaderModule::addAtribute(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset) {
         //
-        VkVertexInputAttributeDescription attribute = {};
-        size_t pos = attributeDescriptions.size();
-        attributeDescriptions.push_back(attribute);
+        const VkVertexInputAttributeDescription attribute{
+            .location = location, // Location in shader where data will be read from
+            .binding = binding,   // Which binding the data is at (should be sdame as above)
+            .format = format,     // Forma the data will take (also helps define size of data)
+            .offset = offset,     // Where this attribute is defined in the data for a single vertex
+        };
 
-        attributeDescriptions[pos].binding = binding;   // Which binding the data is at (should be sdame as above)
-        attributeDescriptions[pos].location = location; // Location in shader where data will be read from
-        attributeDescriptions[pos].format = format;     // Forma the data will take (also helps define size of data)
-        attributeDescriptions[pos].offset = offset;     // Where this attribute is defined in the data for a single vertex
+        attributeDescriptions.push_back(attribute);
     }
 
     void ShaderModule::addBindingDescription(uint32_t binding, uint32_t stride, VkVertexInputRate inputRate) {
-        //
-        VkVertexInputBindingDescription bindingDescription = {};
-        size_t pos = bindingDescriptions.size();
-        bindingDescriptions.push_back(bindingDescription);
 
-        bindingDescriptions[pos].binding = binding;     // Cam bind multiple streams of data, thos defines which one
-        bindingDescriptions[pos].stride = stride;       // Size of a single vertex object
-        bindingDescriptions[pos].inputRate = inputRate; // How to move between data after each vertex
-        ;                                               // VK_VERTEX_INPUT_RATE_INDEX : Move on to the next vertex
-        ;                                               // VK_VERTEX_INPUT_RATR_INSTANCE: Move to a vertex for the next instance
+        const VkVertexInputBindingDescription bindingDescription{
+            .binding = binding,    // Cam bind multiple streams of data, thos defines which one
+            .stride = stride,      // Size of a single vertex object
+            .inputRate = inputRate // How to move between data after each vertex
+                                   // VK_VERTEX_INPUT_RATE_INDEX : Move on to the next vertex
+                                   // VK_VERTEX_INPUT_RATR_INSTANCE: Move to a vertex for the next instance
+        };
+
+        bindingDescriptions.push_back(bindingDescription);
     }
 
     void ShaderModule::setVertexInput(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable) {
