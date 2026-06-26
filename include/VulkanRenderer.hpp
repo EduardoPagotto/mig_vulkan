@@ -36,7 +36,7 @@ class VulkanRenderer {
     int currentFrame = 0;
 
     std::shared_ptr<ce::VWrapp> vwrapp;
-    std::shared_ptr<ce::SwapChain> swc;
+    std::shared_ptr<ce::SwapChain> swapchain;
     std::shared_ptr<ce::Renderer> rederer;
 
     // Scene Objects

@@ -30,8 +30,9 @@
 
 VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 
-    this->swc = std::make_shared<ce::SwapChain>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface(), vwrapp->getWindow());
-    this->rederer = std::make_shared<ce::Renderer>(vwrapp, swc); // this->createRenderPass();
+    this->swapchain =
+        std::make_shared<ce::SwapChain>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface(), vwrapp->getWindow());
+    this->rederer = std::make_shared<ce::Renderer>(vwrapp, swapchain); // this->createRenderPass();
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();
@@ -54,7 +55,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     const glm::vec3 camPos = glm::vec3(-100.0F, 150.0F, 200.0F);
     const glm::vec3 camCenter = glm::vec3(0.0F, 0.0F, -2.0F);
     const glm::vec3 camUp = glm::vec3(0.0F, 1.0F, 0.0F);
-    const float aspect = (float)this->swc->getSwapchainExtent().width / (float)this->swc->getSwapchainExtent().height;
+    const float aspect = (float)this->swapchain->getExtent().width / (float)this->swapchain->getExtent().height;
 
     this->uboViewProjection.projection = glm::perspective(radixAngle, aspect, near, far);
     this->uboViewProjection.view = glm::lookAt(camPos, camCenter, camUp);
@@ -87,7 +88,7 @@ VulkanRenderer::~VulkanRenderer() {
     this->depthBufferObject.reset();
     this->descriptorPool.reset();
     this->descriptorSetLayout.reset();
-    for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
+    for (size_t i = 0; i < this->swapchain->getImages().size(); i++) {
         // destroy uniform
         this->vpUniformBuffer[i].reset();
         // // destroy dynamic uniform
@@ -128,7 +129,7 @@ void VulkanRenderer::draw() {
 
     // Get index of next image to be draw to, and signal semaphore when ready to be draw to
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(vwrapp->getLogical(), this->swc->getSwapchain(), std::numeric_limits<uint64_t>::max(),
+    vkAcquireNextImageKHR(vwrapp->getLogical(), this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
                           this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
@@ -157,7 +158,7 @@ void VulkanRenderer::draw() {
     }
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
-    std::array<VkSwapchainKHR, 1> swapChains{this->swc->getSwapchain()};
+    std::array<VkSwapchainKHR, 1> swapChains{this->swapchain->getKHR()};
     const VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphores to wait on
@@ -243,15 +244,15 @@ void VulkanRenderer::createGraphicsPipeline() {
     shaderModule->setVertexInput(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
     // -- VIEWPORT & SCISSOR
-    const VkViewport viewport{.x = 0.0F,                                               // x start coordinate
-                              .y = 0.0F,                                               // y start coordinate
-                              .width = (float)this->swc->getSwapchainExtent().width,   // width of viewport
-                              .height = (float)this->swc->getSwapchainExtent().height, // height of viewport
-                              .minDepth = 0.0F,                                        // min framebuffer depth
-                              .maxDepth = 1.0F};                                       // max framebuffer depth
+    const VkViewport viewport{.x = 0.0F,                                            // x start coordinate
+                              .y = 0.0F,                                            // y start coordinate
+                              .width = (float)this->swapchain->getExtent().width,   // width of viewport
+                              .height = (float)this->swapchain->getExtent().height, // height of viewport
+                              .minDepth = 0.0F,                                     // min framebuffer depth
+                              .maxDepth = 1.0F};                                    // max framebuffer depth
 
-    const VkRect2D scissor{.offset = VkOffset2D{.x = 0, .y = 0},       // Offset to use region from
-                           .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
+    const VkRect2D scissor{.offset = VkOffset2D{.x = 0, .y = 0},    // Offset to use region from
+                           .extent = this->swapchain->getExtent()}; // Extent to describe region to use, starting at offset
 
     // TODO: mudar o nome da classe
     this->pipeline = std::make_shared<ce::Pipeline>(this->vwrapp->getLogical());
@@ -303,7 +304,7 @@ void VulkanRenderer::createDepthBufferImage() {
 
     // Create Depth Buffer Image
     this->depthBufferObject = std::make_shared<ce::ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
-    this->depthBufferObject->createImage(this->swc->getSwapchainExtent().width, this->swc->getSwapchainExtent().height, depthFormat,
+    this->depthBufferObject->createImage(this->swapchain->getExtent().width, this->swapchain->getExtent().height, depthFormat,
                                          VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -313,12 +314,12 @@ void VulkanRenderer::createDepthBufferImage() {
 
 void VulkanRenderer::createFramebuffers() {
     // Resize framebuffer count to equal chain image count
-    this->swapChainFrameBuffers.resize(this->swc->getSwapchainImages().size());
+    this->swapChainFrameBuffers.resize(this->swapchain->getImages().size());
 
     // Create a framebuffer for eache swap chain image
     for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
-        std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i]->getImageView(),
+        std::array<VkImageView, 2> attachments = {this->swapchain->getImages()[i]->getImageView(),
                                                   this->depthBufferObject->getImageView()}; // order important same as upper
 
         const VkFramebufferCreateInfo framebufferCreateInfo = {
@@ -326,8 +327,8 @@ void VulkanRenderer::createFramebuffers() {
             .renderPass = this->rederer->getRenderPass(),                 // Render Pass layout the framebuffer will be used with
             .attachmentCount = static_cast<uint32_t>(attachments.size()), //
             .pAttachments = attachments.data(),                           // List of attachments (1:1 with Render Pass)
-            .width = this->swc->getSwapchainExtent().width,               // Framebuffer width
-            .height = this->swc->getSwapchainExtent().height,             // Framebuffer height
+            .width = this->swapchain->getExtent().width,                  // Framebuffer width
+            .height = this->swapchain->getExtent().height,                // Framebuffer height
             .layers = 1                                                   // Framebuffer layers
         };
 
@@ -434,13 +435,13 @@ void VulkanRenderer::createUniformBuffers() {
     // VkDeviceSize modelBufferSize = this->modelUniformAlignment * MAX_OBJECTS;
 
     // One uniform buffer for each image (and by extention, command buffer)
-    this->vpUniformBuffer.resize(this->swc->getSwapchainImages().size());
+    this->vpUniformBuffer.resize(this->swapchain->getImages().size());
 
-    // this->modelDUniformBuffer.resize(this->swc->getSwapchainImages().size());
-    // this->modelDUniformBufferMemory.resize(this->swc->getSwapchainImages().size());
+    // this->modelDUniformBuffer.resize(this->swapchain->getImages().size());
+    // this->modelDUniformBufferMemory.resize(this->swapchain->getImages().size());
 
     // Create Unifor buffers
-    for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
+    for (size_t i = 0; i < this->swapchain->getImages().size(); i++) {
         this->vpUniformBuffer[i] = std::make_shared<ce::BufferObject>(vwrapp->getPhysical(), vwrapp->getLogical());
         this->vpUniformBuffer[i]->create(vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -465,7 +466,7 @@ void VulkanRenderer::createDescriptorPool() {
     //                                    static_cast<uint32_t>(this->modelDUniformBuffer.size());//
 
     // Create Descriptor Pool
-    this->descriptorPool->create(static_cast<uint32_t>(this->swc->getSwapchainImages().size())); // Maximum number of descriptor Sets
+    this->descriptorPool->create(static_cast<uint32_t>(this->swapchain->getImages().size())); // Maximum number of descriptor Sets
     ;
 
     // -- CREATE UNIFORM DESCRIPTOR POOL
@@ -480,12 +481,12 @@ void VulkanRenderer::createDescriptorSets() {
     this->descriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
     this->samplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
 
-    std::vector<VkDescriptorSetLayout> setLayouts(this->swc->getSwapchainImages().size(), this->descriptorSetLayout->get());
+    std::vector<VkDescriptorSetLayout> setLayouts(this->swapchain->getImages().size(), this->descriptorSetLayout->get());
 
     this->descriptorSets->allocate(this->descriptorPool->get(), setLayouts);
 
     // Update all of descriptor set buffer bindings
-    for (size_t i = 0; i < this->swc->getSwapchainImages().size(); i++) {
+    for (size_t i = 0; i < this->swapchain->getImages().size(); i++) {
 
         // VIEW PROJECTION DESCRIPTOR
         // Buffer info and data offset info
@@ -571,12 +572,12 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
     const VkRenderPassBeginInfo renderPassBeginInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = this->rederer->getRenderPass(),                      // Render pass to begin
-        .framebuffer = this->swapChainFrameBuffers[currentImage],          //
-        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},                 // Start point of render pass in pixels
-                               .extent = this->swc->getSwapchainExtent()}, // Size of region to run render pass on (starting at offset)
-        .clearValueCount = static_cast<uint32_t>(clearValues.size()),      //
-        .pClearValues = clearValues.data()                                 // List of clear values
+        .renderPass = this->rederer->getRenderPass(),                   // Render pass to begin
+        .framebuffer = this->swapChainFrameBuffers[currentImage],       //
+        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},              // Start point of render pass in pixels
+                               .extent = this->swapchain->getExtent()}, // Size of region to run render pass on (starting at offset)
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),   //
+        .pClearValues = clearValues.data()                              // List of clear values
     };
 
     // Start recording command to command buffer!

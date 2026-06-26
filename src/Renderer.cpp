@@ -21,7 +21,7 @@ namespace ce {
         // Framebuffer data will be storage as an image, but images can be given different data layouts
         // to give optimal use for certan operations
         const VkAttachmentDescription colourAttachemnt{
-            .format = this->swc->getSwapchainImageFormat(),     // Format to use for attachment
+            .format = this->swc->getImageFormat(),              // Format to use for attachment
             .samples = VK_SAMPLE_COUNT_1_BIT,                   // Number of samples to write for multisampling
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,              // Describes what to do with attachemnt before rendering
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,            // Describes what todo with attachment after rendering

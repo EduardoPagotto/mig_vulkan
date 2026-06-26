@@ -77,27 +77,27 @@ namespace ce {
         }
 
         // Store for late reference
-        this->swapchainImageFormat = surrfaceFormat.format;
-        this->swapchainExtent = extent;
+        this->imageFormat = surrfaceFormat.format;
+        this->extent = extent;
 
         // Get swap chain images (first count the values)
         uint32_t swapChainImageCount;
         vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, nullptr);
 
-        std::vector<VkImage> images(swapChainImageCount);
-        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, images.data());
+        std::vector<VkImage> lImages(swapChainImageCount);
+        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, lImages.data());
 
-        for (VkImage image : images) {
+        for (VkImage image : lImages) {
 
             auto imgObj = std::make_shared<ImageObject>(physicalDevice, logicalDevice);
-            imgObj->createImageViewImportedImage(image, this->swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT); // CreateImageView
-            this->swapchainImages.push_back(imgObj);
+            imgObj->createImageViewImportedImage(image, this->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT); // CreateImageView
+            this->images.push_back(imgObj);
         }
     }
 
     SwapChain::~SwapChain() {
 
-        for (auto& image : this->swapchainImages) {
+        for (auto& image : this->images) {
             image.reset();
         }
 
