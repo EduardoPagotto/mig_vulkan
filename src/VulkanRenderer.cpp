@@ -39,7 +39,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->createPushConstantRange();
     this->createGraphicsPipeline();
     this->createDepthBufferImage();
-    this->createFramebuffers();
+
+    this->swapchain->createFramebuffers(this->depthBufferObject->getImageView(), this->rederer->getRenderPass());
+
     this->createCommandPool();
     this->createCommandBuffers();
     this->createTextureSampler();
@@ -106,9 +108,6 @@ VulkanRenderer::~VulkanRenderer() {
     }
 
     vkDestroyCommandPool(vwrapp->getLogical(), this->graphicsCommandPool, nullptr);
-    for (auto& framebuffer : this->swapChainFrameBuffers) { // ? auto& mesmo ??
-        vkDestroyFramebuffer(vwrapp->getLogical(), framebuffer, nullptr);
-    }
 
     this->pipeline.reset();
 }
@@ -314,32 +313,6 @@ void VulkanRenderer::createDepthBufferImage() {
     this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void VulkanRenderer::createFramebuffers() {
-    // Resize framebuffer count to equal chain image count
-    this->swapChainFrameBuffers.resize(this->swapchain->getImages().size());
-
-    // Create a framebuffer for eache swap chain image
-    for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
-
-        std::array<VkImageView, 2> attachments = {this->swapchain->getImages()[i]->getImageView(),
-                                                  this->depthBufferObject->getImageView()}; // order important same as upper
-
-        const VkFramebufferCreateInfo framebufferCreateInfo = {
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .renderPass = this->rederer->getRenderPass(),                 // Render Pass layout the framebuffer will be used with
-            .attachmentCount = static_cast<uint32_t>(attachments.size()), //
-            .pAttachments = attachments.data(),                           // List of attachments (1:1 with Render Pass)
-            .width = this->swapchain->getExtent().width,                  // Framebuffer width
-            .height = this->swapchain->getExtent().height,                // Framebuffer height
-            .layers = 1                                                   // Framebuffer layers
-        };
-
-        if (vkCreateFramebuffer(vwrapp->getLogical(), &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("Faleid to create a frambuffer");
-        }
-    }
-}
-
 void VulkanRenderer::createCommandPool() {
 
     // Get inidices of queue families from device
@@ -361,7 +334,7 @@ void VulkanRenderer::createCommandPool() {
 void VulkanRenderer::createCommandBuffers() {
 
     // Resize command buffer count to have one for each frambuffer
-    this->commandBuffers.resize(this->swapChainFrameBuffers.size());
+    this->commandBuffers.resize(this->swapchain->getSwapChainFrameBuffers().size());
 
     const VkCommandBufferAllocateInfo cbAllocInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -574,9 +547,9 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
     const VkRenderPassBeginInfo renderPassBeginInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = this->rederer->getRenderPass(),                   // Render pass to begin
-        .framebuffer = this->swapChainFrameBuffers[currentImage],       //
-        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},              // Start point of render pass in pixels
+        .renderPass = this->rederer->getRenderPass(),                             // Render pass to begin
+        .framebuffer = this->swapchain->getSwapChainFrameBuffers()[currentImage], //
+        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},                        // Start point of render pass in pixels
                                .extent = this->swapchain->getExtent()}, // Size of region to run render pass on (starting at offset)
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),   //
         .pClearValues = clearValues.data()                              // List of clear values

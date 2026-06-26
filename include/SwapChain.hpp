@@ -27,6 +27,9 @@ namespace ce {
         VkExtent2D& getExtent() { return this->extent; }
         std::vector<std::shared_ptr<ImageObject>>& getImages() { return this->images; }
         VkFormat& getImageFormat() { return this->imageFormat; }
+        std::vector<VkFramebuffer>& getSwapChainFrameBuffers() { return this->swapChainFrameBuffers; }
+
+        void createFramebuffers(VkImageView& imageView, VkRenderPass& renderPass);
 
       private:
         VkSwapchainKHR swapchain;
@@ -34,6 +37,8 @@ namespace ce {
         VkExtent2D extent;
         std::vector<std::shared_ptr<ImageObject>> images;
         VkDevice logicalDevice;
+
+        std::vector<VkFramebuffer> swapChainFrameBuffers;
 
 #ifdef SET_GLFW_ENABLE
         GLFWwindow* window;

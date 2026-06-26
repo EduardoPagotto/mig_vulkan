@@ -97,6 +97,10 @@ namespace ce {
 
     SwapChain::~SwapChain() {
 
+        for (auto& framebuffer : this->swapChainFrameBuffers) { // ? auto& mesmo ??
+            vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+        }
+
         for (auto& image : this->images) {
             image.reset();
         }
@@ -131,6 +135,31 @@ namespace ce {
             std::max(surfaceCapabilities.minImageExtent.height, std::min(surfaceCapabilities.maxImageExtent.height, newExtent.height));
 
         return newExtent;
+    }
+
+    void SwapChain::createFramebuffers(VkImageView& imageView, VkRenderPass& renderPass) {
+        // Resize framebuffer count to equal chain image count
+        this->swapChainFrameBuffers.resize(this->getImages().size());
+
+        // Create a framebuffer for eache swap chain image
+        for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
+
+            std::array<VkImageView, 2> attachments = {this->getImages()[i]->getImageView(), imageView}; // order important same as upper
+
+            const VkFramebufferCreateInfo framebufferCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .renderPass = renderPass,                                     // Render Pass layout the framebuffer will be used with
+                .attachmentCount = static_cast<uint32_t>(attachments.size()), //
+                .pAttachments = attachments.data(),                           // List of attachments (1:1 with Render Pass)
+                .width = this->getExtent().width,                             // Framebuffer width
+                .height = this->getExtent().height,                           // Framebuffer height
+                .layers = 1                                                   // Framebuffer layers
+            };
+
+            if (vkCreateFramebuffer(logicalDevice, &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]) != VK_SUCCESS) {
+                throw std::runtime_error("Faleid to create a frambuffer");
+            }
+        }
     }
 
     // Best format is subjective, but ours will be:

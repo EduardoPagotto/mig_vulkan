@@ -50,7 +50,6 @@ class VulkanRenderer {
 
     // Vulkan components
     // - Main
-    std::vector<VkFramebuffer> swapChainFrameBuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::shared_ptr<ce::ImageObject> depthBufferObject;
@@ -97,7 +96,7 @@ class VulkanRenderer {
     void createPushConstantRange();
     void createGraphicsPipeline();
     void createDepthBufferImage();
-    void createFramebuffers();
+    // void createFramebuffers();
     void createCommandPool();
     void createCommandBuffers();
     void createSynchronisation();
