@@ -20,7 +20,7 @@ namespace ce {
         void create(const VkDeviceSize& bufferSize, const VkBufferUsageFlags& bufferUsage, const VkMemoryPropertyFlags& bufferProperties) {
 
             // information to create a buffer (dosen't include assigning memory)
-            VkBufferCreateInfo bufferInfo{
+            const VkBufferCreateInfo bufferInfo{
                 .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
                 .size = bufferSize,                       // Size of buffer (size of 1 vertex * number of vertices)
                 .usage = bufferUsage,                     // Multiple types of buffer possible
@@ -41,10 +41,10 @@ namespace ce {
             // VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT : CPU can interact with memory
             // VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : Allows placement of data straight into buffer mapping (otherwise would have to
             // specify manually)
-            VkMemoryAllocateInfo memoryAllocInfo{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                 .allocationSize = memRequirements.size,
-                                                 .memoryTypeIndex =
-                                                     findMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
+            const VkMemoryAllocateInfo memoryAllocInfo{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                .allocationSize = memRequirements.size,
+                .memoryTypeIndex = findMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
 
             // Allocate memory to VkDebviceMemory
             if (vkAllocateMemory(this->device, &memoryAllocInfo, nullptr, &this->memory) != VK_SUCCESS) {

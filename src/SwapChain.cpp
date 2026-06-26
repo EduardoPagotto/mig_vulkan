@@ -52,7 +52,7 @@ namespace ce {
         }
 
         // Create information for swap chain
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{
+        const VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .surface = surface,                                                    // Swapchain surface
             .minImageCount = imageCount,                                           // Minimum image in swapchain

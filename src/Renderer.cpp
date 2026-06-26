@@ -29,7 +29,6 @@ namespace ce {
             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE, // Describes what todo with stencil before rendering
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,         // Image data layout before render pass starts
             .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,     // Image data layout after render pass (to change to)
-
         };
 
         // Depth attachemnt of render pass
@@ -38,7 +37,6 @@ namespace ce {
                                             {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
                                             VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
                                             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
-
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,

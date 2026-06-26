@@ -22,7 +22,7 @@ namespace ce {
             std::vector<VkDescriptorSet> localSets(size);
 
             // Descriptor Set Allocation info
-            VkDescriptorSetAllocateInfo setAllocInfo{
+            const VkDescriptorSetAllocateInfo setAllocInfo{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
                 .descriptorPool = descriptorPool,                  // Pool to allocate Descriptor Set
                 .descriptorSetCount = static_cast<uint32_t>(size), // Number of sets to allocate

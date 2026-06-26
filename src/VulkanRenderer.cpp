@@ -140,7 +140,7 @@ void VulkanRenderer::draw() {
     std::array<VkSemaphore, 1> signalSemaphores{this->renderFinished[this->currentFrame]};
 
     std::array<VkPipelineStageFlags, 1> waitStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSubmitInfo submitInfo{
+    const VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),     // Number of semaphores to wait on
         .pWaitSemaphores = waitSemaphores.data(),                               //
@@ -158,7 +158,7 @@ void VulkanRenderer::draw() {
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
     std::array<VkSwapchainKHR, 1> swapChains{this->swc->getSwapchain()};
-    VkPresentInfoKHR presentInfo{
+    const VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphores to wait on
         .pWaitSemaphores = signalSemaphores.data(),                           // Semaphores to wait on
@@ -243,15 +243,15 @@ void VulkanRenderer::createGraphicsPipeline() {
     shaderModule->setVertexInput(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
     // -- VIEWPORT & SCISSOR
-    auto viewport = VkViewport{.x = 0.0F,                                               // x start coordinate
-                               .y = 0.0F,                                               // y start coordinate
-                               .width = (float)this->swc->getSwapchainExtent().width,   // width of viewport
-                               .height = (float)this->swc->getSwapchainExtent().height, // height of viewport
-                               .minDepth = 0.0F,                                        // min framebuffer depth
-                               .maxDepth = 1.0F};                                       // max framebuffer depth
+    const VkViewport viewport{.x = 0.0F,                                               // x start coordinate
+                              .y = 0.0F,                                               // y start coordinate
+                              .width = (float)this->swc->getSwapchainExtent().width,   // width of viewport
+                              .height = (float)this->swc->getSwapchainExtent().height, // height of viewport
+                              .minDepth = 0.0F,                                        // min framebuffer depth
+                              .maxDepth = 1.0F};                                       // max framebuffer depth
 
-    auto scissor = VkRect2D{.offset = VkOffset2D{.x = 0, .y = 0},       // Offset to use region from
-                            .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
+    const VkRect2D scissor{.offset = VkOffset2D{.x = 0, .y = 0},       // Offset to use region from
+                           .extent = this->swc->getSwapchainExtent()}; // Extent to describe region to use, starting at offset
 
     // TODO: mudar o nome da classe
     this->pipeline = std::make_shared<ce::Pipeline>(this->vwrapp->getLogical());
@@ -265,23 +265,22 @@ void VulkanRenderer::createGraphicsPipeline() {
     // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
 
     // Blend Attachment State (how blending is handled)
-    VkPipelineColorBlendAttachmentState colourState = {};
-    colourState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                 VK_COLOR_COMPONENT_A_BIT; // Color to apply blending to
-    colourState.blendEnable = VK_TRUE;                     // Enable blending
-
     // Blending uses equation: (srcColorBlendfactor * new colour) colorBlendOp (dstColorBlendfactor * old colour)
-    colourState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colourState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colourState.colorBlendOp = VK_BLEND_OP_ADD;
-
-    // Sumarised: (VK_BLEND_FACTOR_SRC_ALPHA * new colour) + (VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA * old colour)
+    // Sumarised 1: (VK_BLEND_FACTOR_SRC_ALPHA * new colour) + (VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA * old colour)
     //            (new colour alpha * new colour) + ((i - new color alpha) * old colour)
+    // Sumarized 2: (1 * new alpha) + (0 * old Alpha) = new alpha
 
-    colourState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colourState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colourState.alphaBlendOp = VK_BLEND_OP_ADD;
-    // Sumarized: (1 * new alpha) + (0 * old Alpha) = new alpha
+    const VkPipelineColorBlendAttachmentState colourState{
+        .blendEnable = VK_TRUE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .colorBlendOp = VK_BLEND_OP_ADD,
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .alphaBlendOp = VK_BLEND_OP_ADD,
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                          VK_COLOR_COMPONENT_A_BIT, // Color to apply blending to
+    };
 
     this->pipeline->addColourState(colourState);
 
@@ -322,7 +321,7 @@ void VulkanRenderer::createFramebuffers() {
         std::array<VkImageView, 2> attachments = {this->swc->getSwapchainImages()[i]->getImageView(),
                                                   this->depthBufferObject->getImageView()}; // order important same as upper
 
-        VkFramebufferCreateInfo framebufferCreateInfo = {
+        const VkFramebufferCreateInfo framebufferCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .renderPass = this->rederer->getRenderPass(),                 // Render Pass layout the framebuffer will be used with
             .attachmentCount = static_cast<uint32_t>(attachments.size()), //
@@ -343,10 +342,12 @@ void VulkanRenderer::createCommandPool() {
     // Get inidices of queue families from device
     ce::QueueFamilyIndices queueFamilyIndices = ce::GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
 
-    VkCommandPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily; // Queue Family type that buffers from this command pool will use
+    const VkCommandPoolCreateInfo poolInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex =
+            static_cast<uint32_t>(queueFamilyIndices.graphicsFamily) // Queue Family type that buffers from this command pool will use
+    };
 
     // Create a Graphics Queue Family Command Pool
     if (vkCreateCommandPool(vwrapp->getLogical(), &poolInfo, nullptr, &this->graphicsCommandPool) != VK_SUCCESS) {
@@ -359,15 +360,15 @@ void VulkanRenderer::createCommandBuffers() {
     // Resize command buffer count to have one for each frambuffer
     this->commandBuffers.resize(this->swapChainFrameBuffers.size());
 
-    VkCommandBufferAllocateInfo cbAllocInfo = {};
-    cbAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cbAllocInfo.commandPool = graphicsCommandPool;
-    cbAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
-                                                         // to queue. Can't be called by other buffers.
-                                                         // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
-                                                         // directly. cam be called from other buffe via
-                                                         // "VkCmdExecuteCommand" when recording commands in primary buf
-    cbAllocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+    const VkCommandBufferAllocateInfo cbAllocInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = graphicsCommandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
+                                                  // to queue. Can't be called by other buffers.
+                                                  // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
+                                                  // directly. cam be called from other buffe via
+                                                  // "VkCmdExecuteCommand" when recording commands in primary buf
+        .commandBufferCount = static_cast<uint32_t>(commandBuffers.size())};
 
     // Allocate command buffers and place handles in array of buffers
     if (vkAllocateCommandBuffers(vwrapp->getLogical(), &cbAllocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
@@ -382,12 +383,12 @@ void VulkanRenderer::createSynchronisation() {
     this->drawFences.resize(MAX_FRAME_DRAWS);
 
     // Semaphore creation information
-    VkSemaphoreCreateInfo semaphoreCreateInfo{
+    const VkSemaphoreCreateInfo semaphoreCreateInfo{
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
     };
 
     // Fence creation information
-    VkFenceCreateInfo fenceCreateInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+    const VkFenceCreateInfo fenceCreateInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
@@ -488,14 +489,14 @@ void VulkanRenderer::createDescriptorSets() {
 
         // VIEW PROJECTION DESCRIPTOR
         // Buffer info and data offset info
-        VkDescriptorBufferInfo vpBufferInfo{
+        const VkDescriptorBufferInfo vpBufferInfo{
             .buffer = this->vpUniformBuffer[i]->getBuffer(), // Buffer get data from
             .offset = 0,                                     // Position of star of data
             .range = sizeof(UboViewProjection)               // Size of data
         };
 
         // Data about connection between binding and buffer
-        VkWriteDescriptorSet vpSetWrite{
+        const VkWriteDescriptorSet vpSetWrite{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = this->descriptorSets->get()[i],            // Descriptor Set to update
             .dstBinding = 0,                                     // Binding to update (matches with binding on layout/shader)
@@ -568,17 +569,15 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     clearValues[0].color = {{0.6F, 0.65F, 0.4F, 1.0F}}; // NOLINT(readability-magic-numbers)
     clearValues[1].depthStencil.depth = 1.0F;
 
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = this->rederer->getRenderPass();         // Render pass to begin
-    renderPassBeginInfo.renderArea.offset = {.x = 0, .y = 0};                // Start point of render pass in pixels
-    renderPassBeginInfo.renderArea.extent = this->swc->getSwapchainExtent(); // Size of region to run render pass on (starting at offset)
-    renderPassBeginInfo.pClearValues = clearValues.data();                   // List of clear values
-    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-
-    // for (size_t i = 0; i < this->commandBuffers.size(); i++) {
-
-    renderPassBeginInfo.framebuffer = this->swapChainFrameBuffers[currentImage];
+    const VkRenderPassBeginInfo renderPassBeginInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = this->rederer->getRenderPass(),                      // Render pass to begin
+        .framebuffer = this->swapChainFrameBuffers[currentImage],          //
+        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},                 // Start point of render pass in pixels
+                               .extent = this->swc->getSwapchainExtent()}, // Size of region to run render pass on (starting at offset)
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),      //
+        .pClearValues = clearValues.data()                                 // List of clear values
+    };
 
     // Start recording command to command buffer!
     if (vkBeginCommandBuffer(this->commandBuffers[currentImage], &bufferBeginInfo) != VK_SUCCESS) {
@@ -709,20 +708,20 @@ int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
     auto [index, size] = this->samplerDescriptorSets->allocate(this->samplerDescriptorPool->get(), layouts);
 
     // Texture Image info
-    VkDescriptorImageInfo imageInfo{
+    const VkDescriptorImageInfo imageInfo{
         .sampler = this->textureSampler,                        // Image layout when in use
         .imageView = textureImage,                              // Sampler to use for set
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // Image to bind to set
     };
 
     // Descriptor Write info
-    VkWriteDescriptorSet descriptorWrite{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                         .dstSet = this->samplerDescriptorSets->get()[index],
-                                         .dstBinding = 0,
-                                         .dstArrayElement = 0,
-                                         .descriptorCount = 1,
-                                         .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                         .pImageInfo = &imageInfo};
+    const VkWriteDescriptorSet descriptorWrite{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                               .dstSet = this->samplerDescriptorSets->get()[index],
+                                               .dstBinding = 0,
+                                               .dstArrayElement = 0,
+                                               .descriptorCount = 1,
+                                               .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                               .pImageInfo = &imageInfo};
 
     // Update new descriptor set
     vkUpdateDescriptorSets(vwrapp->getLogical(), 1, &descriptorWrite, 0, nullptr);

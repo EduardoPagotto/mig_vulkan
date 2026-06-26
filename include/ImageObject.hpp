@@ -19,7 +19,7 @@ namespace ce {
                          VkMemoryPropertyFlags propFlags) {
             // CREATE IMAGE
             // Image Create Info
-            VkImageCreateInfo imageCreateInfo{
+            const VkImageCreateInfo imageCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                 .imageType = VK_IMAGE_TYPE_2D,              // Type of image (1D, 2D or 3D)
                 .format = format,                           // Format type of image
@@ -47,10 +47,10 @@ namespace ce {
             vkGetImageMemoryRequirements(this->device, this->image, &memoryRequirements);
 
             // Allocate memory using image requeirement and user define properties
-            VkMemoryAllocateInfo memoryAllocInfo{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                 .allocationSize = memoryRequirements.size,
-                                                 .memoryTypeIndex =
-                                                     findMemoryTypeIndex(this->physical, memoryRequirements.memoryTypeBits, propFlags)};
+            const VkMemoryAllocateInfo memoryAllocInfo{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                .allocationSize = memoryRequirements.size,
+                .memoryTypeIndex = findMemoryTypeIndex(this->physical, memoryRequirements.memoryTypeBits, propFlags)};
 
             if (vkAllocateMemory(this->device, &memoryAllocInfo, nullptr, &this->imageMemory) != VK_SUCCESS) {
                 throw std::runtime_error("Failed to Allocate Memory for Image");
@@ -71,7 +71,7 @@ namespace ce {
 
         void createImageView(VkImageAspectFlags aspectFlags) {
             //
-            VkImageViewCreateInfo viewCreateInfo{
+            const VkImageViewCreateInfo viewCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,  //
                 .image = this->image,                               // Image to create view for
                 .viewType = VK_IMAGE_VIEW_TYPE_2D,                  // Type of image (1D, 2D, 3D, Cube, etc)

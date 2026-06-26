@@ -21,7 +21,7 @@ namespace ce {
         void create() {
 
             // Create Desciptor Set Layout with given bindingd
-            VkDescriptorSetLayoutCreateInfo layoutCreateInfo{
+            const VkDescriptorSetLayoutCreateInfo layoutCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
                 .bindingCount = static_cast<uint32_t>(layoutBinding.size()), // Number of binding infos
                 .pBindings = layoutBinding.data()                            // Array of binding infos
