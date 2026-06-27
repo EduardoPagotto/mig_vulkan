@@ -1,12 +1,12 @@
 #pragma once
 
-#include "BufferObject.hpp"
-#include <memory>
-#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include "Ultilities.hpp"
+#include "buffers/BufferObject.hpp"
 #include <GLFW/glfw3.h>
+#include <memory>
 #include <vector>
+#include <vulkan/vulkan_core.h>
 
 struct Model {
     glm::mat4 model;

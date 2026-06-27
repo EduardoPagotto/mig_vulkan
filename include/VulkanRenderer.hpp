@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BufferObject.hpp"
 #include "Command.hpp"
 #include "ImageObject.hpp"
 #include "MeshModel.hpp"
@@ -8,6 +7,7 @@
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
+#include "buffers/BufferObject.hpp"
 #include "descriptors/DescriptorPool.hpp"
 #include "descriptors/DescriptorSet.hpp"
 #include "descriptors/DescriptorSetLayout.hpp"
