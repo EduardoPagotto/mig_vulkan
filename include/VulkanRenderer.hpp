@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BufferObject.hpp"
+#include "Command.hpp"
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
 #include "DescriptorSetLayout.hpp"
@@ -83,7 +84,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::Pipeline> pipeline;
 
     // - Pools
-    VkCommandPool graphicsCommandPool;
+    std::shared_ptr<ce::CommandPool> graphicsCommandPool;
 
     // - Synchronization
     std::vector<VkSemaphore> imageAvailable;

@@ -41,8 +41,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->createDepthBufferImage();
 
     this->swapchain->createFramebuffers(this->depthBufferObject->getImageView(), this->rederer->getRenderPass());
+    this->graphicsCommandPool = std::make_shared<ce::CommandPool>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface());
 
-    this->createCommandPool();
     this->createCommandBuffers();
     this->createTextureSampler();
     // this->allocateDynamicBufferTransferSpace();
@@ -107,8 +107,7 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroyFence(vwrapp->getLogical(), this->drawFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(vwrapp->getLogical(), this->graphicsCommandPool, nullptr);
-
+    this->graphicsCommandPool.reset();
     this->pipeline.reset();
 }
 
@@ -313,24 +312,6 @@ void VulkanRenderer::createDepthBufferImage() {
     this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void VulkanRenderer::createCommandPool() {
-
-    // Get inidices of queue families from device
-    ce::QueueFamilyIndices queueFamilyIndices = ce::GetQueueFamilies(vwrapp->getPhysical(), vwrapp->getSurface());
-
-    const VkCommandPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex =
-            static_cast<uint32_t>(queueFamilyIndices.graphicsFamily) // Queue Family type that buffers from this command pool will use
-    };
-
-    // Create a Graphics Queue Family Command Pool
-    if (vkCreateCommandPool(vwrapp->getLogical(), &poolInfo, nullptr, &this->graphicsCommandPool) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create Commnad Pool");
-    }
-}
-
 void VulkanRenderer::createCommandBuffers() {
 
     // Resize command buffer count to have one for each frambuffer
@@ -338,7 +319,7 @@ void VulkanRenderer::createCommandBuffers() {
 
     const VkCommandBufferAllocateInfo cbAllocInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = graphicsCommandPool,
+        .commandPool = this->graphicsCommandPool->getCommandPool(),
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
                                                   // to queue. Can't be called by other buffers.
                                                   // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
@@ -661,16 +642,16 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImageObj->getImage(),
-                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
+                          texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy image data
-    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, imageStagingBuffer.getBuffer(),
-                    texImageObj->getImage(), width, height);
+    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
+                    imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
 
     // Transition image to be shader readable for shader
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), graphicsCommandPool, texImageObj->getImage(),
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
+                          texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     // add texture data to vector for reference
     this->textureImageObjects.push_back(texImageObj);
@@ -738,7 +719,7 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
 
     // Load in all our meshes
     std::vector<Mesh> modelMeshes = MeshModel::LoadNode(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getGraphicsQueue(),
-                                                        this->graphicsCommandPool, scene->mRootNode, scene, matToTex);
+                                                        this->graphicsCommandPool->getCommandPool(), scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     MeshModel meshModel(modelMeshes);
