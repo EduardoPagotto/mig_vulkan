@@ -319,7 +319,7 @@ void VulkanRenderer::createCommandBuffers() {
 
     const VkCommandBufferAllocateInfo cbAllocInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = this->graphicsCommandPool->getCommandPool(),
+        .commandPool = this->graphicsCommandPool->getPool(),
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
                                                   // to queue. Can't be called by other buffers.
                                                   // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
@@ -642,16 +642,16 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
-                          texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), texImageObj->getImage(),
+                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy image data
-    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
-                    imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
+    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), imageStagingBuffer.getBuffer(),
+                    texImageObj->getImage(), width, height);
 
     // Transition image to be shader readable for shader
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getCommandPool(),
-                          texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), texImageObj->getImage(),
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     // add texture data to vector for reference
     this->textureImageObjects.push_back(texImageObj);
@@ -719,7 +719,7 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
 
     // Load in all our meshes
     std::vector<Mesh> modelMeshes = MeshModel::LoadNode(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getGraphicsQueue(),
-                                                        this->graphicsCommandPool->getCommandPool(), scene->mRootNode, scene, matToTex);
+                                                        this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     MeshModel meshModel(modelMeshes);

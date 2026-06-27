@@ -72,10 +72,7 @@ static VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool command
     return commandBuffer;
 }
 
-static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer) {
-    // End commands
-    vkEndCommandBuffer(commandBuffer);
-
+static void submitQueue(VkQueue queue, VkCommandBuffer commandBuffer) {
     // Queue submission information
     const VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO, //
@@ -86,6 +83,13 @@ static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool
     // Submit transfer command to transfer queue and wait until it finishes
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(queue);
+}
+
+static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer) {
+    // End commands
+    vkEndCommandBuffer(commandBuffer);
+
+    submitQueue(queue, commandBuffer);
 
     // Free temporary command buffer back to pool
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);

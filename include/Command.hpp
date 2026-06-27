@@ -22,7 +22,7 @@ namespace ce {
 
             // Create a Graphics Queue Family Command Pool
             if (vkCreateCommandPool(this->logicalDevice, &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to create Commnad Pool");
+                throw std::runtime_error("Failed to create Command Pool");
             }
         }
 
@@ -31,12 +31,18 @@ namespace ce {
             vkDestroyCommandPool(logicalDevice, this->commandPool, nullptr);
         }
 
-        VkCommandPool& getCommandPool() { return this->commandPool; }
+        void cleanup() {
+            //
+            if (vkResetCommandPool(this->logicalDevice, this->commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) {
+                throw std::runtime_error("Failed to Reset Command Pool");
+            }
+        }
+
+        VkCommandPool& getPool() { return this->commandPool; }
 
       private:
-        // VkPhysicalDevice physicalDevice;
         VkDevice logicalDevice;
-        VkCommandPool commandPool; // graphicsCommandPool;
+        VkCommandPool commandPool;
         VkSurfaceKHR surface;
     };
 
@@ -62,8 +68,28 @@ namespace ce {
             }
         }
 
+        virtual ~CommandBuffer() {
+            // Free temporary command buffer back to pool
+            vkFreeCommandBuffers(this->device, this->commandPool, static_cast<uint32_t>(this->commandBuffers.size()),
+                                 this->commandBuffers.data());
+        }
+
+        void clean(size_t index) {
+            if (vkResetCommandBuffer(this->commandBuffers[index], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) {
+                throw std::runtime_error("Failed to reset a Command Buffer!");
+            }
+        }
+
+        void cleanAll() {
+            for (auto& commandBuffer : this->commandBuffers) {
+                if (vkResetCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) {
+                    throw std::runtime_error("Failed to reset a Command Buffer!");
+                }
+            }
+        }
+
       private:
-        void beginCommandBuffer(size_t index, VkCommandBufferUsageFlagBits flag) {
+        void begin(size_t index, VkCommandBufferUsageFlagBits flag) {
 
             // Information to begin the command buffer record
             const VkCommandBufferBeginInfo beginInfo{
@@ -73,35 +99,35 @@ namespace ce {
 
             // Begin recording transfer commands
             if (vkBeginCommandBuffer(commandBuffers[index], &beginInfo) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to start recording a Command Buffer!");
+                throw std::runtime_error("Failed to begin a Command Buffer!");
             }
         }
 
-        void endCommandBuffer(size_t index) {
+        void end(size_t index) {
             // End commands
             if (vkEndCommandBuffer(this->commandBuffers[index]) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to stop recording a Command Buffer!");
+                throw std::runtime_error("Failed to end a Command Buffer!");
             }
         }
 
-        void submit(VkQueue queue) {
-            // Queue submission information
-            const VkSubmitInfo submitInfo{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,                                   //
-                .commandBufferCount = static_cast<uint32_t>(this->commandBuffers.size()), //
-                .pCommandBuffers = this->commandBuffers.data()                            //
-            };
+        // void submit(VkQueue queue) {
+        //     // Queue submission information
+        //     const VkSubmitInfo submitInfo{
+        //         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,                                   //
+        //         .commandBufferCount = static_cast<uint32_t>(this->commandBuffers.size()), //
+        //         .pCommandBuffers = this->commandBuffers.data()                            //
+        //     };
 
-            // Submit transfer command to transfer queue and wait until it finishes
-            if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to submit Command Buffer to Queue!");
-            }
+        //     // Submit transfer command to transfer queue and wait until it finishes
+        //     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        //         throw std::runtime_error("Failed to submit Command Buffer to Queue!");
+        //     }
 
-            vkQueueWaitIdle(queue);
+        //     vkQueueWaitIdle(queue);
 
-            // Free temporary command buffer back to pool
-            vkFreeCommandBuffers(this->device, this->commandPool, this->commandBuffers.size(), this->commandBuffers.data());
-        }
+        //     // Free temporary command buffer back to pool
+        //     vkFreeCommandBuffers(this->device, this->commandPool, this->commandBuffers.size(), this->commandBuffers.data());
+        // }
 
         VkDevice device;
         VkCommandPool commandPool;
