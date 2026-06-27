@@ -30,6 +30,9 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
 
 add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/debug.cpp
+                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorSet.cpp
+                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorSetLayout.cpp
+                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorPool.cpp
                                ${CMAKE_SOURCE_DIR}/src/VWrappUtils.cpp
                                ${CMAKE_SOURCE_DIR}/src/VWrapp.cpp
                                ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
