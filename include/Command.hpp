@@ -47,7 +47,7 @@ namespace ce {
     };
 
     class CommandBuffer {
-
+      public:
         explicit CommandBuffer(VkDevice device, VkCommandPool commandPool, size_t count) : device(device), commandPool(commandPool) {
 
             this->commandBuffers.resize(count);
@@ -67,6 +67,8 @@ namespace ce {
                 throw std::runtime_error("Failed to Allocate Command buffers!");
             }
         }
+
+        std::vector<VkCommandBuffer>& getBuffers() { return this->commandBuffers; }
 
         virtual ~CommandBuffer() {
             // Free temporary command buffer back to pool
@@ -88,7 +90,6 @@ namespace ce {
             }
         }
 
-      private:
         void begin(size_t index, VkCommandBufferUsageFlagBits flag) {
 
             // Information to begin the command buffer record
@@ -110,25 +111,7 @@ namespace ce {
             }
         }
 
-        // void submit(VkQueue queue) {
-        //     // Queue submission information
-        //     const VkSubmitInfo submitInfo{
-        //         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,                                   //
-        //         .commandBufferCount = static_cast<uint32_t>(this->commandBuffers.size()), //
-        //         .pCommandBuffers = this->commandBuffers.data()                            //
-        //     };
-
-        //     // Submit transfer command to transfer queue and wait until it finishes
-        //     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-        //         throw std::runtime_error("Failed to submit Command Buffer to Queue!");
-        //     }
-
-        //     vkQueueWaitIdle(queue);
-
-        //     // Free temporary command buffer back to pool
-        //     vkFreeCommandBuffers(this->device, this->commandPool, this->commandBuffers.size(), this->commandBuffers.data());
-        // }
-
+      private:
         VkDevice device;
         VkCommandPool commandPool;
         std::vector<VkCommandBuffer> commandBuffers;

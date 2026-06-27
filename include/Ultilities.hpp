@@ -1,6 +1,7 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
+#include "Command.hpp"
 #include <GLFW/glfw3.h>
 #include <cstddef>
 #include <fstream>
@@ -47,31 +48,6 @@ struct Vertex {
     return fileBuffer;
 }
 
-static VkCommandBuffer beginCommandBuffer(VkDevice device, VkCommandPool commandPool) {
-    // Command buffer to hold transfer commands
-    VkCommandBuffer commandBuffer;
-
-    // Command buffer details
-    const VkCommandBufferAllocateInfo allocInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                                                .commandPool = commandPool,
-                                                .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                                                .commandBufferCount = 1};
-
-    // Allocate command buffer from pool
-    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-    // Information to begin the command buffer record
-    const VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT // We're only using the command buffer once, so set up for one time submit
-    };
-
-    // Begin recording transfer commands
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    return commandBuffer;
-}
-
 static void submitQueue(VkQueue queue, VkCommandBuffer commandBuffer) {
     // Queue submission information
     const VkSubmitInfo submitInfo{
@@ -85,34 +61,27 @@ static void submitQueue(VkQueue queue, VkCommandBuffer commandBuffer) {
     vkQueueWaitIdle(queue);
 }
 
-static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer) {
-    // End commands
-    vkEndCommandBuffer(commandBuffer);
-
-    submitQueue(queue, commandBuffer);
-
-    // Free temporary command buffer back to pool
-    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-}
-
 [[maybe_unused]] static void copyBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer,
                                         VkBuffer dstBuffer, VkDeviceSize bufferSize) {
 
-    const VkCommandBuffer transferComandBuffer = beginCommandBuffer(device, transferCommandPool);
+    ce::CommandBuffer transferComandBuffer(device, transferCommandPool, 1);
+    transferComandBuffer.begin(0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     // Region of data to copy from and to
     const VkBufferCopy bufferCopyRegion{.srcOffset = 0, .dstOffset = 0, .size = bufferSize};
 
     // Command to copy src buffer to dst buffer
-    vkCmdCopyBuffer(transferComandBuffer, srcBuffer, dstBuffer, 1, &bufferCopyRegion);
+    vkCmdCopyBuffer(transferComandBuffer.getBuffers()[0], srcBuffer, dstBuffer, 1, &bufferCopyRegion);
 
-    endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferComandBuffer);
+    transferComandBuffer.end(0);
+    submitQueue(transferQueue, transferComandBuffer.getBuffers()[0]);
 }
 
 [[maybe_unused]] static void copyImageBuffer(VkDevice device, VkQueue transferQueue, VkCommandPool transferCommandPool, VkBuffer srcBuffer,
                                              VkImage image, uint32_t width, uint32_t height) {
     // Create Buffer
-    VkCommandBuffer transferComandBuffer = beginCommandBuffer(device, transferCommandPool);
+    ce::CommandBuffer transferComandBuffer(device, transferCommandPool, 1);
+    transferComandBuffer.begin(0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     const VkBufferImageCopy imageRegion{
         .bufferOffset = 0,                                                                    // Offset into data
@@ -127,15 +96,17 @@ static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool
     };
 
     // Copy buffer to given image
-    vkCmdCopyBufferToImage(transferComandBuffer, srcBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
+    vkCmdCopyBufferToImage(transferComandBuffer.getBuffers()[0], srcBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageRegion);
 
-    endAndSubmitCommandBuffer(device, transferCommandPool, transferQueue, transferComandBuffer);
+    transferComandBuffer.end(0);
+    submitQueue(transferQueue, transferComandBuffer.getBuffers()[0]);
 }
 
 [[maybe_unused]] static void transitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool commandPool, VkImage image,
                                                    VkImageLayout oldLayout, VkImageLayout newLayout) {
     // Create buffer
-    VkCommandBuffer commandBuffer = beginCommandBuffer(device, commandPool);
+    ce::CommandBuffer commandBuffer(device, commandPool, 1);
+    commandBuffer.begin(0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_NONE;
     VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_NONE;
@@ -175,13 +146,14 @@ static void endAndSubmitCommandBuffer(VkDevice device, VkCommandPool commandPool
                                                       .layerCount = 1      // Number of layers to alter starting from baseArrayLayer
                                                   }};
 
-    vkCmdPipelineBarrier(commandBuffer,         //
-                         srcStage, dstStage,    // Pipelane stages (match to src and dst AccessMask)
-                         0,                     // Dependency flags
-                         0, nullptr,            // Memory Barrier cont + data
-                         0, nullptr,            // Buffer Memory Barrier cont + data
-                         1, &imageMemoryBarrier // Image Memory Barrier cont + data
+    vkCmdPipelineBarrier(commandBuffer.getBuffers()[0], //
+                         srcStage, dstStage,            // Pipelane stages (match to src and dst AccessMask)
+                         0,                             // Dependency flags
+                         0, nullptr,                    // Memory Barrier cont + data
+                         0, nullptr,                    // Buffer Memory Barrier cont + data
+                         1, &imageMemoryBarrier         // Image Memory Barrier cont + data
     );
 
-    endAndSubmitCommandBuffer(device, commandPool, queue, commandBuffer);
+    commandBuffer.end(0);
+    submitQueue(queue, commandBuffer.getBuffers()[0]);
 }
