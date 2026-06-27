@@ -1,7 +1,6 @@
 #include "VulkanRenderer.hpp"
 #include "BufferObject.hpp"
 #include "Command.hpp"
-#include "DescriptorSetLayout.hpp"
 #include "ImageObject.hpp"
 #include "Mesh.hpp"
 #include "MeshModel.hpp"
@@ -24,9 +23,7 @@
 #include <glm/ext/vector_float3.hpp>
 #include <glm/trigonometric.hpp>
 #include <limits>
-#include <memory>
 #include <stdexcept>
-#include <vector>
 #include <vulkan/vulkan_core.h>
 
 VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT

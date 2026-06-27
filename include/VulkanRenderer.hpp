@@ -2,15 +2,15 @@
 
 #include "BufferObject.hpp"
 #include "Command.hpp"
-#include "DescriptorPool.hpp"
-#include "DescriptorSet.hpp"
-#include "DescriptorSetLayout.hpp"
 #include "ImageObject.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
+#include "descriptors/DescriptorPool.hpp"
+#include "descriptors/DescriptorSet.hpp"
+#include "descriptors/DescriptorSetLayout.hpp"
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -54,7 +54,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::CommandBuffer> commandBuffers;
     std::shared_ptr<ce::ImageObject> depthBufferObject;
 
-    VkSampler textureSampler;
+    VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
 
     // - Descriptors
     std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout;
