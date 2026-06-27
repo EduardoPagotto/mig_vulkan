@@ -51,8 +51,7 @@ class VulkanRenderer {
 
     // Vulkan components
     // - Main
-    std::vector<VkCommandBuffer> commandBuffers;
-
+    std::shared_ptr<ce::CommandBuffer> commandBuffers;
     std::shared_ptr<ce::ImageObject> depthBufferObject;
 
     VkSampler textureSampler;
@@ -97,9 +96,7 @@ class VulkanRenderer {
     void createPushConstantRange();
     void createGraphicsPipeline();
     void createDepthBufferImage();
-    // void createFramebuffers();
     void createCommandPool();
-    void createCommandBuffers();
     void createSynchronisation();
     void createTextureSampler();
 

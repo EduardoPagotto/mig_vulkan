@@ -1,5 +1,6 @@
 #include "VulkanRenderer.hpp"
 #include "BufferObject.hpp"
+#include "Command.hpp"
 #include "DescriptorSetLayout.hpp"
 #include "ImageObject.hpp"
 #include "Mesh.hpp"
@@ -43,7 +44,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->swapchain->createFramebuffers(this->depthBufferObject->getImageView(), this->rederer->getRenderPass());
     this->graphicsCommandPool = std::make_shared<ce::CommandPool>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface());
 
-    this->createCommandBuffers();
+    // In create Command buffer, count to have one for each frambuffer
+    this->commandBuffers = std::make_shared<ce::CommandBuffer>(vwrapp->getLogical(), this->graphicsCommandPool->getPool(),
+                                                               this->swapchain->getSwapChainFrameBuffers().size());
     this->createTextureSampler();
     // this->allocateDynamicBufferTransferSpace();
     this->createUniformBuffers();
@@ -107,6 +110,7 @@ VulkanRenderer::~VulkanRenderer() {
         vkDestroyFence(vwrapp->getLogical(), this->drawFences[i], nullptr);
     }
 
+    this->commandBuffers.reset();
     this->graphicsCommandPool.reset();
     this->pipeline.reset();
 }
@@ -147,7 +151,7 @@ void VulkanRenderer::draw() {
         .pWaitSemaphores = waitSemaphores.data(),                               //
         .pWaitDstStageMask = waitStages.data(),                                 // Stagegs to check semaphores at
         .commandBufferCount = 1,                                                // Number of command buffers to submit FIXME: é isto mesmo?
-        .pCommandBuffers = &this->commandBuffers[imageIndex],                   // Command buffer to submit
+        .pCommandBuffers = &this->commandBuffers->getBuffers()[imageIndex],     // Command buffer to submit
         .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphore to signal
         .pSignalSemaphores = signalSemaphores.data(),                           // Semaphore to signal when command buffer finishes
     };
@@ -310,27 +314,6 @@ void VulkanRenderer::createDepthBufferImage() {
 
     // Create Depth Buffer Image View
     this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
-}
-
-void VulkanRenderer::createCommandBuffers() {
-
-    // Resize command buffer count to have one for each frambuffer
-    this->commandBuffers.resize(this->swapchain->getSwapChainFrameBuffers().size());
-
-    const VkCommandBufferAllocateInfo cbAllocInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = this->graphicsCommandPool->getPool(),
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, // VK_COMMAND_BUFFER_LEVEL_PRIMARY : Buffer you submit directly
-                                                  // to queue. Can't be called by other buffers.
-                                                  // VK_COMMAND_BUFFER_LEVEL_SECUNDARY : Buffer can't be called
-                                                  // directly. cam be called from other buffe via
-                                                  // "VkCmdExecuteCommand" when recording commands in primary buf
-        .commandBufferCount = static_cast<uint32_t>(commandBuffers.size())};
-
-    // Allocate command buffers and place handles in array of buffers
-    if (vkAllocateCommandBuffers(vwrapp->getLogical(), &cbAllocInfo, this->commandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to Allocate Command buffers!");
-    }
 }
 
 void VulkanRenderer::createSynchronisation() {
@@ -515,12 +498,6 @@ void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
 void VulkanRenderer::recordCommands(uint32_t currentImage) {
     // Information abaout how to begin each command buffer
 
-    VkCommandBufferBeginInfo bufferBeginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT // Buffer can be resubmitted when it has alredy been submited and is awaiting
-                                                              // execution
-    };
-
     // Information about how to begin a render pass (only need for graphical application)
     std::array<VkClearValue, 2> clearValues = {};
     clearValues[0].color = {{0.6F, 0.65F, 0.4F, 1.0F}}; // NOLINT(readability-magic-numbers)
@@ -537,38 +514,39 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     };
 
     // Start recording command to command buffer!
-    if (vkBeginCommandBuffer(this->commandBuffers[currentImage], &bufferBeginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to start recording a Command Buffer!");
-    }
+    // Buffer can be resubmitted when it has alredy been submited and is awaiting execution
+    this->commandBuffers->begin(currentImage, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
     // Begin Render Pass
-    vkCmdBeginRenderPass(this->commandBuffers[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(this->commandBuffers->getBuffers()[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     {
         // Bind Pipeline to be used  in render pass
-        vkCmdBindPipeline(this->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getGraphicsPipeline());
+        vkCmdBindPipeline(this->commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          this->pipeline->getGraphicsPipeline());
 
         for (size_t j = 0; j < this->modelList.size(); j++) { // 1:11:29
 
             MeshModel thisModel = modelList[j];
 
             // "Push" constant to given shader stage directly (no buffer)
-            vkCmdPushConstants(this->commandBuffers[currentImage],  //
-                               this->pipeline->getPipelineLayout(), //
-                               VK_SHADER_STAGE_VERTEX_BIT,          // Stage to push constant to
-                               0,                                   // offset of pushconstant to update
-                               sizeof(Model),                       // size of data being pushed
-                               &thisModel.getModel2());             // Actual data being pushed (cam be array)
+            vkCmdPushConstants(this->commandBuffers->getBuffers()[currentImage], //
+                               this->pipeline->getPipelineLayout(),              //
+                               VK_SHADER_STAGE_VERTEX_BIT,                       // Stage to push constant to
+                               0,                                                // offset of pushconstant to update
+                               sizeof(Model),                                    // size of data being pushed
+                               &thisModel.getModel2());                          // Actual data being pushed (cam be array)
 
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
                 //
 
                 VkBuffer vertexBuffer[] = {thisModel.getMesh(k)->getVertexBuffer()}; // Buffers to bind
                 VkDeviceSize offsets[] = {0};                                        // Offsets into buffers being bound
-                vkCmdBindVertexBuffers(commandBuffers[currentImage], 0, 1, vertexBuffer,
+                vkCmdBindVertexBuffers(commandBuffers->getBuffers()[currentImage], 0, 1, vertexBuffer,
                                        offsets); // Command to bind vertex buffer before drawing with then
 
                 // Bind mesh index buffer, with 0 offset and using the uint32_t type
-                vkCmdBindIndexBuffer(commandBuffers[currentImage], thisModel.getMesh(k)->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffers->getBuffers()[currentImage], thisModel.getMesh(k)->getIndexBuffer(), 0,
+                                     VK_INDEX_TYPE_UINT32);
 
                 // Dynamic offset Amount
                 // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
@@ -576,20 +554,19 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->descriptorSets->get()[currentImage],
                                                                      this->samplerDescriptorSets->get()[thisModel.getMesh(k)->getTexId()]};
 
-                vkCmdBindDescriptorSets(commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline->getPipelineLayout(),
-                                        0, static_cast<uint32_t>(descriptorSetGroup.size()), descriptorSetGroup.data(), 0, nullptr);
+                vkCmdBindDescriptorSets(commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                        this->pipeline->getPipelineLayout(), 0, static_cast<uint32_t>(descriptorSetGroup.size()),
+                                        descriptorSetGroup.data(), 0, nullptr);
 
                 // Execute pipeline
-                vkCmdDrawIndexed(commandBuffers[currentImage], thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);
+                vkCmdDrawIndexed(commandBuffers->getBuffers()[currentImage], thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);
             }
         }
     }
     // End Render Pass
-    vkCmdEndRenderPass(this->commandBuffers[currentImage]);
+    vkCmdEndRenderPass(this->commandBuffers->getBuffers()[currentImage]);
 
-    if (vkEndCommandBuffer(this->commandBuffers[currentImage]) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to stop recording a Command Buffer!");
-    }
+    this->commandBuffers->end(currentImage);
     //}
 }
 
