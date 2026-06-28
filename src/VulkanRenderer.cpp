@@ -1,18 +1,11 @@
 #include "VulkanRenderer.hpp"
-#include "Command.hpp"
-#include "ImageObject.hpp"
 #include "Mesh.hpp"
-#include "MeshModel.hpp"
-#include "Renderer.hpp"
 #include "ShaderModule.hpp"
-#include "SwapChain.hpp"
 #include "Ultilities.hpp"
-#include "VWrapp.hpp"
 #include "VWrappUtils.hpp"
+#include "buffers/CommandBuffer.hpp"
+#include "buffers/utils.hpp"
 #include <array>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -615,16 +608,16 @@ int VulkanRenderer::createTextureImage(const std::string& filename) {
 
     // COPY DATA TO IMAGE
     // Transition image to be DST for copy operation
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), texImageObj->getImage(),
-                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    ce::transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
+                              texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     // Copy image data
-    copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), imageStagingBuffer.getBuffer(),
-                    texImageObj->getImage(), width, height);
+    ce::copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
+                        imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
 
     // Transition image to be shader readable for shader
-    transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(), texImageObj->getImage(),
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    ce::transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
+                              texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     // add texture data to vector for reference
     this->textureImageObjects.push_back(texImageObj);

@@ -8,6 +8,7 @@
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
 #include "buffers/BufferObject.hpp"
+#include "buffers/CommandBuffer.hpp"
 #include "descriptors/DescriptorPool.hpp"
 #include "descriptors/DescriptorSet.hpp"
 #include "descriptors/DescriptorSetLayout.hpp"

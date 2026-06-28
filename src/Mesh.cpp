@@ -1,8 +1,6 @@
 #include "Mesh.hpp"
-#include "Ultilities.hpp"
+#include "buffers/utils.hpp"
 #include <glm/ext/matrix_float4x4.hpp>
-#include <memory>
-#include <vulkan/vulkan_core.h>
 
 Mesh::Mesh() {
     //
@@ -61,7 +59,8 @@ void Mesh::createVertexBuffer(VkQueue transferQueue, VkCommandPool transferComma
                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Copy staging buffer to vertex buffer on GPU
-    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->vertexBuffer->getBuffer(), bufferSize);
+    ce::copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->vertexBuffer->getBuffer(),
+                   bufferSize);
 }
 
 void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices) {
@@ -83,7 +82,7 @@ void Mesh::createIndexBuffer(VkQueue transferQueue, VkCommandPool transferComman
                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // Copy from staging buffer to GPU access buffer
-    copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->indexBuffer->getBuffer(), bufferSize);
+    ce::copyBuffer(this->device, transferQueue, transferCommandPool, stagingBuffer.getBuffer(), this->indexBuffer->getBuffer(), bufferSize);
 }
 
 void Mesh::setModel(glm::mat4 newModel) { this->model.model = newModel; }
