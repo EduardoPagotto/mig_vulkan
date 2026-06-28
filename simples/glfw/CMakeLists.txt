@@ -36,6 +36,8 @@ add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/debug.cpp
                                ${CMAKE_SOURCE_DIR}/src/VWrappUtils.cpp
                                ${CMAKE_SOURCE_DIR}/src/buffers/BufferObject.cpp
                                ${CMAKE_SOURCE_DIR}/src/buffers/CommandBuffer.cpp
+                               ${CMAKE_SOURCE_DIR}/src/buffers/VBO.cpp
+                               ${CMAKE_SOURCE_DIR}/src/buffers/IBO.cpp
                                ${CMAKE_SOURCE_DIR}/src/VWrapp.cpp
                                ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
                                ${CMAKE_SOURCE_DIR}/src/Renderer.cpp

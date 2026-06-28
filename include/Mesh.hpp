@@ -2,8 +2,8 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include "Ultilities.hpp"
-#include "buffers/BufferObject.hpp"
-#include <GLFW/glfw3.h>
+#include "buffers/IBO.hpp"
+#include "buffers/VBO.hpp"
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -39,14 +39,11 @@ class Mesh {
 
     int texId;
 
-    int vertexCount;
-    std::shared_ptr<ce::BufferObject> vertexBuffer;
-
-    int indexCount;
-    std::shared_ptr<ce::BufferObject> indexBuffer;
-
     VkPhysicalDevice physicalDevice;
     VkDevice device;
+
+    std::shared_ptr<ce::VBO> vbo;
+    std::shared_ptr<ce::IBO> ibo;
 
     void createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices);
     void createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices);
