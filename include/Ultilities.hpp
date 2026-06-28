@@ -1,7 +1,7 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include "Command.hpp"
+#include "buffers/CommandBuffer.hpp"
 #include <GLFW/glfw3.h>
 #include <cstddef>
 #include <fstream>
