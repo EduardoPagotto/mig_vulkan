@@ -27,8 +27,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->rederer = std::make_shared<ce::Renderer>(vwrapp->getPhysical(), vwrapp->getLogical(), this->swapchain->getImageFormat());
 
     // createUniformBuffers
-    this->ubo = std::make_shared<ce::UBO>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), this->swapchain->getImages().size(),
-                                          sizeof(UboViewProjection));
+    this->uboVP = std::make_shared<ce::UBO>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), this->swapchain->getImages().size(),
+                                            sizeof(UboViewProjection));
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();
@@ -86,7 +86,7 @@ VulkanRenderer::~VulkanRenderer() {
 
     this->depthBufferObject.reset();
     this->descriptorPool.reset();
-    this->ubo.reset();
+    this->uboVP.reset();
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
@@ -175,7 +175,7 @@ void VulkanRenderer::createDescriptorSetLayout() {
 
     // UNIFORM VALUES DESCRIPTOR SET LAYOUT
     // UboViewProjection Binding info
-    this->ubo->addDescriptorSetLayoutBinding({
+    this->uboVP->addDescriptorSetLayoutBinding({
         .binding = 0,                                        // Binding point in shader (designed by binding number in shader)
         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // Type of descriptor (uniform, dynamic, image sampler, etc)
         .descriptorCount = 1,                                // Number of descriptors for binding
@@ -190,7 +190,7 @@ void VulkanRenderer::createDescriptorSetLayout() {
     //                                        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
     //                                        .pImmutableSamplers = nullptr});
 
-    this->ubo->createDescriptorSetLayout();
+    this->uboVP->createDescriptorSetLayout();
 
     // CREATE TEXTURE SAMPLER DESCRIPTOR SET LAYOUT
     this->samplerSetLayout = std::make_shared<ce::DescriptorSetLayout>(this->vwrapp->getLogical());
@@ -273,7 +273,7 @@ void VulkanRenderer::createGraphicsPipeline() {
     this->pipeline->addColourState(colourState);
 
     // -- PIPELINE LAYOUT --
-    this->pipeline->addLayout(this->ubo->getDescriptorSetLayout());
+    this->pipeline->addLayout(this->uboVP->getDescriptorSetLayout());
     this->pipeline->addLayout(this->samplerSetLayout->get());
     this->pipeline->addPushRange(this->pushConstantRange);
 
@@ -355,7 +355,7 @@ void VulkanRenderer::createDescriptorPool() {
     this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->vwrapp->getLogical());
     // Type of Descriptors + how many DESCRIPTORS, not Descriptor Sets (combined makes the pool size)
     // ViewProjection Pool
-    this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(this->ubo->size()));
+    this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(this->uboVP->size()));
 
     // // Model Pool (Dynamic)
     // this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, //
@@ -376,7 +376,7 @@ void VulkanRenderer::createDescriptorSets() {
     // create smart pointer of Descripor set collection and Resize Descriptor Set list so one for every buffer
     this->samplerDescriptorSets = std::make_shared<ce::DescriptorSet>(this->vwrapp->getLogical());
 
-    this->ubo->allocateDescriptorSets(this->descriptorPool->get());
+    this->uboVP->allocateDescriptorSets(this->descriptorPool->get());
 
     // Update all of descriptor set buffer bindings
     for (size_t i = 0; i < this->swapchain->getImages().size(); i++) {
@@ -384,15 +384,15 @@ void VulkanRenderer::createDescriptorSets() {
         // Buffer info and data offset info
         const VkDescriptorBufferInfo vpBufferInfo{
             //.buffer = this->vpUniformBuffer[i]->getBuffer(), // Buffer get data from
-            .buffer = this->ubo->getUBO()[i]->getBuffer(), // vpUniformBuffer[i]->getBuffer(), // Buffer get data from
-            .offset = 0,                                   // Position of star of data
-            .range = sizeof(UboViewProjection)             // Size of data
+            .buffer = this->uboVP->getUBO()[i]->getBuffer(), // vpUniformBuffer[i]->getBuffer(), // Buffer get data from
+            .offset = 0,                                     // Position of star of data
+            .range = sizeof(UboViewProjection)               // Size of data
         };
 
         // Data about connection between binding and buffer
         const VkWriteDescriptorSet vpSetWrite{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = this->ubo->getDescriptorSets()[i],         // this->descriptorSets->get()[i],            // Descriptor Set to update
+            .dstSet = this->uboVP->getDescriptorSets()[i],       // this->descriptorSets->get()[i],            // Descriptor Set to update
             .dstBinding = 0,                                     // Binding to update (matches with binding on layout/shader)
             .dstArrayElement = 0,                                // index in array to update
             .descriptorCount = 1,                                // type of Descriptor
@@ -421,18 +421,18 @@ void VulkanRenderer::createDescriptorSets() {
 
         // List of descriptor set writes
         // std::vector<VkWriteDescriptorSet> setWrites = {vpSetWrite, modelSetWrite};
-        this->ubo->addWriteDescriptorSet(vpSetWrite);
+        this->uboVP->addWriteDescriptorSet(vpSetWrite);
 
         // Update the descripto sets with new buffer/binding info
-        this->ubo->updateDescriptorSets();
-        this->ubo->clearWriteDescriptorSet();
+        this->uboVP->updateDescriptorSets();
+        this->uboVP->clearWriteDescriptorSet();
     }
 }
 
 void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
 
     // Copy VP data
-    this->ubo->getUBO()[imageIndex]->mapper(&this->uboViewProjection);
+    this->uboVP->getUBO()[imageIndex]->mapper(&this->uboViewProjection);
 
     // // Copy Model data
     // for (size_t i = 0; i < this->meshList.size(); i++) {
@@ -506,7 +506,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
                 // Dynamic offset Amount
                 // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
 
-                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->ubo->getDescriptorSets()[currentImage],
+                std::array<VkDescriptorSet, 2> descriptorSetGroup = {this->uboVP->getDescriptorSets()[currentImage],
                                                                      this->samplerDescriptorSets->get()[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,

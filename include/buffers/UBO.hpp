@@ -17,13 +17,13 @@ namespace ce {
             VkDeviceSize vpBufferSize = sizeDataUBO; // tamanho do struct com os dados
 
             // One uniform buffer for each image (and by extention, command buffer)
-            this->vpUniformBuffer.resize(maxUBO); // total a ser criado
+            this->ubo.resize(maxUBO); // total a ser criado
 
             // Create Unifor buffers
             for (size_t i = 0; i < maxUBO; i++) {
-                this->vpUniformBuffer[i] = std::make_shared<BufferObject>(physical, logical);
-                this->vpUniformBuffer[i]->create(vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                this->ubo[i] = std::make_shared<BufferObject>(physical, logical);
+                this->ubo[i]->create(vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             }
 
             // UNIFORM VALUES DESCRIPTOR SET LAYOUT AND DESCRIPTORSETS
@@ -34,7 +34,7 @@ namespace ce {
         virtual ~UBO() {
 
             // for (size_t i = 0; i < sizeDataUBO; i++) {
-            //     this->vpUniformBuffer[i].reset();
+            //     this->ubo[i].reset();
             // }
 
             this->descriptorSets.reset(); // TODO: testar??
@@ -51,7 +51,7 @@ namespace ce {
         void clearWriteDescriptorSet() { this->setWrites.clear(); }
 
         void allocateDescriptorSets(const VkDescriptorPool& descriptorPool) {
-            std::vector<VkDescriptorSetLayout> setLayouts(this->vpUniformBuffer.size(), this->descriptorSetLayout->get());
+            std::vector<VkDescriptorSetLayout> setLayouts(this->ubo.size(), this->descriptorSetLayout->get());
             this->descriptorSets->allocate(descriptorPool, setLayouts);
         }
 
@@ -60,8 +60,8 @@ namespace ce {
             vkUpdateDescriptorSets(logical, static_cast<uint32_t>(this->setWrites.size()), this->setWrites.data(), 0, nullptr);
         }
 
-        [[nodiscard]] size_t size() const noexcept { return vpUniformBuffer.size(); }
-        [[nodiscard]] std::vector<std::shared_ptr<BufferObject>>& getUBO() { return vpUniformBuffer; }
+        [[nodiscard]] size_t size() const noexcept { return ubo.size(); }
+        [[nodiscard]] std::vector<std::shared_ptr<BufferObject>>& getUBO() { return ubo; }
         [[nodiscard]] VkDescriptorSetLayout& getDescriptorSetLayout() const { return descriptorSetLayout->get(); }
         [[nodiscard]] std::vector<VkDescriptorSet>& getDescriptorSets() const { return descriptorSets->get(); }
 
@@ -69,7 +69,7 @@ namespace ce {
         VkDevice logical;
         std::shared_ptr<DescriptorSet> descriptorSets;
         std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
-        std::vector<std::shared_ptr<BufferObject>> vpUniformBuffer;
+        std::vector<std::shared_ptr<BufferObject>> ubo;
 
         std::vector<VkWriteDescriptorSet> setWrites;
     };

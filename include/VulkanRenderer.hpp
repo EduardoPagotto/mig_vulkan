@@ -60,10 +60,9 @@ class VulkanRenderer {
     std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
 
     std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
-
     std::shared_ptr<ce::DescriptorSet> samplerDescriptorSets;
 
-    std::shared_ptr<ce::UBO> ubo;
+    std::shared_ptr<ce::UBO> uboVP;
 
     VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
 
