@@ -1,9 +1,6 @@
 #include "Mesh.hpp"
 #include <glm/ext/matrix_float4x4.hpp>
 
-Mesh::Mesh() {
-    //
-}
 Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
            std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId) {
 
@@ -18,9 +15,6 @@ Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue trans
 
     this->model.model = glm::mat4(1.0F);
     this->texId = newTexId;
-}
-Mesh::~Mesh() {
-    //
 }
 
 int Mesh::getVertexCount() const { return this->vbo->getCount(); }

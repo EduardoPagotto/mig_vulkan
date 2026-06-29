@@ -14,10 +14,11 @@ struct Model {
 
 class Mesh {
   public:
-    Mesh();
+    Mesh() = default;
     Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
          std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId);
-    ~Mesh();
+
+    virtual ~Mesh() = default;
 
     void setModel(glm::mat4 newModel);
     Model getModel();

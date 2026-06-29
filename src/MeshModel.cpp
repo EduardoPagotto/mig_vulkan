@@ -1,7 +1,5 @@
 #include "MeshModel.hpp"
-#include "Mesh.hpp"
 #include <assimp/material.h>
-#include <assimp/scene.h>
 #include <assimp/types.h>
 
 MeshModel::MeshModel(const std::vector<Mesh>& newMeshList) {
@@ -9,7 +7,7 @@ MeshModel::MeshModel(const std::vector<Mesh>& newMeshList) {
     model = glm::mat4(1.0F);
 }
 
-[[nodiscard]] Mesh* MeshModel::getMesh(const size_t& index) {
+Mesh* MeshModel::getMesh(const size_t& index) {
 
     if (index > meshList.size()) {
         throw std::runtime_error("Attempted to access invalid Mesh index!");
@@ -58,28 +56,30 @@ std::vector<std::string> MeshModel::loadMaterials(const aiScene* scene) {
     return textureList;
 }
 
-std::vector<Mesh> MeshModel::LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
-                                      aiNode* node, const aiScene* scene, std::vector<int> matToText) {
+std::vector<Mesh> MeshModel::LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue,
+                                      VkCommandPool transferCommandPool, aiNode* node, const aiScene* scene, std::vector<int>& matToText) {
     //
     std::vector<Mesh> meshList;
 
     // Go through each mesh at this node and create it, then add it to our meshList
     for (size_t i = 0; i < node->mNumMeshes; i++) {
-        meshList.push_back(LoadMesh(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, scene->mMeshes[node->mMeshes[i]], scene, matToText));
+        meshList.push_back(
+            LoadMesh(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, scene->mMeshes[node->mMeshes[i]], scene, matToText));
     }
 
     // Go through each attached to this node and load it, then append their meshes to this node's mesh list
     for (size_t i = 0; i < node->mNumChildren; i++) {
         //
-        std::vector<Mesh> newList = LoadNode(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, node->mChildren[i], scene, matToText);
+        std::vector<Mesh> newList =
+            LoadNode(newPhysicalDevice, newDevice, transferQueue, transferCommandPool, node->mChildren[i], scene, matToText);
         meshList.insert(meshList.end(), newList.begin(), newList.end());
     }
 
     return meshList;
 }
 
-Mesh MeshModel::LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool, aiMesh* mesh,
-                         const aiScene* scene, std::vector<int> matToText) {
+Mesh MeshModel::LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
+                         aiMesh* mesh, const aiScene* scene, std::vector<int> matToText) {
     //
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;

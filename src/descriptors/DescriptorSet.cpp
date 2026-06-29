@@ -23,7 +23,7 @@ namespace ce {
 
         // Allocate descriptor sets (multiple)
         if (vkAllocateDescriptorSets(device, &setAllocInfo, localSets.data()) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate Texture descriptor set");
+            throw std::runtime_error("Failed to allocate DescriptorSet");
         }
 
         // copy localSets sets to descriptorSets
