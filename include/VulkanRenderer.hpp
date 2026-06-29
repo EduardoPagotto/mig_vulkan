@@ -10,8 +10,6 @@
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/UBO.hpp"
 #include "descriptors/DescriptorPool.hpp"
-#include "descriptors/DescriptorSet.hpp"
-#include "descriptors/DescriptorSetLayout.hpp"
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

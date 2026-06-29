@@ -3,7 +3,6 @@
 #include "ShaderModule.hpp"
 #include "Ultilities.hpp"
 #include "VWrappUtils.hpp"
-#include "buffers/CommandBuffer.hpp"
 #include "buffers/utils.hpp"
 #include <array>
 #include <cstddef>
@@ -15,9 +14,7 @@
 #include <glm/ext/vector_float3.hpp>
 #include <glm/trigonometric.hpp>
 #include <limits>
-#include <memory>
 #include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
 VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
 

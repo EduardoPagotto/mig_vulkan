@@ -3,7 +3,6 @@
 #include "descriptors/DescriptorSet.hpp"
 #include "descriptors/DescriptorSetLayout.hpp"
 #include <memory>
-#include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace ce {
@@ -19,7 +18,7 @@ namespace ce {
         explicit UBO(VkPhysicalDevice physical, VkDevice logical, const size_t maxUBO, const size_t sizeDataUBO) : logical(logical) {
 
             // ViewProjection Buffer size
-            VkDeviceSize vpBufferSize = sizeDataUBO; // tamanho do struct com os dados
+            const VkDeviceSize vpBufferSize = sizeDataUBO; // tamanho do struct com os dados
 
             // One uniform buffer for each image (and by extention, command buffer)
             this->ubo.resize(maxUBO); // total a ser criado
