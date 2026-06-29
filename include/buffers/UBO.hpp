@@ -11,7 +11,11 @@ namespace ce {
     template <typename T, template <typename, typename> class Container = std::vector>
     class UBO {
       public:
-        explicit UBO(VkDevice logical) : logical(logical) {}
+        explicit UBO(VkDevice logical) : logical(logical) {
+            // UNIFORM VALUES DESCRIPTOR SET LAYOUT AND DESCRIPTORSETS
+            this->descriptorSetLayout = std::make_shared<DescriptorSetLayout>(this->logical);
+            this->descriptorSets = std::make_shared<DescriptorSet>(this->logical);
+        }
         explicit UBO(VkPhysicalDevice physical, VkDevice logical, const size_t maxUBO, const size_t sizeDataUBO) : logical(logical) {
 
             // ViewProjection Buffer size
@@ -51,8 +55,8 @@ namespace ce {
         void addWriteDescriptorSet(const VkWriteDescriptorSet& vpSetWrite) { this->setWrites.push_back(vpSetWrite); }
         void clearWriteDescriptorSet() { this->setWrites.clear(); }
 
-        std::pair<size_t, size_t> allocateDescriptorSets(const VkDescriptorPool& descriptorPool) {
-            std::vector<VkDescriptorSetLayout> setLayouts(this->ubo.size(), this->descriptorSetLayout->get());
+        std::pair<size_t, size_t> allocateDescriptorSets(size_t tot, const VkDescriptorPool& descriptorPool) {
+            std::vector<VkDescriptorSetLayout> setLayouts(tot, this->descriptorSetLayout->get());
             return this->descriptorSets->allocate(descriptorPool, setLayouts);
         }
 
