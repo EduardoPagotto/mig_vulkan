@@ -27,8 +27,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->rederer = std::make_shared<ce::Renderer>(vwrapp->getPhysical(), vwrapp->getLogical(), this->swapchain->getImageFormat());
 
     // createUniformBuffers
-    this->uboVP = std::make_shared<ce::UBO>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(), this->swapchain->getImages().size(),
-                                            sizeof(UboViewProjection));
+    this->uboVP = std::make_shared<ce::UBO<ce::BufferObject>>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(),
+                                                              this->swapchain->getImages().size(), sizeof(UboViewProjection));
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();
@@ -419,14 +419,12 @@ void VulkanRenderer::createDescriptorSets() {
         //     .pBufferInfo = &modelBufferInfo
         // };
 
-        // List of descriptor set writes
-        // std::vector<VkWriteDescriptorSet> setWrites = {vpSetWrite, modelSetWrite};
+        // Add to a list of descriptor set writes
         this->uboVP->addWriteDescriptorSet(vpSetWrite);
-
-        // Update the descripto sets with new buffer/binding info
-        this->uboVP->updateDescriptorSets();
-        this->uboVP->clearWriteDescriptorSet();
     }
+    // Update the descripto sets with new buffer/binding info
+    this->uboVP->updateDescriptorSets();
+    this->uboVP->clearWriteDescriptorSet();
 }
 
 void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {

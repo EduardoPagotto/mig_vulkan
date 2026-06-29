@@ -62,7 +62,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
     std::shared_ptr<ce::DescriptorSet> samplerDescriptorSets;
 
-    std::shared_ptr<ce::UBO> uboVP;
+    std::shared_ptr<ce::UBO<ce::BufferObject>> uboVP;
 
     VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
 
@@ -76,6 +76,7 @@ class VulkanRenderer {
     // UboModel* modelTransferSpace;
 
     // - Assets
+    // std::shared_ptr<ce::UBO<ce::ImageObject>> uboSampler;
     std::vector<std::shared_ptr<ce::ImageObject>> textureImageObjects;
 
     // - Pipeline

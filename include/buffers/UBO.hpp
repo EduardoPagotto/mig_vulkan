@@ -1,6 +1,5 @@
 #pragma once
 
-#include "buffers/BufferObject.hpp"
 #include "descriptors/DescriptorSet.hpp"
 #include "descriptors/DescriptorSetLayout.hpp"
 #include <memory>
@@ -9,8 +8,10 @@
 
 namespace ce {
 
+    template <typename T, template <typename, typename> class Container = std::vector>
     class UBO {
       public:
+        explicit UBO(VkDevice logical) : logical(logical) {}
         explicit UBO(VkPhysicalDevice physical, VkDevice logical, const size_t maxUBO, const size_t sizeDataUBO) : logical(logical) {
 
             // ViewProjection Buffer size
@@ -21,7 +22,7 @@ namespace ce {
 
             // Create Unifor buffers
             for (size_t i = 0; i < maxUBO; i++) {
-                this->ubo[i] = std::make_shared<BufferObject>(physical, logical);
+                this->ubo[i] = std::make_shared<T>(physical, logical);
                 this->ubo[i]->create(vpBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             }
@@ -37,7 +38,7 @@ namespace ce {
             //     this->ubo[i].reset();
             // }
 
-            this->descriptorSets.reset(); // TODO: testar??
+            this->descriptorSets.reset(); // FIXME: acima da erro
             this->descriptorSetLayout.reset();
         }
 
@@ -50,9 +51,9 @@ namespace ce {
         void addWriteDescriptorSet(const VkWriteDescriptorSet& vpSetWrite) { this->setWrites.push_back(vpSetWrite); }
         void clearWriteDescriptorSet() { this->setWrites.clear(); }
 
-        void allocateDescriptorSets(const VkDescriptorPool& descriptorPool) {
+        std::pair<size_t, size_t> allocateDescriptorSets(const VkDescriptorPool& descriptorPool) {
             std::vector<VkDescriptorSetLayout> setLayouts(this->ubo.size(), this->descriptorSetLayout->get());
-            this->descriptorSets->allocate(descriptorPool, setLayouts);
+            return this->descriptorSets->allocate(descriptorPool, setLayouts);
         }
 
         void updateDescriptorSets() {
@@ -61,7 +62,7 @@ namespace ce {
         }
 
         [[nodiscard]] size_t size() const noexcept { return ubo.size(); }
-        [[nodiscard]] std::vector<std::shared_ptr<BufferObject>>& getUBO() { return ubo; }
+        [[nodiscard]] std::vector<std::shared_ptr<T>>& getUBO() { return ubo; }
         [[nodiscard]] VkDescriptorSetLayout& getDescriptorSetLayout() const { return descriptorSetLayout->get(); }
         [[nodiscard]] std::vector<VkDescriptorSet>& getDescriptorSets() const { return descriptorSets->get(); }
 
@@ -69,7 +70,7 @@ namespace ce {
         VkDevice logical;
         std::shared_ptr<DescriptorSet> descriptorSets;
         std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
-        std::vector<std::shared_ptr<BufferObject>> ubo;
+        Container<std::shared_ptr<T>, std::allocator<std::shared_ptr<T>>> ubo;
 
         std::vector<VkWriteDescriptorSet> setWrites;
     };
