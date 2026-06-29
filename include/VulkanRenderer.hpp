@@ -7,8 +7,8 @@
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "VWrapp.hpp"
-#include "buffers/BufferObject.hpp"
 #include "buffers/CommandBuffer.hpp"
+#include "buffers/UBO.hpp"
 #include "descriptors/DescriptorPool.hpp"
 #include "descriptors/DescriptorSet.hpp"
 #include "descriptors/DescriptorSetLayout.hpp"
@@ -59,13 +59,11 @@ class VulkanRenderer {
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
     std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
 
-    std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout;
     std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
 
-    std::shared_ptr<ce::DescriptorSet> descriptorSets;
     std::shared_ptr<ce::DescriptorSet> samplerDescriptorSets;
 
-    std::vector<std::shared_ptr<ce::BufferObject>> vpUniformBuffer;
+    std::shared_ptr<ce::UBO> ubo;
 
     VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
 
@@ -102,7 +100,6 @@ class VulkanRenderer {
     void createSynchronisation();
     void createTextureSampler();
 
-    void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
 

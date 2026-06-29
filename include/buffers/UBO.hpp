@@ -11,7 +11,7 @@ namespace ce {
 
     class UBO {
       public:
-        explicit UBO(const size_t maxUBO, const size_t sizeDataUBO) : sizeDataUBO(sizeDataUBO) {
+        explicit UBO(VkPhysicalDevice physical, VkDevice logical, const size_t maxUBO, const size_t sizeDataUBO) : logical(logical) {
 
             // ViewProjection Buffer size
             VkDeviceSize vpBufferSize = sizeDataUBO; // tamanho do struct com os dados
@@ -33,41 +33,40 @@ namespace ce {
 
         virtual ~UBO() {
 
-            this->descriptorSetLayout.reset();
+            // for (size_t i = 0; i < sizeDataUBO; i++) {
+            //     this->vpUniformBuffer[i].reset();
+            // }
+
             this->descriptorSets.reset(); // TODO: testar??
-            for (size_t i = 0; i < sizeDataUBO; i++) {
-                this->vpUniformBuffer[i].reset();
-            }
+            this->descriptorSetLayout.reset();
         }
 
-        void addDescriptorSetLayout(const VkDescriptorSetLayoutBinding& vpLayoutBinding) {
+        void addDescriptorSetLayoutBinding(const VkDescriptorSetLayoutBinding& vpLayoutBinding) {
             this->descriptorSetLayout->addBinding(vpLayoutBinding);
         }
 
         void createDescriptorSetLayout() { this->descriptorSetLayout->create(); }
 
         void addWriteDescriptorSet(const VkWriteDescriptorSet& vpSetWrite) { this->setWrites.push_back(vpSetWrite); }
+        void clearWriteDescriptorSet() { this->setWrites.clear(); }
 
-        void createDescriptorSets(const VkDescriptorPool& descriptorPool) {
-
+        void allocateDescriptorSets(const VkDescriptorPool& descriptorPool) {
             std::vector<VkDescriptorSetLayout> setLayouts(this->vpUniformBuffer.size(), this->descriptorSetLayout->get());
             this->descriptorSets->allocate(descriptorPool, setLayouts);
-
-            // Update all of descriptor set buffer bindings
-            for (size_t i = 0; i < sizeDataUBO; i++) {
-                // Update the descripto sets with new buffer/binding info
-                vkUpdateDescriptorSets(logical, static_cast<uint32_t>(this->setWrites.size()), this->setWrites.data(), 0, nullptr);
-            }
         }
 
-        std::vector<std::shared_ptr<BufferObject>>& getUBO() { return vpUniformBuffer; }
+        void updateDescriptorSets() {
+            // Update the descripto sets with new buffer/binding info
+            vkUpdateDescriptorSets(logical, static_cast<uint32_t>(this->setWrites.size()), this->setWrites.data(), 0, nullptr);
+        }
+
+        [[nodiscard]] size_t size() const noexcept { return vpUniformBuffer.size(); }
+        [[nodiscard]] std::vector<std::shared_ptr<BufferObject>>& getUBO() { return vpUniformBuffer; }
+        [[nodiscard]] VkDescriptorSetLayout& getDescriptorSetLayout() const { return descriptorSetLayout->get(); }
+        [[nodiscard]] std::vector<VkDescriptorSet>& getDescriptorSets() const { return descriptorSets->get(); }
 
       private:
-        size_t sizeDataUBO;
-
-        VkPhysicalDevice physical;
         VkDevice logical;
-
         std::shared_ptr<DescriptorSet> descriptorSets;
         std::shared_ptr<DescriptorSetLayout> descriptorSetLayout;
         std::vector<std::shared_ptr<BufferObject>> vpUniformBuffer;
