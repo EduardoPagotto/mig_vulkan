@@ -55,20 +55,21 @@ class VulkanRenderer {
     std::shared_ptr<ce::CommandBuffer> commandBuffers;
     std::shared_ptr<ce::ImageObject> depthBufferObject;
 
-    VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
-
     // - Descriptors
+    std::shared_ptr<ce::DescriptorPool> descriptorPool;
+    std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
+
     std::shared_ptr<ce::DescriptorSetLayout> descriptorSetLayout;
     std::shared_ptr<ce::DescriptorSetLayout> samplerSetLayout;
 
-    VkPushConstantRange pushConstantRange;
-
-    std::shared_ptr<ce::DescriptorPool> descriptorPool;
-    std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
     std::shared_ptr<ce::DescriptorSet> descriptorSets;
     std::shared_ptr<ce::DescriptorSet> samplerDescriptorSets;
 
     std::vector<std::shared_ptr<ce::BufferObject>> vpUniformBuffer;
+
+    VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
+
+    VkPushConstantRange pushConstantRange;
 
     // std::vector<VkBuffer> modelDUniformBuffer;
     // std::vector<VkDeviceMemory> modelDUniformBufferMemory;
