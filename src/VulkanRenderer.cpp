@@ -3,7 +3,6 @@
 #include "ShaderModule.hpp"
 #include "Ultilities.hpp"
 #include "VWrappUtils.hpp"
-#include "buffers/utils.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -27,8 +26,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->uboVP = std::make_shared<ce::UBO<ce::BufferObject>>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(),
                                                               this->swapchain->getImages().size(), sizeof(UboViewProjection));
 
-    this->uboSampler = std::make_shared<ce::UBO<ce::ImageObject>>(this->vwrapp->getLogical());
-    //
+    this->textureMng = std::make_shared<ce::Textures>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+
     this->createDescriptorSetLayout();
     this->createPushConstantRange();
     this->createGraphicsPipeline();
@@ -40,8 +39,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     // In create Command buffer, count to have one for each frambuffer
     this->commandBuffers = std::make_shared<ce::CommandBuffer>(vwrapp->getLogical(), this->graphicsCommandPool->getPool(),
                                                                this->swapchain->getSwapChainFrameBuffers().size());
-    this->createTextureSampler();
-    // this->allocateDynamicBufferTransferSpace();
+    //  this->allocateDynamicBufferTransferSpace();
     this->createDescriptorPool();
     this->createDescriptorSets();
     this->createSynchronisation();
@@ -62,7 +60,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     this->uboViewProjection.projection[1][1] *= -1; // vulkan inverted of OpenGL
 
     // Create our default "no texture" texture
-    createTexture("plain.png");
+    this->textureMng->createTexture("plain.png", this->vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool());
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -75,10 +73,7 @@ VulkanRenderer::~VulkanRenderer() {
         model.destroyMeshModel();
     }
 
-    this->samplerDescriptorPool.reset();
-    this->uboSampler.reset();
-
-    vkDestroySampler(vwrapp->getLogical(), this->textureSampler, nullptr);
+    this->textureMng.reset();
 
     this->depthBufferObject.reset();
     this->descriptorPool.reset();
@@ -187,16 +182,6 @@ void VulkanRenderer::createDescriptorSetLayout() {
     //                                        .pImmutableSamplers = nullptr});
 
     this->uboVP->createDescriptorSetLayout();
-
-    // CREATE TEXTURE SAMPLER DESCRIPTOR SET LAYOUT
-    // Texture binding info
-    this->uboSampler->addDescriptorSetLayoutBinding({.binding = 0,
-                                                     .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                     .descriptorCount = 1,
-                                                     .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                     .pImmutableSamplers = nullptr});
-
-    this->uboSampler->createDescriptorSetLayout();
 }
 
 void VulkanRenderer::createPushConstantRange() {
@@ -268,7 +253,7 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     // -- PIPELINE LAYOUT --
     this->pipeline->addLayout(this->uboVP->getDescriptorSetLayout());
-    this->pipeline->addLayout(this->uboSampler->getDescriptorSetLayout());
+    this->pipeline->addLayout(this->textureMng->getUbo()->getDescriptorSetLayout());
     this->pipeline->addPushRange(this->pushConstantRange);
 
     // -- GRAPHICS PIPELINE CREATION
@@ -318,30 +303,6 @@ void VulkanRenderer::createSynchronisation() {
     }
 }
 
-void VulkanRenderer::createTextureSampler() {
-    // Sampler create info
-    const VkSamplerCreateInfo samplerCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .magFilter = VK_FILTER_LINEAR,                   // How torender when image is magnified on screen
-        .minFilter = VK_FILTER_LINEAR,                   // How to render when image is minifield on screen
-        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,     // Mipmap interpolation mode
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in U(x) direction
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in V(y) direction
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,  // How to handle texture wrap in W(z) direction
-        .mipLodBias = 0.0F,                              // Level of detail of bias for mip level
-        .anisotropyEnable = VK_TRUE,                     // Enable anisotropy
-        .maxAnisotropy = 16,                             // Anisotropy sample level
-        .minLod = 0.0F,                                  // Minimum Level Detail ro pick mip level
-        .maxLod = 0.0F,                                  // Maximum Level Detail ro pick mip level
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // Border beond texture (only works for border clamp)
-        .unnormalizedCoordinates = VK_FALSE,             // Wheter coords should be normalized (between 0 and 1)
-    };
-
-    if (vkCreateSampler(vwrapp->getLogical(), &samplerCreateInfo, nullptr, &this->textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create a Sampler");
-    }
-}
-
 void VulkanRenderer::createDescriptorPool() {
 
     // CREATE DESCRIPTOR POOL
@@ -357,13 +318,6 @@ void VulkanRenderer::createDescriptorPool() {
 
     // Create Descriptor Pool
     this->descriptorPool->create(static_cast<uint32_t>(this->swapchain->getImages().size())); // Maximum number of descriptor Sets
-    ;
-
-    // -- CREATE UNIFORM DESCRIPTOR POOL
-    // Texture sampler pool
-    this->samplerDescriptorPool = std::make_shared<ce::DescriptorPool>(this->vwrapp->getLogical());
-    this->samplerDescriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_OBJECTS);
-    this->samplerDescriptorPool->create(MAX_OBJECTS);
 }
 
 void VulkanRenderer::createDescriptorSets() {
@@ -498,7 +452,7 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
                 std::array<VkDescriptorSet, 2> descriptorSetGroup = {
                     this->uboVP->getDescriptorSets()[currentImage],
-                    this->uboSampler->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
+                    this->textureMng->getUbo()->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
 
                 vkCmdBindDescriptorSets(commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                         this->pipeline->getPipelineLayout(), 0, static_cast<uint32_t>(descriptorSetGroup.size()),
@@ -524,91 +478,6 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 //     // Create space in memory to hold dynamic byffer that is alignment and holds MAX_OBJECTS
 //     this->modelTransferSpace = (UboModel*)aligned_alloc(this->modelUniformAlignment, this->modelUniformAlignment * MAX_OBJECTS);
 // }
-
-int VulkanRenderer::createTexture(const std::string& filename) {
-    // Create Texture image and get its location in array
-    int textureImageLoc = this->createTextureImage(filename);
-    this->uboSampler->getUBO()[textureImageLoc]->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-
-    // Create Texture Descriptor
-    int descritorLoc = this->createTextureDescriptor(this->uboSampler->getUBO()[textureImageLoc]->getImageView());
-
-    // Return location of set with texture
-    return descritorLoc;
-}
-
-int VulkanRenderer::createTextureImage(const std::string& filename) {
-    // Load image
-    int width;
-    int height;
-    VkDeviceSize imageSize;
-
-    stbi_uc* imageData = VulkanRenderer::loadTextureFile(filename, &width, &height, &imageSize);
-
-    // Create staging buffer to hold load data, redy to copy device
-    ce::BufferObject imageStagingBuffer(vwrapp->getPhysical(), vwrapp->getLogical());
-    imageStagingBuffer.create(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    // copy image data to staging buffer
-    imageStagingBuffer.mapper(imageData);
-
-    // Free original image data
-    stbi_image_free(imageData);
-
-    // create image to hold final texture
-    std::shared_ptr<ce::ImageObject> texImageObj =
-        std::make_shared<ce::ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
-
-    texImageObj->createImage(width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
-                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    // COPY DATA TO IMAGE
-    // Transition image to be DST for copy operation
-    ce::transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
-                              texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    // Copy image data
-    ce::copyImageBuffer(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
-                        imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
-
-    // Transition image to be shader readable for shader
-    ce::transitionImageLayout(vwrapp->getLogical(), vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool(),
-                              texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    // add texture data to vector for reference
-    this->uboSampler->getUBO().push_back(texImageObj);
-
-    return this->uboSampler->getUBO().size() - 1;
-}
-
-int VulkanRenderer::createTextureDescriptor(VkImageView textureImage) {
-    //
-    auto [index, size] = this->uboSampler->allocateDescriptorSets(1, this->samplerDescriptorPool->get());
-
-    // Texture Image info
-    const VkDescriptorImageInfo imageInfo{
-        .sampler = this->textureSampler,                        // Image layout when in use
-        .imageView = textureImage,                              // Sampler to use for set
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // Image to bind to set
-    };
-
-    // Descriptor Write info
-    const VkWriteDescriptorSet descriptorWrite{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                               .dstSet = this->uboSampler->getDescriptorSets()[index],
-                                               .dstBinding = 0,
-                                               .dstArrayElement = 0,
-                                               .descriptorCount = 1,
-                                               .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                               .pImageInfo = &imageInfo};
-
-    this->uboSampler->addWriteDescriptorSet(descriptorWrite);
-    // Update new descriptor set
-    this->uboSampler->updateDescriptorSets();
-    this->uboSampler->clearWriteDescriptorSet();
-
-    return this->uboSampler->getDescriptorSets().size() - 1;
-}
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     // Import model "scene"
@@ -636,7 +505,8 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
         } else {
 
             // Otherwise, create texture and set value to index of new texture
-            matToTex[i] = createTexture(textureNames[i]);
+            matToTex[i] =
+                this->textureMng->createTexture(textureNames[i], this->vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool());
             // matToTex[i] = createTexture("panda.jpg");
         }
     }
@@ -650,22 +520,4 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     this->modelList.push_back(meshModel);
 
     return this->modelList.size() - 1;
-}
-
-stbi_uc* VulkanRenderer::loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize) {
-    // number of chanels image uses
-    int channels;
-
-    // Loads pixel data for image
-    std::string fileLoc = "./textures/" + filename;
-    stbi_uc* image = stbi_load(fileLoc.c_str(), width, height, &channels, STBI_rgb_alpha);
-
-    if (image == nullptr) {
-        throw std::runtime_error("Failed to load a Texture file  (" + fileLoc + ") !");
-    }
-
-    // Calculate image size give a know data
-    *imageSize = (*width) * (*height) * 4;
-
-    return image;
 }

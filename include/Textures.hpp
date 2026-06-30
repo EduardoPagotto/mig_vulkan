@@ -15,25 +15,26 @@ namespace ce {
     class Textures {
 
       public:
-        explicit Textures(VkPhysicalDevice physical, VkDevice logical, VkQueue graphicsQueue, VkCommandPool commandPool)
-            : physical(physical), logical(logical), graphicsQueue(graphicsQueue), commandPool(commandPool) {
+        explicit Textures(VkPhysicalDevice physical, VkDevice logical) : physical(physical), logical(logical) {
             //
             uboSampler = std::make_shared<ce::UBO<ce::ImageObject>>(logical);
             createDescriptorSetLayout();
-            createTextureSampler();
             createDescriptorPool();
+            createTextureSampler();
         }
 
         virtual ~Textures() {
             //
-            samplerDescriptorPool.reset();
             vkDestroySampler(this->logical, this->textureSampler, nullptr);
+            samplerDescriptorPool.reset();
             uboSampler.reset();
         }
 
-        int createTexture(const std::string& filename) {
+        std::shared_ptr<UBO<ImageObject>> getUbo() { return uboSampler; }
+
+        int createTexture(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool) {
             // Create Texture image and get its location in array
-            int textureImageLoc = this->createTextureImage(filename);
+            int textureImageLoc = this->createTextureImage(filename, graphicsQueue, commandPool);
             this->uboSampler->getUBO()[textureImageLoc]->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
             // Create Texture Descriptor
@@ -90,7 +91,7 @@ namespace ce {
             }
         }
 
-        int createTextureImage(const std::string& filename) {
+        int createTextureImage(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool) {
             // Load image
             int width;
             int height;
@@ -182,8 +183,6 @@ namespace ce {
 
         VkPhysicalDevice physical;
         VkDevice logical;
-        VkQueue graphicsQueue;
-        VkCommandPool commandPool;
 
         VkSampler textureSampler;
 

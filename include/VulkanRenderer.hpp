@@ -6,11 +6,11 @@
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
+#include "Textures.hpp"
 #include "VWrapp.hpp"
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/UBO.hpp"
 #include "descriptors/DescriptorPool.hpp"
-#include "stb_image.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -55,11 +55,10 @@ class VulkanRenderer {
 
     // - Descriptors
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
-    std::shared_ptr<ce::DescriptorPool> samplerDescriptorPool;
 
     std::shared_ptr<ce::UBO<ce::BufferObject>> uboVP;
 
-    VkSampler textureSampler; // TODO: aqui!!! depois o draw!!!
+    std::shared_ptr<ce::Textures> textureMng;
 
     VkPushConstantRange pushConstantRange;
 
@@ -71,7 +70,6 @@ class VulkanRenderer {
     // UboModel* modelTransferSpace;
 
     // - Assets
-    std::shared_ptr<ce::UBO<ce::ImageObject>> uboSampler;
 
     // - Pipeline
     std::shared_ptr<ce::Pipeline> pipeline;
@@ -92,7 +90,6 @@ class VulkanRenderer {
     void createDepthBufferImage();
     void createCommandPool();
     void createSynchronisation();
-    void createTextureSampler();
 
     void createDescriptorPool();
     void createDescriptorSets();
@@ -104,12 +101,4 @@ class VulkanRenderer {
 
     // - Allocate functions
     // void allocateDynamicBufferTransferSpace();
-
-    // -- Create Functions
-    int createTextureImage(const std::string& filename);
-    int createTexture(const std::string& filename);
-    int createTextureDescriptor(VkImageView textureImage);
-
-    // -- Loader Funcions
-    static stbi_uc* loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize);
 };
