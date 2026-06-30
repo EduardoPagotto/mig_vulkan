@@ -55,10 +55,7 @@ class VulkanRenderer {
 
     // - Descriptors
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
-
     std::shared_ptr<ce::UBO<ce::BufferObject>> uboVP;
-
-    std::shared_ptr<ce::Textures> textureMng;
 
     VkPushConstantRange pushConstantRange;
 
@@ -70,6 +67,7 @@ class VulkanRenderer {
     // UboModel* modelTransferSpace;
 
     // - Assets
+    std::shared_ptr<ce::Textures> textureMng;
 
     // - Pipeline
     std::shared_ptr<ce::Pipeline> pipeline;
@@ -90,7 +88,6 @@ class VulkanRenderer {
     void createDepthBufferImage();
     void createCommandPool();
     void createSynchronisation();
-
     void createDescriptorPool();
     void createDescriptorSets();
 

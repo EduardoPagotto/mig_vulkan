@@ -101,7 +101,7 @@ namespace ce {
 
     // --swapchain
 
-    uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
+    uint32_t FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
         // get properties of physical device memory
         VkPhysicalDeviceMemoryProperties memoryProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);

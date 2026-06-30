@@ -35,7 +35,7 @@ namespace ce {
         const VkMemoryAllocateInfo memoryAllocInfo{
             .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .allocationSize = memRequirements.size,
-            .memoryTypeIndex = findMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
+            .memoryTypeIndex = FindMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
 
         // Allocate memory to VkDebviceMemory
         if (vkAllocateMemory(this->device, &memoryAllocInfo, nullptr, &this->memory) != VK_SUCCESS) {

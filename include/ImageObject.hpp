@@ -50,7 +50,7 @@ namespace ce {
             const VkMemoryAllocateInfo memoryAllocInfo{
                 .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
                 .allocationSize = memoryRequirements.size,
-                .memoryTypeIndex = findMemoryTypeIndex(this->physical, memoryRequirements.memoryTypeBits, propFlags)};
+                .memoryTypeIndex = FindMemoryTypeIndex(this->physical, memoryRequirements.memoryTypeBits, propFlags)};
 
             if (vkAllocateMemory(this->device, &memoryAllocInfo, nullptr, &this->imageMemory) != VK_SUCCESS) {
                 throw std::runtime_error("Failed to Allocate Memory for Image");

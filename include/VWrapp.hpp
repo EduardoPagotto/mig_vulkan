@@ -11,6 +11,16 @@
 
 namespace ce {
 
+    //     class DevVK {
+    //       public:
+    //         DevVK(const DevVK&) = delete;
+    //         DevVK& operator=(const DevVK&) = delete;
+
+    //         VkPhysicalDevice physical{VK_NULL_HANDLE};
+    //         VkDevice logical{VK_NULL_HANDLE};
+    //         VkSurfaceKHR surface{VK_NULL_HANDLE};
+    //     };
+
     class VWrapp {
       public:
 #ifdef SET_GLFW_ENABLE
@@ -48,6 +58,8 @@ namespace ce {
         VkQueue graphicsQueue;
         VkQueue presentationQueue;
         VkSurfaceKHR surface;
+
+        // shared_ptr<DevVK> devvk;
 
         bool validationEnabled = true;
 
