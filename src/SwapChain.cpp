@@ -133,20 +133,20 @@ namespace ce {
 
     void SwapChain::createFramebuffers(VkImageView& imageView, VkRenderPass& renderPass) {
         // Resize framebuffer count to equal chain image count
-        this->swapChainFrameBuffers.resize(this->getImages().size());
+        this->swapChainFrameBuffers.resize(this->images.size());
 
         // Create a framebuffer for eache swap chain image
         for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
-            std::array<VkImageView, 2> attachments = {this->getImages()[i]->getImageView(), imageView}; // order important same as upper
+            std::array<VkImageView, 2> attachments = {this->images[i]->getImageView(), imageView}; // order important same as upper
 
             const VkFramebufferCreateInfo framebufferCreateInfo = {
                 .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 .renderPass = renderPass,                                     // Render Pass layout the framebuffer will be used with
                 .attachmentCount = static_cast<uint32_t>(attachments.size()), //
                 .pAttachments = attachments.data(),                           // List of attachments (1:1 with Render Pass)
-                .width = this->getExtent().width,                             // Framebuffer width
-                .height = this->getExtent().height,                           // Framebuffer height
+                .width = this->extent.width,                                  // Framebuffer width
+                .height = this->extent.height,                                // Framebuffer height
                 .layers = 1                                                   // Framebuffer layers
             };
 
