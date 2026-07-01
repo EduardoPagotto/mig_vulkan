@@ -1,7 +1,6 @@
 #pragma once
 #include "Mesh.hpp"
 #include <assimp/scene.h>
-#include <vulkan/vulkan_core.h>
 
 class MeshModel {
   public:

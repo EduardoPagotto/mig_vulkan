@@ -2,7 +2,6 @@
 #include "DevVK.hpp"
 #include "Mesh.hpp"
 #include "ShaderModule.hpp"
-#include "Ultilities.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>

@@ -4,8 +4,6 @@
 #include "buffers/UBO.hpp"
 #include "descriptors/DescriptorPool.hpp"
 #include "stb_image.h"
-#include <memory>
-#include <vulkan/vulkan_core.h>
 
 namespace ce {
     class Textures {

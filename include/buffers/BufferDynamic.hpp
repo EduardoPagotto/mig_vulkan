@@ -1,10 +1,9 @@
 #pragma once
 
 #include "Mesh.hpp"
-#include "Ultilities.hpp"
 #include <cstring>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <vulkan/vulkan_core.h>
+#include <glm/glm.hpp>
+
 namespace ce {
 
     struct UboModel {

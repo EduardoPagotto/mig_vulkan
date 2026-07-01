@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Command.hpp"
-#include "DevVK.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
@@ -10,15 +9,9 @@
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/ImageObject.hpp"
 #include "buffers/UBO.hpp"
-#include "descriptors/DescriptorPool.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <memory>
-#include <vector>
-#include <vulkan/vulkan_core.h>
 
 class VulkanRenderer {
   public:

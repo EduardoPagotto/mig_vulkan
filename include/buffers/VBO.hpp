@@ -3,7 +3,6 @@
 #include "DevVK.hpp"
 #include "buffers/BufferObject.hpp"
 #include <memory>
-#include <vulkan/vulkan_core.h>
 
 namespace ce {
 

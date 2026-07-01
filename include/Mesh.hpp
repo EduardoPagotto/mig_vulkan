@@ -1,11 +1,7 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
 #include "buffers/IBO.hpp"
 #include "buffers/VBO.hpp"
-#include <memory>
-#include <vector>
-#include <vulkan/vulkan_core.h>
 
 struct Model {
     glm::mat4 model;
