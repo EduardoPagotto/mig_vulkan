@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Command.hpp"
+#include "DevVK.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "Textures.hpp"
-#include "VWrapp.hpp"
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/ImageObject.hpp"
 #include "buffers/UBO.hpp"
@@ -22,7 +22,7 @@
 
 class VulkanRenderer {
   public:
-    explicit VulkanRenderer(ce::VWrapp& vwrapp);
+    explicit VulkanRenderer(ce::DevVk& devvk);
     virtual ~VulkanRenderer();
 
     void updateModel(int modelId, glm::mat4 newModel);

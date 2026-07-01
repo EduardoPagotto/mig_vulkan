@@ -1,6 +1,4 @@
 #define STB_IMAGE_IMPLEMENTATION
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include "VWrapp.hpp"
 #include "VulkanRenderer.hpp"
 #include <cstdlib>
 #include <glm/ext/matrix_transform.hpp>
@@ -31,8 +29,8 @@ int main() {
 
     try {
 
-        ce::VWrapp vwrapp(window);
-        VulkanRenderer vulkanRenderer(vwrapp);
+        ce::DevVk devvk(window);
+        VulkanRenderer vulkanRenderer(devvk);
 
         float angle = 0.0F;
         float deltaTime = 0.0F;

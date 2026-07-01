@@ -1,13 +1,14 @@
-#include "VWrapp.hpp"
-#include "VWrappUtils.hpp"
+#include "DevVK.hpp"
 #include "debug.hpp"
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <set>
 #include <stdexcept>
 
 namespace ce {
-    VWrapp::~VWrapp() {
+
+    DevVk::~DevVk() {
         // cleanup
         vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
         vkDestroyDevice(this->logicalDevice, nullptr);
@@ -19,7 +20,7 @@ namespace ce {
         vkDestroyInstance(this->instance, nullptr);
     }
 
-    void VWrapp::init_device() {
+    void DevVk::init_device() {
         this->createInstance();
         this->createDebugCallback();
         this->createSurface();        // create before physical
@@ -27,9 +28,9 @@ namespace ce {
         this->createLogicalDevice();
     }
 
-    void VWrapp::createInstance() {
+    void DevVk::createInstance() {
 
-        if (this->validationEnabled && !VWrapp::CheckValidationLayerSupport()) {
+        if (this->validationEnabled && !DevVk::CheckValidationLayerSupport()) {
             throw std::runtime_error("Required Validation Layers not supported!");
         }
 
@@ -61,7 +62,7 @@ namespace ce {
         }
 
         // check Instance Extentions suppoted..
-        if (!VWrapp::CheckInstanceExtensionSupport(&instanceExtensions)) {
+        if (!DevVk::CheckInstanceExtensionSupport(&instanceExtensions)) {
             throw std::runtime_error("vkInstance does no suport requerid extentions!");
         }
 
@@ -100,7 +101,7 @@ namespace ce {
         }
     }
 
-    void VWrapp::createDebugCallback() {
+    void DevVk::createDebugCallback() {
         // Only create callback if validation enabled
         if (!this->validationEnabled) {
             return;
@@ -119,7 +120,7 @@ namespace ce {
         }
     }
 
-    void VWrapp::createSurface() {
+    void DevVk::createSurface() {
 
         // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
 #ifdef SET_GLFW_ENABLE
@@ -133,7 +134,7 @@ namespace ce {
 #endif
     }
 
-    void VWrapp::getNewPhysicalDevice() {
+    void DevVk::getNewPhysicalDevice() {
         // Enumerate Physical devices the vkInstance can access
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(this->instance, &deviceCount, nullptr);
@@ -149,7 +150,7 @@ namespace ce {
 
         // mainDevice.physicalDevice = deviceList[0];
         for (const auto& device : deviceList) {
-            if (VWrapp::CheckDeviceSuitable(device, this->surface)) {
+            if (DevVk::CheckDeviceSuitable(device, this->surface)) {
                 physicalDevice = device;
                 break;
             }
@@ -161,10 +162,10 @@ namespace ce {
         // minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
     }
 
-    void VWrapp::createLogicalDevice() {
+    void DevVk::createLogicalDevice() {
 
         // Get the queue family indices for the chosen Physical device
-        QueueFamilyIndices indices = GetQueueFamilies(this->physicalDevice, surface);
+        QueueFamilyIndices indices = aux::GetQueueFamilies(this->physicalDevice, surface);
 
         // vector for queue creation information, and set for family indices
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -194,8 +195,8 @@ namespace ce {
             .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()), // Number queueCreateInfos
             .pQueueCreateInfos = queueCreateInfos.data(), // List of queueCreateInfos so device can create required queues
-            .enabledExtensionCount = static_cast<uint32_t>(VWrapp::deviceExtensions.size()), // Number of enable logical device extentions
-            .ppEnabledExtensionNames = VWrapp::deviceExtensions.data(),                      // List of enable logical device extentions
+            .enabledExtensionCount = static_cast<uint32_t>(DevVk::deviceExtensions.size()), // Number of enable logical device extentions
+            .ppEnabledExtensionNames = DevVk::deviceExtensions.data(),                      // List of enable logical device extentions
             .pEnabledFeatures = &deviceFeatures // Physica device features logica device will use
         };
 
@@ -213,7 +214,7 @@ namespace ce {
     }
 
     // --utils
-    bool VWrapp::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+    bool DevVk::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
         // Get device extension count
         uint32_t extensionCount = 0;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -228,7 +229,7 @@ namespace ce {
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, extensions.data());
 
         // Check for extension
-        for (const auto& deviceExtension : VWrapp::deviceExtensions) {
+        for (const auto& deviceExtension : DevVk::deviceExtensions) {
             bool hasExtension = false;
             for (const auto& extension : extensions) {
                 if (std::strcmp(deviceExtension, extension.extensionName) == 0) {
@@ -245,7 +246,7 @@ namespace ce {
         return true;
     }
 
-    bool VWrapp::CheckDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    bool DevVk::CheckDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
         /*
         // Information abaout the device itself (ID, Name, Type Vendor, etc)
@@ -256,20 +257,20 @@ namespace ce {
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-        QueueFamilyIndices indices = GetQueueFamilies(device, surface);
+        QueueFamilyIndices indices = aux::GetQueueFamilies(device, surface);
 
-        bool extensionsSupported = VWrapp::CheckDeviceExtensionSupport(device);
+        bool extensionsSupported = DevVk::CheckDeviceExtensionSupport(device);
 
         bool swapChainValid = false;
         if (extensionsSupported) {
-            SwapChainDetails swapChainDetails = GetSwapChainDetails(device, surface);
+            SwapChainDetails swapChainDetails = aux::GetSwapChainDetails(device, surface);
             swapChainValid = !swapChainDetails.presentationModes.empty() && !swapChainDetails.formats.empty();
         }
 
         return indices.isValid() && extensionsSupported && swapChainValid && (deviceFeatures.samplerAnisotropy == VK_TRUE);
     }
 
-    bool VWrapp::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtentions) {
+    bool DevVk::CheckInstanceExtensionSupport(std::vector<const char*>* checkExtentions) {
         // need to get number of extentions to create array of correct size to hold extentions
         uint32_t extentionsCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extentionsCount, nullptr);
@@ -297,7 +298,7 @@ namespace ce {
         return true;
     }
 
-    bool VWrapp::CheckValidationLayerSupport() {
+    bool DevVk::CheckValidationLayerSupport() {
         // Get number of validation layers to create vector of appropriate size
         uint32_t validationLayerCount = 0;
         vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
@@ -336,5 +337,153 @@ namespace ce {
 
         return true;
     }
+
+    namespace aux {
+
+        SwapChainDetails GetSwapChainDetails(VkPhysicalDevice device, VkSurfaceKHR surface) {
+            SwapChainDetails swapChainDetails;
+
+            // -- CAPABILITIES --
+            // Get the surface capabilities for the given surface on the given physical device
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &swapChainDetails.surfaceCapabilities);
+
+            // -- FORMATS --
+            uint32_t formatCount = 0;
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+            // If formats returned, get list of formats
+            if (formatCount != 0) {
+                swapChainDetails.formats.resize(formatCount);
+                vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, swapChainDetails.formats.data());
+            }
+
+            // -- PRESENTATION MODES --
+            uint32_t presentationCount = 0;
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, nullptr);
+
+            // If presentation modes returned, get list of presentation modes
+            if (presentationCount != 0) {
+                swapChainDetails.presentationModes.resize(presentationCount);
+                vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentationCount, swapChainDetails.presentationModes.data());
+            }
+
+            return swapChainDetails;
+        }
+
+        VkFormat ChooseSupportedFormat(VkPhysicalDevice device, const std::vector<VkFormat>& formats, VkImageTiling tilling,
+                                       VkFormatFeatureFlags featureFlags) {
+
+            // Loop through options and find compatible one
+            for (VkFormat format : formats) {
+
+                // Get properties for give format on this device
+                VkFormatProperties properties;
+                vkGetPhysicalDeviceFormatProperties(device, format, &properties);
+
+                // Depending on tiling choice, nned to check for difference bit flag
+                if (tilling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & featureFlags) == featureFlags) {
+                    //
+                    return format;
+                }
+                if (tilling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & featureFlags) == featureFlags) {
+                    //
+                    return format;
+                }
+            }
+
+            throw std::runtime_error("Failed to find a matching format!");
+        }
+
+        QueueFamilyIndices GetQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+
+            QueueFamilyIndices indices;
+
+            // Get all Queue Family Property info for the given device
+            uint32_t queueFamilyCount = 0;
+            vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+            std::vector<VkQueueFamilyProperties> queueFamilyList(queueFamilyCount);
+
+            vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyList.data());
+
+            // Go through each queue family and check if it has at least 1 of the requered types of queue
+            int idx = 0;
+            for (const auto& queueFamily : queueFamilyList) {
+
+                // First check if queue has at least 1 queue in that family (could have no queue)
+                // Queue cam be multiple types defined through bitfield. Need to bitwise AND with VK_QUEUE_*_BIT to check if
+                // has requered type
+                if ((queueFamily.queueCount > 0) && ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)) {
+                    indices.graphicsFamily = idx; // if queue family is valid then get index
+                }
+
+                // Check if Queue Family support presentation
+                VkBool32 presentationSupport = VK_FALSE;
+                vkGetPhysicalDeviceSurfaceSupportKHR(device, idx, surface,
+                                                     &presentationSupport); // TODO: validar se result OK
+                // check if queue is presentation type (can bo boyh graphics and presentation)
+                if ((queueFamily.queueCount > 0) && (presentationSupport == VK_TRUE)) {
+                    indices.presentationFamily = idx;
+                }
+
+                // check if queue family indices are in valid state, stop searching if so
+                if (indices.isValid()) {
+                    break;
+                }
+
+                idx++;
+            }
+
+            return indices;
+        }
+
+        // --swapchain
+
+        uint32_t FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t allowedTypes, VkMemoryPropertyFlags properties) {
+            // get properties of physical device memory
+            VkPhysicalDeviceMemoryProperties memoryProperties;
+            vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+            for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+
+                // Index of memory type must match corresponding bit in allowedTypes and desired property bit flag are part of memory type's
+                // property flags
+                if ((allowedTypes & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) { // NOLINT
+                    // this memory type is valid, so return its index
+                    return i;
+                }
+            }
+
+            throw std::runtime_error("Failed to find Memory!");
+        }
+
+        // --utils
+
+        std::vector<char> readFile(const std::filesystem::path& filename) {
+            // Open stream from given file
+            // std::ios::binary tells stream to read file as binary
+            // std::ios::ate tells stream to start reading from end file
+            std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+            // Chack if fstream sucessfully open
+            if (!file.is_open()) {
+                throw std::runtime_error("Failed to open a file!");
+            }
+
+            auto filesize = static_cast<size_t>(file.tellg());
+
+            std::vector<char> fileBuffer(filesize);
+
+            // Move read position (seek to0 the start of the file)
+            file.seekg(0);
+
+            // Read the file data into the buffer (stream "fileSize" in total)
+            file.read(fileBuffer.data(), filesize);
+
+            // Close stream
+            file.close();
+
+            return fileBuffer;
+        }
+    } // namespace aux
 
 } // namespace ce

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "VWrappUtils.hpp"
+#include "DevVK.hpp"
 #include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
 namespace ce {
 
@@ -12,7 +11,7 @@ namespace ce {
             : logicalDevice(logicalDevice), surface(surface) {
 
             // Get inidices of queue families from device
-            ce::QueueFamilyIndices queueFamilyIndices = GetQueueFamilies(physicalDevice, this->surface);
+            ce::QueueFamilyIndices queueFamilyIndices = aux::GetQueueFamilies(physicalDevice, this->surface);
 
             const VkCommandPoolCreateInfo poolInfo{
                 .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,

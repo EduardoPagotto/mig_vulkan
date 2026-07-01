@@ -1,8 +1,8 @@
 #include "VulkanRenderer.hpp"
+#include "DevVK.hpp"
 #include "Mesh.hpp"
 #include "ShaderModule.hpp"
 #include "Ultilities.hpp"
-#include "VWrappUtils.hpp"
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -15,17 +15,17 @@
 #include <limits>
 #include <stdexcept>
 
-VulkanRenderer::VulkanRenderer(ce::VWrapp& vwrapp) {
+VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
 
     using namespace ce;
 
-    physical = vwrapp.getPhysical();
-    logical = vwrapp.getLogical();
-    gQueue = vwrapp.getGraphicsQueue();
-    pQueue = vwrapp.getPresentationQueue();
-    surface = vwrapp.getSurface();
+    physical = devvk.getPhysical();
+    logical = devvk.getLogical();
+    gQueue = devvk.getGraphicsQueue();
+    pQueue = devvk.getPresentationQueue();
+    surface = devvk.getSurface();
 
-    swapchain = std::make_shared<SwapChain>(physical, logical, surface, vwrapp.getWindow());
+    swapchain = std::make_shared<SwapChain>(physical, logical, surface, devvk.getWindow());
     rederer = std::make_shared<Renderer>(physical, logical, swapchain->getImageFormat());
     uboVP = std::make_shared<UBO<BufferObject>>(physical, logical, swapchain->getImages().size(), sizeof(UboViewProjection));
     textureMng = std::make_shared<Textures>(physical, logical);
@@ -76,7 +76,7 @@ VulkanRenderer::~VulkanRenderer() {
     descriptorPool.reset();
     uboVP.reset();
 
-    for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
+    for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
         vkDestroySemaphore(logical, renderFinished[i], nullptr);
         vkDestroySemaphore(logical, imageAvailable[i], nullptr);
         vkDestroyFence(logical, drawFences[i], nullptr);
@@ -150,10 +150,10 @@ void VulkanRenderer::draw() {
     }
 
     // Get next frame
-    this->currentFrame = (this->currentFrame + 1) % MAX_FRAME_DRAWS;
+    this->currentFrame = (this->currentFrame + 1) % ce::MAX_FRAME_DRAWS;
 
     // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
-    if (this->currentFrame == (MAX_FRAME_DRAWS - 1)) {
+    if (this->currentFrame == (ce::MAX_FRAME_DRAWS - 1)) {
         vkDeviceWaitIdle(logical);
     }
 }
@@ -191,16 +191,16 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     // Read in SPIR-V code shaders, Vertex Stage creation information and Fragment Stage creation information
     std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(logical);
-    shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, readFile("./bin/vert.spv"));
-    shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, readFile("./bin/frag.spv"));
+    shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, ce::aux::readFile("./bin/vert.spv"));
+    shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, ce::aux::readFile("./bin/frag.spv"));
 
     // How the data for a sigle vertex (including info such as position, colour, texture coords, normals, etc..) is as a whole
-    shaderModule->addBindingDescription(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
+    shaderModule->addBindingDescription(0, sizeof(ce::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
 
     // Attributes of shader vertex
-    shaderModule->addAtribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)); // Position Attribute
-    shaderModule->addAtribute(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, col)); // Color Attribute
-    shaderModule->addAtribute(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, tex));    // Texture Atribute
+    shaderModule->addAtribute(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ce::Vertex, pos)); // Position Attribute
+    shaderModule->addAtribute(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ce::Vertex, col)); // Color Attribute
+    shaderModule->addAtribute(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(ce::Vertex, tex));    // Texture Atribute
 
     // -- VERTEX INPUT  ASSEMBLY INPUT --
     shaderModule->setVertexInput(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
@@ -259,7 +259,7 @@ void VulkanRenderer::createGraphicsPipeline() {
 void VulkanRenderer::createDepthBufferImage() {
 
     // Get suported format for depth buffer
-    VkFormat depthFormat = ce::ChooseSupportedFormat(
+    VkFormat depthFormat = ce::aux::ChooseSupportedFormat(
         this->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
         VK_IMAGE_TILING_OPTIMAL,                                                                           // Tilling
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                   // Depth
@@ -276,9 +276,9 @@ void VulkanRenderer::createDepthBufferImage() {
 
 void VulkanRenderer::createSynchronisation() {
 
-    this->imageAvailable.resize(MAX_FRAME_DRAWS);
-    this->renderFinished.resize(MAX_FRAME_DRAWS);
-    this->drawFences.resize(MAX_FRAME_DRAWS);
+    this->imageAvailable.resize(ce::MAX_FRAME_DRAWS);
+    this->renderFinished.resize(ce::MAX_FRAME_DRAWS);
+    this->drawFences.resize(ce::MAX_FRAME_DRAWS);
 
     // Semaphore creation information
     const VkSemaphoreCreateInfo semaphoreCreateInfo{
@@ -288,7 +288,7 @@ void VulkanRenderer::createSynchronisation() {
     // Fence creation information
     const VkFenceCreateInfo fenceCreateInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
 
-    for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
+    for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
 
         if (vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
             vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||

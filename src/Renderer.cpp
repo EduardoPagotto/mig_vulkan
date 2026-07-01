@@ -1,5 +1,5 @@
 #include "Renderer.hpp"
-#include "VWrappUtils.hpp"
+#include "DevVK.hpp"
 #include <array>
 #include <stdexcept>
 
@@ -31,10 +31,10 @@ namespace ce {
 
         // Depth attachemnt of render pass
         const VkAttachmentDescription depthAttachemnt{
-            .format = ChooseSupportedFormat(this->physicalDevice,
-                                            {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-                                            VK_IMAGE_TILING_OPTIMAL,                                                           // Tilling
-                                            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
+            .format = aux::ChooseSupportedFormat(
+                this->physicalDevice, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+                VK_IMAGE_TILING_OPTIMAL,                                                                                 // Tilling
+                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,

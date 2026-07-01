@@ -1,7 +1,6 @@
 #pragma once
 
 #define GLFW_INCLUDE_VULKAN
-#include "Ultilities.hpp"
 #include "buffers/IBO.hpp"
 #include "buffers/VBO.hpp"
 #include <memory>
@@ -16,7 +15,7 @@ class Mesh {
   public:
     Mesh() = default;
     Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
-         std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId);
+         std::vector<ce::Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId);
 
     virtual ~Mesh() = default;
 
@@ -46,6 +45,6 @@ class Mesh {
     std::shared_ptr<ce::VBO> vbo;
     std::shared_ptr<ce::IBO> ibo;
 
-    void createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<Vertex>* vertices);
+    void createVertexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<ce::Vertex>* vertices);
     void createIndexBuffer(VkQueue transferQueue, VkCommandPool transferCommandPool, std::vector<uint32_t>* indices);
 };

@@ -1,5 +1,4 @@
 #include "SwapChain.hpp"
-#include "VWrappUtils.hpp"
 #include <array>
 #include <memory>
 
@@ -13,7 +12,7 @@ namespace ce {
         : logicalDevice(logicalDevice), window(window) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails = GetSwapChainDetails(physicalDevice, surface);
+        SwapChainDetails swapchainDetails = aux::GetSwapChainDetails(physicalDevice, surface);
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = SwapChain::ChooseBestSurfaceFormat(swapchainDetails.formats);
@@ -31,7 +30,7 @@ namespace ce {
         }
 
         // Get Queue Family indices
-        ce::QueueFamilyIndices indices = GetQueueFamilies(physicalDevice, surface);
+        ce::QueueFamilyIndices indices = aux::GetQueueFamilies(physicalDevice, surface);
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
 
         // indices.graphicsFamily == indices.presentationFamily

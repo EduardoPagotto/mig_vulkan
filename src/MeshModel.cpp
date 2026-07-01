@@ -81,7 +81,7 @@ std::vector<Mesh> MeshModel::LoadNode(VkPhysicalDevice newPhysicalDevice, VkDevi
 Mesh MeshModel::LoadMesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
                          aiMesh* mesh, const aiScene* scene, std::vector<int> matToText) {
     //
-    std::vector<Vertex> vertices;
+    std::vector<ce::Vertex> vertices;
     std::vector<uint32_t> indices;
 
     // Resize vertex list to hold all vertices for mesh

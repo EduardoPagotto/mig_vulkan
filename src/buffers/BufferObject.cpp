@@ -1,5 +1,5 @@
 #include "buffers/BufferObject.hpp"
-#include "VWrappUtils.hpp"
+#include "DevVK.hpp"
 #include <cstring>
 #include <stdexcept>
 
@@ -35,7 +35,7 @@ namespace ce {
         const VkMemoryAllocateInfo memoryAllocInfo{
             .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .allocationSize = memRequirements.size,
-            .memoryTypeIndex = FindMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
+            .memoryTypeIndex = aux::FindMemoryTypeIndex(this->physical, memRequirements.memoryTypeBits, bufferProperties)};
 
         // Allocate memory to VkDebviceMemory
         if (vkAllocateMemory(this->device, &memoryAllocInfo, nullptr, &this->memory) != VK_SUCCESS) {

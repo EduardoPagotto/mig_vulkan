@@ -2,13 +2,13 @@
 #include <glm/ext/matrix_float4x4.hpp>
 
 Mesh::Mesh(VkPhysicalDevice newPhysicalDevice, VkDevice newDevice, VkQueue transferQueue, VkCommandPool transferCommandPool,
-           std::vector<Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId) {
+           std::vector<ce::Vertex>* vertices, std::vector<uint32_t>* indices, int newTexId) {
 
     this->physicalDevice = newPhysicalDevice;
     this->device = newDevice;
 
     this->vbo = std::make_shared<ce::VBO>(newPhysicalDevice, newDevice);
-    this->vbo->create(transferQueue, transferCommandPool, vertices, sizeof(Vertex));
+    this->vbo->create(transferQueue, transferCommandPool, vertices, sizeof(ce::Vertex));
 
     this->ibo = std::make_shared<ce::IBO>(newPhysicalDevice, newDevice);
     this->ibo->create(transferQueue, transferCommandPool, indices);
