@@ -4,11 +4,10 @@
 
 namespace ce {
     //
-    CommandPool::CommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface)
-        : logicalDevice(logicalDevice), surface(surface) {
+    CommandPool::CommandPool(std::shared_ptr<BaseVK> bvk) : bvk(bvk) { // NOLINT
 
         // Get inidices of queue families from device
-        QueueFamilyIndices queueFamilyIndices = aux::GetQueueFamilies(physicalDevice, this->surface);
+        QueueFamilyIndices queueFamilyIndices = aux::GetQueueFamilies(bvk->physical, bvk->surface);
 
         const VkCommandPoolCreateInfo poolInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -18,19 +17,19 @@ namespace ce {
         };
 
         // Create a Graphics Queue Family Command Pool
-        if (vkCreateCommandPool(this->logicalDevice, &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
+        if (vkCreateCommandPool(bvk->logical, &poolInfo, nullptr, &this->commandPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create Command Pool");
         }
     }
 
     CommandPool::~CommandPool() {
         //
-        vkDestroyCommandPool(logicalDevice, this->commandPool, nullptr);
+        vkDestroyCommandPool(this->bvk->logical, this->commandPool, nullptr);
     }
 
     void CommandPool::cleanup() {
         //
-        if (vkResetCommandPool(this->logicalDevice, this->commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) {
+        if (vkResetCommandPool(this->bvk->logical, this->commandPool, VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS) {
             throw std::runtime_error("Failed to Reset Command Pool");
         }
     }

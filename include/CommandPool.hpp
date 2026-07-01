@@ -1,19 +1,20 @@
 #pragma once
 
+#include "subsystem.hpp"
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 namespace ce {
 
     class CommandPool {
       public:
-        explicit CommandPool(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface);
+        explicit CommandPool(std::shared_ptr<BaseVK> bvk);
         virtual ~CommandPool();
         void cleanup();
         VkCommandPool& getPool() { return this->commandPool; }
 
       private:
-        VkDevice logicalDevice;
+        std::shared_ptr<BaseVK> bvk;
         VkCommandPool commandPool;
-        VkSurfaceKHR surface;
     };
 } // namespace ce

@@ -33,7 +33,7 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     createDepthBufferImage();
 
     swapchain->createFramebuffers(depthBufferObject->getImageView(), rederer->getRenderPass());
-    graphicsCommandPool = std::make_shared<CommandPool>(bvk->physical, bvk->logical, bvk->surface);
+    graphicsCommandPool = std::make_shared<CommandPool>(this->bvk);
     commandBuffers =
         std::make_shared<CommandBuffer>(bvk->logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
 
