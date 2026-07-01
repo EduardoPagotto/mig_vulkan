@@ -99,6 +99,9 @@ namespace ce {
             image.reset();
         }
 
+        // TODO: e aqui?
+        this->depthBufferObject.reset();
+
         vkDestroySwapchainKHR(this->bvk->logical, this->swapchain, nullptr);
     }
 
@@ -131,14 +134,19 @@ namespace ce {
         return newExtent;
     }
 
-    void SwapChain::createFramebuffers(VkImageView& imageView, VkRenderPass& renderPass) {
+    void SwapChain::createFramebuffers(VkRenderPass& renderPass) {
+
+        // create depth buffer
+        this->createDepthBufferImage();
+
         // Resize framebuffer count to equal chain image count
         this->swapChainFrameBuffers.resize(this->images.size());
 
         // Create a framebuffer for eache swap chain image
         for (size_t i = 0; i < this->swapChainFrameBuffers.size(); i++) {
 
-            std::array<VkImageView, 2> attachments = {this->images[i]->getImageView(), imageView}; // order important same as upper
+            std::array<VkImageView, 2> attachments = {this->images[i]->getImageView(),
+                                                      depthBufferObject->getImageView()}; // order important same as upper
 
             const VkFramebufferCreateInfo framebufferCreateInfo = {
                 .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -154,6 +162,23 @@ namespace ce {
                 throw std::runtime_error("Faleid to create a frambuffer");
             }
         }
+    }
+
+    void SwapChain::createDepthBufferImage() {
+
+        // Get suported format for depth buffer
+        VkFormat depthFormat = ce::aux::ChooseSupportedFormat(
+            this->bvk->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+            VK_IMAGE_TILING_OPTIMAL,                                                                                // Tilling
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                        // Depth
+
+        // Create Depth Buffer Image
+        this->depthBufferObject = std::make_shared<ce::ImageObject>(this->bvk->physical, this->bvk->logical);
+        this->depthBufferObject->createImage(this->extent.width, this->extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                                             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        // Create Depth Buffer Image View
+        this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
     // Best format is subjective, but ours will be:

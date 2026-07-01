@@ -18,7 +18,8 @@ namespace ce {
         VkFormat& getImageFormat() { return this->imageFormat; }
         std::vector<VkFramebuffer>& getSwapChainFrameBuffers() { return this->swapChainFrameBuffers; }
 
-        void createFramebuffers(VkImageView& imageView, VkRenderPass& renderPass);
+        void createFramebuffers(VkRenderPass& renderPass);
+        void createDepthBufferImage();
 
       private:
         VkSwapchainKHR swapchain;
@@ -26,6 +27,7 @@ namespace ce {
         VkExtent2D extent;
         std::shared_ptr<BaseVK> bvk;
         std::vector<std::shared_ptr<ImageObject>> images;
+        std::shared_ptr<ce::ImageObject> depthBufferObject;
         std::vector<VkFramebuffer> swapChainFrameBuffers;
 
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);

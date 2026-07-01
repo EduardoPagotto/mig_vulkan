@@ -30,9 +30,8 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     createDescriptorSetLayout();
     createPushConstantRange();
     createGraphicsPipeline();
-    createDepthBufferImage();
 
-    swapchain->createFramebuffers(depthBufferObject->getImageView(), rederer->getRenderPass());
+    swapchain->createFramebuffers(rederer->getRenderPass());
     graphicsCommandPool = std::make_shared<CommandPool>(this->bvk);
     commandBuffers =
         std::make_shared<CommandBuffer>(bvk->logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
@@ -70,7 +69,6 @@ VulkanRenderer::~VulkanRenderer() {
     }
 
     textureMng.reset();
-    depthBufferObject.reset();
     descriptorPool.reset();
     uboVP.reset();
 
@@ -252,24 +250,6 @@ void VulkanRenderer::createGraphicsPipeline() {
 
     // -- GRAPHICS PIPELINE CREATION
     this->pipeline->create(shaderModule, this->rederer->getRenderPass());
-}
-
-void VulkanRenderer::createDepthBufferImage() {
-
-    // Get suported format for depth buffer
-    VkFormat depthFormat = ce::aux::ChooseSupportedFormat(
-        this->bvk->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-        VK_IMAGE_TILING_OPTIMAL,                                                                                // Tilling
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                        // Depth
-
-    // Create Depth Buffer Image
-    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->bvk->physical, this->bvk->logical);
-    this->depthBufferObject->createImage(this->swapchain->getExtent().width, this->swapchain->getExtent().height, depthFormat,
-                                         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    // Create Depth Buffer Image View
-    this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void VulkanRenderer::createSynchronisation() {

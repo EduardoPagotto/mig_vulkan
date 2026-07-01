@@ -5,7 +5,6 @@
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
 #include "buffers/CommandBuffer.hpp"
-#include "buffers/ImageObject.hpp"
 #include "buffers/UBO.hpp"
 #include "entitys/MeshModel.hpp"
 #include "entitys/Textures.hpp"
@@ -45,7 +44,6 @@ class VulkanRenderer {
     // Vulkan components
     // - Main
     std::shared_ptr<ce::CommandBuffer> commandBuffers;
-    std::shared_ptr<ce::ImageObject> depthBufferObject;
 
     // - Descriptors
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
@@ -72,7 +70,7 @@ class VulkanRenderer {
     void createDescriptorSetLayout();
     void createPushConstantRange();
     void createGraphicsPipeline();
-    void createDepthBufferImage();
+    // void createDepthBufferImage();
     void createCommandPool();
     void createSynchronisation();
     void createDescriptorPool();
