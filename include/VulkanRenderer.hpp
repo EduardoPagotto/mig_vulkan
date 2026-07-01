@@ -59,13 +59,6 @@ class VulkanRenderer {
 
     VkPushConstantRange pushConstantRange;
 
-    // std::vector<VkBuffer> modelDUniformBuffer;
-    // std::vector<VkDeviceMemory> modelDUniformBufferMemory;
-
-    // VkDeviceSize minUniformBufferOffset;
-    // size_t modelUniformAlignment;
-    // UboModel* modelTransferSpace;
-
     // - Assets
     std::shared_ptr<ce::Textures> textureMng;
 
@@ -95,7 +88,4 @@ class VulkanRenderer {
 
     // - Record Functions
     void recordCommands(uint32_t currentImage);
-
-    // - Allocate functions
-    // void allocateDynamicBufferTransferSpace();
 };

@@ -39,7 +39,6 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     // In create Command buffer, count to have one for each frambuffer
     this->commandBuffers = std::make_shared<ce::CommandBuffer>(vwrapp->getLogical(), this->graphicsCommandPool->getPool(),
                                                                this->swapchain->getSwapChainFrameBuffers().size());
-    //  this->allocateDynamicBufferTransferSpace();
     this->createDescriptorPool();
     this->createDescriptorSets();
     this->createSynchronisation();
@@ -175,11 +174,11 @@ void VulkanRenderer::createDescriptorSetLayout() {
     });
 
     // // Model Binding Info
-    // this->descriptorSetLayout->addBinding({.binding = 1,
-    //                                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-    //                                        .descriptorCount = 1,
-    //                                        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-    //                                        .pImmutableSamplers = nullptr});
+    // this->uboVP->addDescriptorSetLayoutBinding({.binding = 1,
+    //                                             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+    //                                             .descriptorCount = 1,
+    //                                             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+    //                                             .pImmutableSamplers = nullptr});
 
     this->uboVP->createDescriptorSetLayout();
 }
@@ -329,8 +328,7 @@ void VulkanRenderer::createDescriptorSets() {
         // VIEW PROJECTION DESCRIPTOR
         // Buffer info and data offset info
         const VkDescriptorBufferInfo vpBufferInfo{
-            //.buffer = this->vpUniformBuffer[i]->getBuffer(), // Buffer get data from
-            .buffer = this->uboVP->getUBO()[i]->getBuffer(), // vpUniformBuffer[i]->getBuffer(), // Buffer get data from
+            .buffer = this->uboVP->getUBO()[i]->getBuffer(), // Buffer get data from
             .offset = 0,                                     // Position of star of data
             .range = sizeof(UboViewProjection)               // Size of data
         };
@@ -377,21 +375,6 @@ void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
 
     // Copy VP data
     this->uboVP->getUBO()[imageIndex]->mapper(&this->uboViewProjection);
-
-    // // Copy Model data
-    // for (size_t i = 0; i < this->meshList.size(); i++) {
-
-    //     std::byte* ptr_base = reinterpret_cast<std::byte*>(this->modelTransferSpace);
-    //     std::byte* ptr_atual = ptr_base + (i * this->modelUniformAlignment);
-    //     UboModel* thisModel = std::launder(reinterpret_cast<UboModel*>(ptr_atual));
-
-    //     *thisModel = meshList[i].getModel();
-    // }
-
-    // // Map the list of model data
-    // vkMapMemory(vwrapp->getLogical(), this->modelDUniformBufferMemory[imageIndex], 0, this->modelUniformAlignment * meshList.size(), 0,
-    // &data); memcpy(data, this->modelTransferSpace, this->modelUniformAlignment * meshList.size()); vkUnmapMemory(vwrapp->getLogical(),
-    // this->modelDUniformBufferMemory[imageIndex]);
 }
 
 void VulkanRenderer::recordCommands(uint32_t currentImage) {
@@ -469,15 +452,6 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
     this->commandBuffers->end(currentImage);
     //}
 }
-
-// void VulkanRenderer::allocateDynamicBufferTransferSpace() {
-
-//     // Caculate alignment of model data
-//     this->modelUniformAlignment = (sizeof(UboModel) + this->minUniformBufferOffset - 1) & ~(this->minUniformBufferOffset - 1);
-
-//     // Create space in memory to hold dynamic byffer that is alignment and holds MAX_OBJECTS
-//     this->modelTransferSpace = (UboModel*)aligned_alloc(this->modelUniformAlignment, this->modelUniformAlignment * MAX_OBJECTS);
-// }
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     // Import model "scene"
