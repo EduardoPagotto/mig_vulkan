@@ -1,13 +1,6 @@
 #pragma once
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
-#ifdef SET_GLFW_ENABLE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#else
-#include <SDL3/SDL_vulkan.h>
-#endif
+#include "subsystem.hpp" // NOLINT
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <vector>
@@ -41,49 +34,24 @@ namespace ce {
 
     class DevVk {
       public:
-#ifdef SET_GLFW_ENABLE
-        explicit DevVk(GLFWwindow* window) {
-#else
-        explicit DevVk(SDL_Window* window) {
-#endif
-            this->window = window;
-            init_device();
-        }
-
+        explicit DevVk(std::shared_ptr<BaseVK> bvk) : bvk(bvk) { init_device(); } // NOLINT
         virtual ~DevVk();
 
-        [[nodiscard]] VkDevice& getLogical() { return logicalDevice; }
-        [[nodiscard]] VkPhysicalDevice& getPhysical() { return physicalDevice; }
+        std::shared_ptr<BaseVK> getBaseVK() const { return bvk; }
+
         [[nodiscard]] VkQueue& getGraphicsQueue() { return graphicsQueue; }
         [[nodiscard]] VkQueue& getPresentationQueue() { return presentationQueue; }
-        [[nodiscard]] VkSurfaceKHR& getSurface() { return surface; }
-
-#ifdef SET_GLFW_ENABLE
-        [[nodiscard]] GLFWwindow* getWindow() {
-#else
-        [[nodiscard]] SDL_Window* getWindow() {
-#endif
-            return this->window;
-        }
 
       private:
         // Vulkan components
         // - Main
         VkInstance instance;
         VkDebugReportCallbackEXT callback;
-        VkPhysicalDevice physicalDevice;
-        VkDevice logicalDevice;
         VkQueue graphicsQueue;
         VkQueue presentationQueue;
-        VkSurfaceKHR surface;
+        std::shared_ptr<BaseVK> bvk;
 
         bool validationEnabled = true;
-
-#ifdef SET_GLFW_ENABLE
-        GLFWwindow* window;
-#else
-        SDL_Window* window;
-#endif
 
         inline static std::vector<const char*> deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
         inline static std::vector<const char*> validationLayers{"VK_LAYER_KHRONOS_validation"};

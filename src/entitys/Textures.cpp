@@ -20,9 +20,9 @@ namespace ce {
         uboSampler.reset();
     }
 
-    int Textures::createTexture(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool) {
+    int Textures::createTexture(const std::string& filename, VkQueue queue, VkCommandPool commandPool) {
         // Create Texture image and get its location in array
-        int textureImageLoc = this->createTextureImage(filename, graphicsQueue, commandPool);
+        int textureImageLoc = this->createTextureImage(filename, queue, commandPool);
         this->uboSampler->getUBO()[textureImageLoc]->createImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 
         // Create Texture Descriptor
@@ -78,7 +78,7 @@ namespace ce {
         }
     }
 
-    int Textures::createTextureImage(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool) {
+    int Textures::createTextureImage(const std::string& filename, VkQueue queue, VkCommandPool commandPool) {
         // Load image
         int width;
         int height;
@@ -105,14 +105,14 @@ namespace ce {
 
         // COPY DATA TO IMAGE
         // Transition image to be DST for copy operation
-        transitionImageLayout(this->logical, graphicsQueue, commandPool, texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+        transitionImageLayout(this->logical, queue, commandPool, texImageObj->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         // Copy image data
-        copyImageBuffer(this->logical, graphicsQueue, commandPool, imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
+        copyImageBuffer(this->logical, queue, commandPool, imageStagingBuffer.getBuffer(), texImageObj->getImage(), width, height);
 
         // Transition image to be shader readable for shader
-        transitionImageLayout(this->logical, graphicsQueue, commandPool, texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        transitionImageLayout(this->logical, queue, commandPool, texImageObj->getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         // add texture data to vector for reference

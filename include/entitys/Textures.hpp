@@ -17,13 +17,13 @@ namespace ce {
 
         std::shared_ptr<UBO<ImageObject>> getUbo() { return uboSampler; }
 
-        int createTexture(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool);
+        int createTexture(const std::string& filename, VkQueue queue, VkCommandPool commandPool);
 
       private:
         void createDescriptorSetLayout();
         void createDescriptorPool();
         void createTextureSampler();
-        int createTextureImage(const std::string& filename, VkQueue graphicsQueue, VkCommandPool commandPool);
+        int createTextureImage(const std::string& filename, VkQueue queue, VkCommandPool commandPool);
         int createTextureDescriptor(VkImageView textureImage);
 
         static stbi_uc* loadTextureFile(const std::string& filename, int* width, int* height, VkDeviceSize* imageSize);

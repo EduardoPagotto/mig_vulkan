@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DevVK.hpp" // FIXME: corrigir depois
+#include "DevVK.hpp" // FIXME: ver depois
 #include "buffers/ImageObject.hpp"
 #include <memory>
 #include <vector>

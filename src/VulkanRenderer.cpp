@@ -17,13 +17,13 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
 
     using namespace ce;
 
-    physical = devvk.getPhysical();
-    logical = devvk.getLogical();
+    physical = devvk.getBaseVK()->physical;
+    logical = devvk.getBaseVK()->logical;
     gQueue = devvk.getGraphicsQueue();
     pQueue = devvk.getPresentationQueue();
-    surface = devvk.getSurface();
+    surface = devvk.getBaseVK()->surface;
 
-    swapchain = std::make_shared<SwapChain>(physical, logical, surface, devvk.getWindow());
+    swapchain = std::make_shared<SwapChain>(physical, logical, surface, devvk.getBaseVK()->window);
     rederer = std::make_shared<Renderer>(physical, logical, swapchain->getImageFormat());
     uboVP = std::make_shared<UBO<BufferObject>>(physical, logical, swapchain->getImages().size(), sizeof(UboViewProjection));
     textureMng = std::make_shared<Textures>(physical, logical);

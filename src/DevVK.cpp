@@ -10,8 +10,8 @@ namespace ce {
 
     DevVk::~DevVk() {
         // cleanup
-        vkDestroySurfaceKHR(this->instance, this->surface, nullptr);
-        vkDestroyDevice(this->logicalDevice, nullptr);
+        vkDestroySurfaceKHR(this->instance, this->bvk->surface, nullptr);
+        vkDestroyDevice(this->bvk->logical, nullptr);
 
         if (this->validationEnabled) {
             DestroyDebugReportCallbackEXT(this->instance, this->callback, nullptr);
@@ -124,7 +124,7 @@ namespace ce {
 
         // Create Surface (creates a surface creste info struct, runs the create surface function, returns result)
 #ifdef SET_GLFW_ENABLE
-        if (glfwCreateWindowSurface(this->instance, this->window, nullptr, &this->surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(this->instance, this->bvk->window, nullptr, &this->bvk->surface) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #else
@@ -150,22 +150,22 @@ namespace ce {
 
         // mainDevice.physicalDevice = deviceList[0];
         for (const auto& device : deviceList) {
-            if (DevVk::CheckDeviceSuitable(device, this->surface)) {
-                physicalDevice = device;
+            if (DevVk::CheckDeviceSuitable(device, this->bvk->surface)) {
+                this->bvk->physical = device;
                 break;
             }
         }
 
         // Get properties of our new device
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(this->physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(this->bvk->physical, &deviceProperties);
         // minUniformBufferOffset = deviceProperties.limits.minUniformBufferOffsetAlignment;
     }
 
     void DevVk::createLogicalDevice() {
 
         // Get the queue family indices for the chosen Physical device
-        QueueFamilyIndices indices = aux::GetQueueFamilies(this->physicalDevice, surface);
+        QueueFamilyIndices indices = aux::GetQueueFamilies(this->bvk->physical, this->bvk->surface);
 
         // vector for queue creation information, and set for family indices
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -201,7 +201,7 @@ namespace ce {
         };
 
         // Create the Logical device for the givem physical device
-        if (vkCreateDevice(this->physicalDevice, &deviceCreateInfo, nullptr, &this->logicalDevice) != VK_SUCCESS) {
+        if (vkCreateDevice(this->bvk->physical, &deviceCreateInfo, nullptr, &this->bvk->logical) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a logical device");
         }
 
@@ -209,8 +209,8 @@ namespace ce {
         // so we want handle to queues
         // From given logical device, of given Queue Family, of given Queue Index(0 since only one), place reference in
         // given Vkqueue
-        vkGetDeviceQueue(this->logicalDevice, indices.graphicsFamily, 0, &this->graphicsQueue);
-        vkGetDeviceQueue(this->logicalDevice, indices.presentationFamily, 0, &this->presentationQueue);
+        vkGetDeviceQueue(this->bvk->logical, indices.graphicsFamily, 0, &this->graphicsQueue);
+        vkGetDeviceQueue(this->bvk->logical, indices.presentationFamily, 0, &this->presentationQueue);
     }
 
     // --utils

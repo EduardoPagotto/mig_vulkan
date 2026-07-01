@@ -1,3 +1,4 @@
+#include <memory>
 #define STB_IMAGE_IMPLEMENTATION
 #include "VulkanRenderer.hpp"
 #include <cstdlib>
@@ -29,7 +30,10 @@ int main() {
 
     try {
 
-        ce::DevVk devvk(window);
+        std::shared_ptr<ce::BaseVK> bvk = std::make_shared<ce::BaseVK>();
+        bvk->window = window;
+
+        ce::DevVk devvk(bvk);
         VulkanRenderer vulkanRenderer(devvk);
 
         float angle = 0.0F;
