@@ -17,16 +17,15 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
 
     using namespace ce;
 
-    physical = devvk.getBaseVK()->physical;
-    logical = devvk.getBaseVK()->logical;
-    gQueue = devvk.getGraphicsQueue();
-    pQueue = devvk.getPresentationQueue();
-    surface = devvk.getBaseVK()->surface;
+    this->bvk = devvk.getBaseVK();
 
-    swapchain = std::make_shared<SwapChain>(physical, logical, surface, devvk.getBaseVK()->window);
-    rederer = std::make_shared<Renderer>(physical, logical, swapchain->getImageFormat());
-    uboVP = std::make_shared<UBO<BufferObject>>(physical, logical, swapchain->getImages().size(), sizeof(UboViewProjection));
-    textureMng = std::make_shared<Textures>(physical, logical);
+    this->gQueue = devvk.getGraphicsQueue();
+    this->pQueue = devvk.getPresentationQueue();
+
+    swapchain = std::make_shared<SwapChain>(bvk);
+    rederer = std::make_shared<Renderer>(bvk, swapchain->getImageFormat());
+    uboVP = std::make_shared<UBO<BufferObject>>(bvk->physical, bvk->logical, swapchain->getImages().size(), sizeof(UboViewProjection));
+    textureMng = std::make_shared<Textures>(bvk->physical, bvk->logical);
 
     createDescriptorSetLayout();
     createPushConstantRange();
@@ -34,8 +33,9 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     createDepthBufferImage();
 
     swapchain->createFramebuffers(depthBufferObject->getImageView(), rederer->getRenderPass());
-    graphicsCommandPool = std::make_shared<CommandPool>(physical, logical, surface);
-    commandBuffers = std::make_shared<CommandBuffer>(logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
+    graphicsCommandPool = std::make_shared<CommandPool>(bvk->physical, bvk->logical, bvk->surface);
+    commandBuffers =
+        std::make_shared<CommandBuffer>(bvk->logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
 
     createDescriptorPool();
     createDescriptorSets();
@@ -62,7 +62,7 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
 VulkanRenderer::~VulkanRenderer() {
 
     // Wait until no action being run on device before destroying
-    vkDeviceWaitIdle(logical);
+    vkDeviceWaitIdle(bvk->logical);
 
     // free(modelTransferSpace);
     for (auto& model : modelList) {
@@ -75,9 +75,9 @@ VulkanRenderer::~VulkanRenderer() {
     uboVP.reset();
 
     for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
-        vkDestroySemaphore(logical, renderFinished[i], nullptr);
-        vkDestroySemaphore(logical, imageAvailable[i], nullptr);
-        vkDestroyFence(logical, drawFences[i], nullptr);
+        vkDestroySemaphore(bvk->logical, renderFinished[i], nullptr);
+        vkDestroySemaphore(bvk->logical, imageAvailable[i], nullptr);
+        vkDestroyFence(bvk->logical, drawFences[i], nullptr);
     }
 
     commandBuffers.reset();
@@ -97,13 +97,13 @@ void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
 void VulkanRenderer::draw() {
     // -- GET NEXT IMAGE --
     // Wait for given fence to signal (open) from last draw before continuing
-    vkWaitForFences(logical, 1, &this->drawFences[this->currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(bvk->logical, 1, &this->drawFences[this->currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     // Manually reset (close) fence
-    vkResetFences(logical, 1, &this->drawFences[this->currentFrame]);
+    vkResetFences(bvk->logical, 1, &this->drawFences[this->currentFrame]);
 
     // Get index of next image to be draw to, and signal semaphore when ready to be draw to
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(logical, this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
+    vkAcquireNextImageKHR(bvk->logical, this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
                           this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
@@ -152,7 +152,7 @@ void VulkanRenderer::draw() {
 
     // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
     if (this->currentFrame == (ce::MAX_FRAME_DRAWS - 1)) {
-        vkDeviceWaitIdle(logical);
+        vkDeviceWaitIdle(bvk->logical);
     }
 }
 
@@ -188,7 +188,7 @@ void VulkanRenderer::createPushConstantRange() {
 void VulkanRenderer::createGraphicsPipeline() {
 
     // Read in SPIR-V code shaders, Vertex Stage creation information and Fragment Stage creation information
-    std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(logical);
+    std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(bvk->logical);
     shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, ce::aux::readFile("./bin/vert.spv"));
     shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, ce::aux::readFile("./bin/frag.spv"));
 
@@ -215,7 +215,7 @@ void VulkanRenderer::createGraphicsPipeline() {
                            .extent = this->swapchain->getExtent()}; // Extent to describe region to use, starting at offset
 
     // TODO: mudar o nome da classe
-    this->pipeline = std::make_shared<ce::Pipeline>(this->logical);
+    this->pipeline = std::make_shared<ce::Pipeline>(this->bvk->logical);
     this->pipeline->addViewport(viewport);
     this->pipeline->addScissor(scissor);
 
@@ -258,12 +258,12 @@ void VulkanRenderer::createDepthBufferImage() {
 
     // Get suported format for depth buffer
     VkFormat depthFormat = ce::aux::ChooseSupportedFormat(
-        this->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-        VK_IMAGE_TILING_OPTIMAL,                                                                           // Tilling
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                   // Depth
+        this->bvk->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+        VK_IMAGE_TILING_OPTIMAL,                                                                                // Tilling
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                        // Depth
 
     // Create Depth Buffer Image
-    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->physical, this->logical);
+    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->bvk->physical, this->bvk->logical);
     this->depthBufferObject->createImage(this->swapchain->getExtent().width, this->swapchain->getExtent().height, depthFormat,
                                          VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -288,9 +288,9 @@ void VulkanRenderer::createSynchronisation() {
 
     for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
 
-        if (vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||
-            vkCreateFence(logical, &fenceCreateInfo, nullptr, &this->drawFences[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(bvk->logical, &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(bvk->logical, &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||
+            vkCreateFence(bvk->logical, &fenceCreateInfo, nullptr, &this->drawFences[i]) != VK_SUCCESS) {
 
             throw std::runtime_error("Failed to create a Semaphore and/or Fence!");
         }
@@ -301,7 +301,7 @@ void VulkanRenderer::createDescriptorPool() {
 
     // CREATE DESCRIPTOR POOL
     // CREATE UNIFORM DESCRIPTOR POOL
-    this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->logical);
+    this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->bvk->logical);
     // Type of Descriptors + how many DESCRIPTORS, not Descriptor Sets (combined makes the pool size)
     // ViewProjection Pool
     this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(this->uboVP->size()));
@@ -480,8 +480,8 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     }
 
     // Load in all our meshes
-    std::vector<ce::Mesh> modelMeshes =
-        ce::MeshModel::LoadNode(physical, logical, gQueue, this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
+    std::vector<ce::Mesh> modelMeshes = ce::MeshModel::LoadNode(bvk->physical, bvk->logical, gQueue, this->graphicsCommandPool->getPool(),
+                                                                scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     ce::MeshModel meshModel(modelMeshes);

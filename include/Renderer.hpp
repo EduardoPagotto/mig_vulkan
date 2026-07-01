@@ -1,18 +1,18 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
+#include "subsystem.hpp"
+#include <memory>
 
 namespace ce {
 
     class Renderer {
       public:
-        explicit Renderer(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, const VkFormat& format);
+        explicit Renderer(std::shared_ptr<BaseVK> bvk, const VkFormat& format);
         virtual ~Renderer();
 
         VkRenderPass& getRenderPass() { return renderPass; }
 
       private:
-        VkPhysicalDevice physicalDevice;
-        VkDevice logicalDevice;
+        std::shared_ptr<BaseVK> bvk;
 
         VkRenderPass renderPass;
 

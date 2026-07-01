@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DevVK.hpp" // FIXME: ver depois
 #include "buffers/ImageObject.hpp"
+#include "subsystem.hpp"
 #include <memory>
 #include <vector>
 
@@ -9,12 +9,7 @@ namespace ce {
 
     class SwapChain {
       public:
-#ifdef SET_GLFW_ENABLE
-        explicit SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, GLFWwindow* window);
-#else
-        explicit SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, SDL_Window* window);
-#endif
-
+        explicit SwapChain(std::shared_ptr<BaseVK> bvk);
         virtual ~SwapChain();
 
         VkSwapchainKHR& getKHR() { return this->swapchain; }
@@ -29,16 +24,10 @@ namespace ce {
         VkSwapchainKHR swapchain;
         VkFormat imageFormat;
         VkExtent2D extent;
+        std::shared_ptr<BaseVK> bvk;
         std::vector<std::shared_ptr<ImageObject>> images;
-        VkDevice logicalDevice;
-
         std::vector<VkFramebuffer> swapChainFrameBuffers;
 
-#ifdef SET_GLFW_ENABLE
-        GLFWwindow* window;
-#else
-        SDL_Window* window;
-#endif
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
 
         static VkSurfaceFormatKHR ChooseBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);

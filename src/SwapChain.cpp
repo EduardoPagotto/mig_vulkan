@@ -1,18 +1,14 @@
 #include "SwapChain.hpp"
+#include "DevVK.hpp"
 #include <array>
 #include <memory>
 
 namespace ce {
 
-#ifdef SET_GLFW_ENABLE
-    SwapChain::SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, GLFWwindow* window)
-#else
-    SwapChain::SwapChain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, VkSurfaceKHR surface, SDL_Window* window)
-#endif
-        : logicalDevice(logicalDevice), window(window) { // NOLINT
+    SwapChain::SwapChain(std::shared_ptr<BaseVK> bvk) : bvk(bvk) { // NOLINT
 
         // Get Swap Chain details so we cam pick best setting
-        SwapChainDetails swapchainDetails = aux::GetSwapChainDetails(physicalDevice, surface);
+        SwapChainDetails swapchainDetails = aux::GetSwapChainDetails(bvk->physical, bvk->surface);
 
         // Find optimal surface value for our swap chain
         VkSurfaceFormatKHR surrfaceFormat = SwapChain::ChooseBestSurfaceFormat(swapchainDetails.formats);
@@ -30,7 +26,7 @@ namespace ce {
         }
 
         // Get Queue Family indices
-        ce::QueueFamilyIndices indices = aux::GetQueueFamilies(physicalDevice, surface);
+        ce::QueueFamilyIndices indices = aux::GetQueueFamilies(bvk->physical, bvk->surface);
         // If Graphics and Presentation families are diferent, the swapchain must let images ge shared between families
 
         // indices.graphicsFamily == indices.presentationFamily
@@ -52,7 +48,7 @@ namespace ce {
         // Create information for swap chain
         const VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .surface = surface,                                                    // Swapchain surface
+            .surface = bvk->surface,                                               // Swapchain surface
             .minImageCount = imageCount,                                           // Minimum image in swapchain
             .imageFormat = surrfaceFormat.format,                                  // Swapchain format
             .imageColorSpace = surrfaceFormat.colorSpace,                          // Swapchain color space
@@ -70,7 +66,7 @@ namespace ce {
                                              //  hand over  responsabilities
 
         // Create Swapchain
-        if (vkCreateSwapchainKHR(logicalDevice, &swapchainCreateInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
+        if (vkCreateSwapchainKHR(bvk->logical, &swapchainCreateInfo, nullptr, &this->swapchain) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create a Swapchain");
         }
 
@@ -80,14 +76,14 @@ namespace ce {
 
         // Get swap chain images (first count the values)
         uint32_t swapChainImageCount;
-        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, nullptr);
+        vkGetSwapchainImagesKHR(bvk->logical, this->swapchain, &swapChainImageCount, nullptr);
 
         std::vector<VkImage> lImages(swapChainImageCount);
-        vkGetSwapchainImagesKHR(logicalDevice, this->swapchain, &swapChainImageCount, lImages.data());
+        vkGetSwapchainImagesKHR(bvk->logical, this->swapchain, &swapChainImageCount, lImages.data());
 
         for (VkImage image : lImages) {
 
-            auto imgObj = std::make_shared<ImageObject>(physicalDevice, logicalDevice);
+            auto imgObj = std::make_shared<ImageObject>(bvk->physical, bvk->logical);
             imgObj->createImageViewImportedImage(image, this->imageFormat, VK_IMAGE_ASPECT_COLOR_BIT); // CreateImageView
             this->images.push_back(imgObj);
         }
@@ -96,14 +92,14 @@ namespace ce {
     SwapChain::~SwapChain() {
 
         for (auto& framebuffer : this->swapChainFrameBuffers) { // ? auto& mesmo ??
-            vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+            vkDestroyFramebuffer(this->bvk->logical, framebuffer, nullptr);
         }
 
         for (auto& image : this->images) {
             image.reset();
         }
 
-        vkDestroySwapchainKHR(logicalDevice, this->swapchain, nullptr);
+        vkDestroySwapchainKHR(this->bvk->logical, this->swapchain, nullptr);
     }
 
     VkExtent2D SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) {
@@ -116,9 +112,9 @@ namespace ce {
         int witdh;
         int height;
 #ifdef SET_GLFW_ENABLE
-        glfwGetFramebufferSize(this->window, &witdh, &height);
+        glfwGetFramebufferSize(this->bvk->window, &witdh, &height);
 #else
-        SDL_GetWindowSizeInPixels(this->window, &witdh, &height);
+        SDL_GetWindowSizeInPixels(this->bvk->window, &witdh, &height);
 #endif
         VkExtent2D newExtent{
             .width = static_cast<uint32_t>(witdh),  //
@@ -154,7 +150,7 @@ namespace ce {
                 .layers = 1                                                   // Framebuffer layers
             };
 
-            if (vkCreateFramebuffer(logicalDevice, &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]) != VK_SUCCESS) {
+            if (vkCreateFramebuffer(this->bvk->logical, &framebufferCreateInfo, nullptr, &this->swapChainFrameBuffers[i]) != VK_SUCCESS) {
                 throw std::runtime_error("Faleid to create a frambuffer");
             }
         }

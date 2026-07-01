@@ -25,12 +25,10 @@ class VulkanRenderer {
   private:
     int currentFrame = 0;
 
-    VkPhysicalDevice physical;
-    VkDevice logical;
     VkQueue gQueue; // graphicsQueue
     VkQueue pQueue; // presentationQueue
-    VkSurfaceKHR surface;
 
+    std::shared_ptr<ce::BaseVK> bvk;
     // std::shared_ptr<ce::VWrapp> vwrapp;
     std::shared_ptr<ce::SwapChain> swapchain;
     std::shared_ptr<ce::Renderer> rederer;
