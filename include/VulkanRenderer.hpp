@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Command.hpp"
-#include "ImageObject.hpp"
 #include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
@@ -9,6 +8,7 @@
 #include "Textures.hpp"
 #include "VWrapp.hpp"
 #include "buffers/CommandBuffer.hpp"
+#include "buffers/ImageObject.hpp"
 #include "buffers/UBO.hpp"
 #include "descriptors/DescriptorPool.hpp"
 #include <assimp/Importer.hpp>

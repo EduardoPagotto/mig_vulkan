@@ -1,5 +1,4 @@
 #include "SwapChain.hpp"
-#include "ImageObject.hpp"
 #include "VWrappUtils.hpp"
 #include <array>
 #include <memory>

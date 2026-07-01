@@ -15,7 +15,7 @@
 #include <limits>
 #include <stdexcept>
 
-VulkanRenderer::VulkanRenderer(ce::VWrapp& vwrapp) { // NOLINT
+VulkanRenderer::VulkanRenderer(ce::VWrapp& vwrapp) {
 
     using namespace ce;
 

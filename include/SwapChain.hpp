@@ -7,7 +7,7 @@
 #else
 #include <SDL3/SDL_vulkan.h>
 #endif
-#include "ImageObject.hpp"
+#include "buffers/ImageObject.hpp"
 #include <memory>
 #include <vector>
 
