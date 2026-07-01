@@ -42,6 +42,7 @@ add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/DevVK.cpp
                                ${CMAKE_SOURCE_DIR}/src/entitys/Textures.cpp
                                ${CMAKE_SOURCE_DIR}/src/entitys/MeshModel.cpp
                                ${CMAKE_SOURCE_DIR}/src/entitys/Mesh.cpp
+                               ${CMAKE_SOURCE_DIR}/src/CommandPool.cpp
                                ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
                                ${CMAKE_SOURCE_DIR}/src/Renderer.cpp
                                ${CMAKE_SOURCE_DIR}/src/ShaderModule.cpp

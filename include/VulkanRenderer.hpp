@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Command.hpp"
+#include "CommandPool.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
