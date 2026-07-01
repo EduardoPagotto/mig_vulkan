@@ -15,33 +15,33 @@
 #include <limits>
 #include <stdexcept>
 
-VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwrapp) { // NOLINT
+VulkanRenderer::VulkanRenderer(ce::VWrapp& vwrapp) { // NOLINT
 
-    this->swapchain =
-        std::make_shared<ce::SwapChain>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface(), vwrapp->getWindow());
+    using namespace ce;
 
-    this->rederer = std::make_shared<ce::Renderer>(vwrapp->getPhysical(), vwrapp->getLogical(), this->swapchain->getImageFormat());
+    physical = vwrapp.getPhysical();
+    logical = vwrapp.getLogical();
+    gQueue = vwrapp.getGraphicsQueue();
+    pQueue = vwrapp.getPresentationQueue();
+    surface = vwrapp.getSurface();
 
-    // createUniformBuffers
-    this->uboVP = std::make_shared<ce::UBO<ce::BufferObject>>(this->vwrapp->getPhysical(), this->vwrapp->getLogical(),
-                                                              this->swapchain->getImages().size(), sizeof(UboViewProjection));
+    swapchain = std::make_shared<SwapChain>(physical, logical, surface, vwrapp.getWindow());
+    rederer = std::make_shared<Renderer>(physical, logical, swapchain->getImageFormat());
+    uboVP = std::make_shared<UBO<BufferObject>>(physical, logical, swapchain->getImages().size(), sizeof(UboViewProjection));
+    textureMng = std::make_shared<Textures>(physical, logical);
 
-    this->textureMng = std::make_shared<ce::Textures>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+    createDescriptorSetLayout();
+    createPushConstantRange();
+    createGraphicsPipeline();
+    createDepthBufferImage();
 
-    this->createDescriptorSetLayout();
-    this->createPushConstantRange();
-    this->createGraphicsPipeline();
-    this->createDepthBufferImage();
+    swapchain->createFramebuffers(depthBufferObject->getImageView(), rederer->getRenderPass());
+    graphicsCommandPool = std::make_shared<CommandPool>(physical, logical, surface);
+    commandBuffers = std::make_shared<CommandBuffer>(logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
 
-    this->swapchain->createFramebuffers(this->depthBufferObject->getImageView(), this->rederer->getRenderPass());
-    this->graphicsCommandPool = std::make_shared<ce::CommandPool>(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getSurface());
-
-    // In create Command buffer, count to have one for each frambuffer
-    this->commandBuffers = std::make_shared<ce::CommandBuffer>(vwrapp->getLogical(), this->graphicsCommandPool->getPool(),
-                                                               this->swapchain->getSwapChainFrameBuffers().size());
-    this->createDescriptorPool();
-    this->createDescriptorSets();
-    this->createSynchronisation();
+    createDescriptorPool();
+    createDescriptorSets();
+    createSynchronisation();
 
     // const float radixAngle = 45.0F;
     const float near = 0.1F;
@@ -51,43 +51,40 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp) : vwrapp(vwra
     const glm::vec3 camPos = glm::vec3(-100.0F, 150.0F, 200.0F);
     const glm::vec3 camCenter = glm::vec3(0.0F, 0.0F, -2.0F);
     const glm::vec3 camUp = glm::vec3(0.0F, 1.0F, 0.0F);
-    const float aspect = (float)this->swapchain->getExtent().width / (float)this->swapchain->getExtent().height;
+    const float aspect = (float)swapchain->getExtent().width / (float)swapchain->getExtent().height;
 
-    this->uboViewProjection.projection = glm::perspective(radixAngle, aspect, near, far);
-    this->uboViewProjection.view = glm::lookAt(camPos, camCenter, camUp);
-
-    this->uboViewProjection.projection[1][1] *= -1; // vulkan inverted of OpenGL
+    uboViewProjection.projection = glm::perspective(radixAngle, aspect, near, far);
+    uboViewProjection.view = glm::lookAt(camPos, camCenter, camUp);
+    uboViewProjection.projection[1][1] *= -1; // vulkan inverted of OpenGL
 
     // Create our default "no texture" texture
-    this->textureMng->createTexture("plain.png", this->vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool());
+    textureMng->createTexture("plain.png", gQueue, graphicsCommandPool->getPool());
 }
 
 VulkanRenderer::~VulkanRenderer() {
 
     // Wait until no action being run on device before destroying
-    vkDeviceWaitIdle(vwrapp->getLogical());
+    vkDeviceWaitIdle(logical);
 
-    // free(this->modelTransferSpace);
-    for (auto& model : this->modelList) {
+    // free(modelTransferSpace);
+    for (auto& model : modelList) {
         model.destroyMeshModel();
     }
 
-    this->textureMng.reset();
-
-    this->depthBufferObject.reset();
-    this->descriptorPool.reset();
-    this->uboVP.reset();
+    textureMng.reset();
+    depthBufferObject.reset();
+    descriptorPool.reset();
+    uboVP.reset();
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
-
-        vkDestroySemaphore(vwrapp->getLogical(), this->renderFinished[i], nullptr);
-        vkDestroySemaphore(vwrapp->getLogical(), this->imageAvailable[i], nullptr);
-        vkDestroyFence(vwrapp->getLogical(), this->drawFences[i], nullptr);
+        vkDestroySemaphore(logical, renderFinished[i], nullptr);
+        vkDestroySemaphore(logical, imageAvailable[i], nullptr);
+        vkDestroyFence(logical, drawFences[i], nullptr);
     }
 
-    this->commandBuffers.reset();
-    this->graphicsCommandPool.reset();
-    this->pipeline.reset();
+    commandBuffers.reset();
+    graphicsCommandPool.reset();
+    pipeline.reset();
 }
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
@@ -102,13 +99,13 @@ void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
 void VulkanRenderer::draw() {
     // -- GET NEXT IMAGE --
     // Wait for given fence to signal (open) from last draw before continuing
-    vkWaitForFences(vwrapp->getLogical(), 1, &this->drawFences[this->currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(logical, 1, &this->drawFences[this->currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     // Manually reset (close) fence
-    vkResetFences(vwrapp->getLogical(), 1, &this->drawFences[this->currentFrame]);
+    vkResetFences(logical, 1, &this->drawFences[this->currentFrame]);
 
     // Get index of next image to be draw to, and signal semaphore when ready to be draw to
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(vwrapp->getLogical(), this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
+    vkAcquireNextImageKHR(logical, this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
                           this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
@@ -132,7 +129,7 @@ void VulkanRenderer::draw() {
     };
 
     // Submit command buffer to queue
-    if (vkQueueSubmit(vwrapp->getGraphicsQueue(), 1, &submitInfo, this->drawFences[this->currentFrame]) != VK_SUCCESS) {
+    if (vkQueueSubmit(gQueue, 1, &submitInfo, this->drawFences[this->currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit Command Buffer to Queue!");
     }
 
@@ -148,7 +145,7 @@ void VulkanRenderer::draw() {
     };
 
     // Present Image
-    if (vkQueuePresentKHR(vwrapp->getPresentationQueue(), &presentInfo) != VK_SUCCESS) {
+    if (vkQueuePresentKHR(pQueue, &presentInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to present Image!");
     }
 
@@ -157,7 +154,7 @@ void VulkanRenderer::draw() {
 
     // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
     if (this->currentFrame == (MAX_FRAME_DRAWS - 1)) {
-        vkDeviceWaitIdle(vwrapp->getLogical());
+        vkDeviceWaitIdle(logical);
     }
 }
 
@@ -193,7 +190,7 @@ void VulkanRenderer::createPushConstantRange() {
 void VulkanRenderer::createGraphicsPipeline() {
 
     // Read in SPIR-V code shaders, Vertex Stage creation information and Fragment Stage creation information
-    std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(vwrapp->getLogical());
+    std::shared_ptr<ce::ShaderModule> shaderModule = std::make_shared<ce::ShaderModule>(logical);
     shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, readFile("./bin/vert.spv"));
     shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, readFile("./bin/frag.spv"));
 
@@ -220,7 +217,7 @@ void VulkanRenderer::createGraphicsPipeline() {
                            .extent = this->swapchain->getExtent()}; // Extent to describe region to use, starting at offset
 
     // TODO: mudar o nome da classe
-    this->pipeline = std::make_shared<ce::Pipeline>(this->vwrapp->getLogical());
+    this->pipeline = std::make_shared<ce::Pipeline>(this->logical);
     this->pipeline->addViewport(viewport);
     this->pipeline->addScissor(scissor);
 
@@ -263,12 +260,12 @@ void VulkanRenderer::createDepthBufferImage() {
 
     // Get suported format for depth buffer
     VkFormat depthFormat = ce::ChooseSupportedFormat(
-        this->vwrapp->getPhysical(), {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
-        VK_IMAGE_TILING_OPTIMAL,                                                                                        // Tilling
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                                // Depth
+        this->physical, {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT}, // Formats
+        VK_IMAGE_TILING_OPTIMAL,                                                                           // Tilling
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);                                                   // Depth
 
     // Create Depth Buffer Image
-    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->vwrapp->getPhysical(), this->vwrapp->getLogical());
+    this->depthBufferObject = std::make_shared<ce::ImageObject>(this->physical, this->logical);
     this->depthBufferObject->createImage(this->swapchain->getExtent().width, this->swapchain->getExtent().height, depthFormat,
                                          VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -293,9 +290,9 @@ void VulkanRenderer::createSynchronisation() {
 
     for (size_t i = 0; i < MAX_FRAME_DRAWS; i++) {
 
-        if (vkCreateSemaphore(vwrapp->getLogical(), &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(vwrapp->getLogical(), &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||
-            vkCreateFence(vwrapp->getLogical(), &fenceCreateInfo, nullptr, &this->drawFences[i]) != VK_SUCCESS) {
+        if (vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
+            vkCreateSemaphore(logical, &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||
+            vkCreateFence(logical, &fenceCreateInfo, nullptr, &this->drawFences[i]) != VK_SUCCESS) {
 
             throw std::runtime_error("Failed to create a Semaphore and/or Fence!");
         }
@@ -306,7 +303,7 @@ void VulkanRenderer::createDescriptorPool() {
 
     // CREATE DESCRIPTOR POOL
     // CREATE UNIFORM DESCRIPTOR POOL
-    this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->vwrapp->getLogical());
+    this->descriptorPool = std::make_shared<ce::DescriptorPool>(this->logical);
     // Type of Descriptors + how many DESCRIPTORS, not Descriptor Sets (combined makes the pool size)
     // ViewProjection Pool
     this->descriptorPool->addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(this->uboVP->size()));
@@ -479,15 +476,14 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
         } else {
 
             // Otherwise, create texture and set value to index of new texture
-            matToTex[i] =
-                this->textureMng->createTexture(textureNames[i], this->vwrapp->getGraphicsQueue(), this->graphicsCommandPool->getPool());
+            matToTex[i] = this->textureMng->createTexture(textureNames[i], this->gQueue, this->graphicsCommandPool->getPool());
             // matToTex[i] = createTexture("panda.jpg");
         }
     }
 
     // Load in all our meshes
-    std::vector<Mesh> modelMeshes = MeshModel::LoadNode(vwrapp->getPhysical(), vwrapp->getLogical(), vwrapp->getGraphicsQueue(),
-                                                        this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
+    std::vector<Mesh> modelMeshes =
+        MeshModel::LoadNode(physical, logical, gQueue, this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     MeshModel meshModel(modelMeshes);

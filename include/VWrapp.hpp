@@ -11,16 +11,6 @@
 
 namespace ce {
 
-    //     class DevVK {
-    //       public:
-    //         DevVK(const DevVK&) = delete;
-    //         DevVK& operator=(const DevVK&) = delete;
-
-    //         VkPhysicalDevice physical{VK_NULL_HANDLE};
-    //         VkDevice logical{VK_NULL_HANDLE};
-    //         VkSurfaceKHR surface{VK_NULL_HANDLE};
-    //     };
-
     class VWrapp {
       public:
 #ifdef SET_GLFW_ENABLE
@@ -34,16 +24,16 @@ namespace ce {
 
         virtual ~VWrapp();
 
-        VkDevice& getLogical() { return logicalDevice; }
-        VkPhysicalDevice& getPhysical() { return physicalDevice; }
-        VkQueue& getGraphicsQueue() { return graphicsQueue; }
-        VkQueue& getPresentationQueue() { return presentationQueue; }
-        VkSurfaceKHR& getSurface() { return surface; }
+        [[nodiscard]] VkDevice& getLogical() { return logicalDevice; }
+        [[nodiscard]] VkPhysicalDevice& getPhysical() { return physicalDevice; }
+        [[nodiscard]] VkQueue& getGraphicsQueue() { return graphicsQueue; }
+        [[nodiscard]] VkQueue& getPresentationQueue() { return presentationQueue; }
+        [[nodiscard]] VkSurfaceKHR& getSurface() { return surface; }
 
 #ifdef SET_GLFW_ENABLE
-        GLFWwindow* getWindow() {
+        [[nodiscard]] GLFWwindow* getWindow() {
 #else
-        SDL_Window* getWindow() {
+        [[nodiscard]] SDL_Window* getWindow() {
 #endif
             return this->window;
         }
@@ -58,8 +48,6 @@ namespace ce {
         VkQueue graphicsQueue;
         VkQueue presentationQueue;
         VkSurfaceKHR surface;
-
-        // shared_ptr<DevVK> devvk;
 
         bool validationEnabled = true;
 

@@ -22,20 +22,23 @@
 
 class VulkanRenderer {
   public:
-    explicit VulkanRenderer(std::shared_ptr<ce::VWrapp> vwrapp);
-
+    explicit VulkanRenderer(ce::VWrapp& vwrapp);
     virtual ~VulkanRenderer();
 
     void updateModel(int modelId, glm::mat4 newModel);
-
     int createMeshModel(const std::string& modelFile);
-
     void draw();
 
   private:
     int currentFrame = 0;
 
-    std::shared_ptr<ce::VWrapp> vwrapp;
+    VkPhysicalDevice physical;
+    VkDevice logical;
+    VkQueue gQueue; // graphicsQueue
+    VkQueue pQueue; // presentationQueue
+    VkSurfaceKHR surface;
+
+    // std::shared_ptr<ce::VWrapp> vwrapp;
     std::shared_ptr<ce::SwapChain> swapchain;
     std::shared_ptr<ce::Renderer> rederer;
 

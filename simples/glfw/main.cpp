@@ -6,7 +6,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
-#include <memory>
 
 GLFWwindow* window;
 
@@ -32,14 +31,14 @@ int main() {
 
     try {
 
-        std::shared_ptr<ce::VWrapp> vwrapp = std::make_shared<ce::VWrapp>(window);
-        std::shared_ptr<VulkanRenderer> vulkanRenderer = std::make_shared<VulkanRenderer>(vwrapp);
+        ce::VWrapp vwrapp(window);
+        VulkanRenderer vulkanRenderer(vwrapp);
 
         float angle = 0.0F;
         float deltaTime = 0.0F;
         float lastTime = 0.0F;
 
-        int helicopter = vulkanRenderer->createMeshModel("./models/Seahawk.obj");
+        int helicopter = vulkanRenderer.createMeshModel("./models/Seahawk.obj");
 
         // loop until close
         while (glfwWindowShouldClose(window) == 0) {
@@ -58,8 +57,8 @@ int main() {
             //  testMat = glm::rotate(testMat, glm::radians(-45.0F), glm::vec3(0.0F, 0.0F, 1.0F));
             //  this->modelList[0].setModel(testMat);
 
-            vulkanRenderer->updateModel(helicopter, testMat);
-            vulkanRenderer->draw();
+            vulkanRenderer.updateModel(helicopter, testMat);
+            vulkanRenderer.draw();
         }
 
     } catch (const std::runtime_error& e) {
