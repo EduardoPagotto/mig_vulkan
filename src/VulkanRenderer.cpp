@@ -1,6 +1,5 @@
 #include "VulkanRenderer.hpp"
 #include "DevVK.hpp"
-#include "Mesh.hpp"
 #include "ShaderModule.hpp"
 #include <array>
 #include <cstddef>
@@ -183,7 +182,7 @@ void VulkanRenderer::createPushConstantRange() {
     // Define push constant value (no 'create' needed!)
     this->pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // Shader stage push constant will go to
     this->pushConstantRange.offset = 0;                              // offset into given data to pass to push constant
-    this->pushConstantRange.size = sizeof(Model);                    // Size of data being passed
+    this->pushConstantRange.size = sizeof(ce::Model);                // Size of data being passed
 }
 
 void VulkanRenderer::createGraphicsPipeline() {
@@ -404,14 +403,14 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
 
         for (size_t j = 0; j < this->modelList.size(); j++) { // 1:11:29
 
-            MeshModel thisModel = modelList[j];
+            ce::MeshModel thisModel = modelList[j];
 
             // "Push" constant to given shader stage directly (no buffer)
             vkCmdPushConstants(this->commandBuffers->getBuffers()[currentImage], //
                                this->pipeline->getPipelineLayout(),              //
                                VK_SHADER_STAGE_VERTEX_BIT,                       // Stage to push constant to
                                0,                                                // offset of pushconstant to update
-                               sizeof(Model),                                    // size of data being pushed
+                               sizeof(ce::Model),                                // size of data being pushed
                                &thisModel.getModel2());                          // Actual data being pushed (cam be array)
 
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
@@ -461,7 +460,7 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     }
 
     // Get vector of all material with 1:1 ID placement
-    std::vector<std::string> textureNames = MeshModel::loadMaterials(scene);
+    std::vector<std::string> textureNames = ce::MeshModel::loadMaterials(scene);
 
     // Convesion from the material list IDs to our Descriptor Array IDs
     std::vector<int> matToTex(textureNames.size());
@@ -481,11 +480,11 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     }
 
     // Load in all our meshes
-    std::vector<Mesh> modelMeshes =
-        MeshModel::LoadNode(physical, logical, gQueue, this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
+    std::vector<ce::Mesh> modelMeshes =
+        ce::MeshModel::LoadNode(physical, logical, gQueue, this->graphicsCommandPool->getPool(), scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
-    MeshModel meshModel(modelMeshes);
+    ce::MeshModel meshModel(modelMeshes);
     this->modelList.push_back(meshModel);
 
     return this->modelList.size() - 1;

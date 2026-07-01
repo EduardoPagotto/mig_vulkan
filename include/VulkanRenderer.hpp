@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Command.hpp"
-#include "MeshModel.hpp"
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
@@ -9,6 +8,7 @@
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/ImageObject.hpp"
 #include "buffers/UBO.hpp"
+#include "entitys/MeshModel.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -36,7 +36,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::Renderer> rederer;
 
     // Scene Objects
-    std::vector<MeshModel> modelList;
+    std::vector<ce::MeshModel> modelList;
 
     // Scene Settings
     struct UboViewProjection {
