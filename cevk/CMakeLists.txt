@@ -23,25 +23,25 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 set (IncludeDirs ${CMAKE_SOURCE_DIR}/cevk/include)
 
-set(SourceFiles  ${CMAKE_SOURCE_DIR}/cevk/src/DevVK.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/debug.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorSet.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorSetLayout.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorPool.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/buffers/BufferObject.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/buffers/CommandBuffer.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/buffers/ImageObject.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/buffers/VBO.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/buffers/IBO.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/entitys/ShaderModule.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Textures.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/entitys/MeshModel.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Mesh.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/CommandPool.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/SwapChain.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/Renderer.cpp
-
-                            ${CMAKE_SOURCE_DIR}/cevk/src/Pipeline.cpp)
+set(SourceFiles ${CMAKE_SOURCE_DIR}/cevk/src/DevVK.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/debug.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorSet.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorSetLayout.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/descriptors/DescriptorPool.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/buffers/BufferObject.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/buffers/CommandBuffer.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/buffers/ImageObject.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/buffers/VBO.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/buffers/IBO.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/entitys/ShaderModule.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Textures.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/entitys/MeshModel.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Mesh.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/Sync.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/CommandPool.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/SwapChain.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/Renderer.cpp
+                ${CMAKE_SOURCE_DIR}/cevk/src/Pipeline.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SourceFiles})
 
