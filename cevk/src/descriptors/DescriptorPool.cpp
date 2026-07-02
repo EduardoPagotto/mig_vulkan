@@ -28,17 +28,17 @@ namespace ce {
         // Data to create Descriptor Pool
         const VkDescriptorPoolCreateInfo poolCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = maxSets,                                      // Maximum number of descriptor Sets that can be create from pool
-            .poolSizeCount = static_cast<uint32_t>(poolSize.size()), // Amount of Pool Sizes being passed
-            .pPoolSizes = poolSize.data()                            // Pool Sizes to create pool with
+            .maxSets = maxSets,                                            // Maximum number of descriptor Sets that can be create from pool
+            .poolSizeCount = static_cast<uint32_t>(this->poolSize.size()), // Amount of Pool Sizes being passed
+            .pPoolSizes = this->poolSize.data()                            // Pool Sizes to create pool with
         };
 
         if (vkCreateDescriptorPool(device, &poolCreateInfo, nullptr, &this->handle) != VK_SUCCESS) { // Create Descriptor Pool
             throw std::runtime_error("Failed to create Descriptor pool");
         }
 
-        poolSize.clear();
-        poolSize.shrink_to_fit();
+        this->poolSize.clear();
+        this->poolSize.shrink_to_fit();
     }
 
     void DescriptorPool::cleanup() noexcept {

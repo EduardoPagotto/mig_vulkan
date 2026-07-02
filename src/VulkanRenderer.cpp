@@ -111,8 +111,8 @@ void VulkanRenderer::draw() {
     // Queue submission information
     std::array<VkSemaphore, 1> waitSemaphores{this->imageAvailable[this->currentFrame]};
     std::array<VkSemaphore, 1> signalSemaphores{this->renderFinished[this->currentFrame]};
-
     std::array<VkPipelineStageFlags, 1> waitStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
     const VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),     // Number of semaphores to wait on
