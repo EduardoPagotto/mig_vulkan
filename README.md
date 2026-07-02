@@ -73,3 +73,8 @@ glslangValidator  -V ./shaders/shader.vert -o ./bin/vert.spv
 glslangValidator  -V ./shaders/shader.frag -o ./bin/frag.spv
 
 ```
+
+consultas:
+
+- Na vulkan api como lidar com varios mesh com shaders diferentes em relacao ao pipeline
+  - Configuração de Descriptor Sets para evitar alterações de Pipeline

@@ -33,13 +33,14 @@ set(SourceFiles  ${CMAKE_SOURCE_DIR}/cevk/src/DevVK.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/buffers/ImageObject.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/buffers/VBO.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/buffers/IBO.cpp
+                            ${CMAKE_SOURCE_DIR}/cevk/src/entitys/ShaderModule.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Textures.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/entitys/MeshModel.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/entitys/Mesh.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/CommandPool.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/SwapChain.cpp
                             ${CMAKE_SOURCE_DIR}/cevk/src/Renderer.cpp
-                            ${CMAKE_SOURCE_DIR}/cevk/src/ShaderModule.cpp
+
                             ${CMAKE_SOURCE_DIR}/cevk/src/Pipeline.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SourceFiles})
