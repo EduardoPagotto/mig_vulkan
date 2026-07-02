@@ -4,6 +4,7 @@
 #include "Pipeline.hpp"
 #include "Renderer.hpp"
 #include "SwapChain.hpp"
+#include "Sync.hpp"
 #include "buffers/CommandBuffer.hpp"
 #include "buffers/UBO.hpp"
 #include "entitys/MeshModel.hpp"
@@ -61,9 +62,7 @@ class VulkanRenderer {
     std::shared_ptr<ce::CommandPool> graphicsCommandPool;
 
     // - Synchronization
-    std::vector<VkSemaphore> imageAvailable;
-    std::vector<VkSemaphore> renderFinished;
-    std::vector<VkFence> drawFences;
+    std::shared_ptr<ce::Sync> sync;
 
     // Vulkan Functions
     // - Create functions

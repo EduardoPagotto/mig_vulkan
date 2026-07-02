@@ -11,6 +11,7 @@
 #include <glm/ext/vector_float3.hpp>
 #include <glm/trigonometric.hpp>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 
 VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
@@ -72,11 +73,7 @@ VulkanRenderer::~VulkanRenderer() {
     descriptorPool.reset();
     uboVP.reset();
 
-    for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
-        vkDestroySemaphore(bvk->logical, renderFinished[i], nullptr);
-        vkDestroySemaphore(bvk->logical, imageAvailable[i], nullptr);
-        vkDestroyFence(bvk->logical, drawFences[i], nullptr);
-    }
+    sync.reset();
 
     commandBuffers.reset();
     graphicsCommandPool.reset();
@@ -93,43 +90,32 @@ void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
 }
 
 void VulkanRenderer::draw() {
-    // -- GET NEXT IMAGE --
-    // Wait for given fence to signal (open) from last draw before continuing
-    vkWaitForFences(bvk->logical, 1, &this->drawFences[this->currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    // Manually reset (close) fence
-    vkResetFences(bvk->logical, 1, &this->drawFences[this->currentFrame]);
+    // // -- GET NEXT IMAGE --
+    // // Wait for given fence to signal (open) from last draw before continuing
+    // // Manually reset (close) fence
+    this->sync->waitAndResetFence(this->currentFrame);
 
     // Get index of next image to be draw to, and signal semaphore when ready to be draw to
     uint32_t imageIndex;
     vkAcquireNextImageKHR(bvk->logical, this->swapchain->getKHR(), std::numeric_limits<uint64_t>::max(),
-                          this->imageAvailable[this->currentFrame], VK_NULL_HANDLE, &imageIndex);
+                          this->sync->getWaitSemafore(this->currentFrame), VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
     this->updateUniformBuffers(imageIndex);
 
     // -- SUBMIT COMMAND BUFFER TO RENDER
     // Queue submission information
-    std::array<VkSemaphore, 1> waitSemaphores{this->imageAvailable[this->currentFrame]};
-    std::array<VkSemaphore, 1> signalSemaphores{this->renderFinished[this->currentFrame]};
-    std::array<VkPipelineStageFlags, 1> waitStages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    const ce::SubmitToRenderInfo subToRender{.gQueue = gQueue,
+                                             .wait = this->sync->getWaitSemafore(this->currentFrame),
+                                             .signal = this->sync->getSignalSemaphore(this->currentFrame),
+                                             .fence = this->sync->getDrawFence(this->currentFrame),
+                                             .pipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                             .bufferIndex = imageIndex};
 
-    const VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),     // Number of semaphores to wait on
-        .pWaitSemaphores = waitSemaphores.data(),                               //
-        .pWaitDstStageMask = waitStages.data(),                                 // Stagegs to check semaphores at
-        .commandBufferCount = 1,                                                // Number of command buffers to submit FIXME: é isto mesmo?
-        .pCommandBuffers = &this->commandBuffers->getBuffers()[imageIndex],     // Command buffer to submit
-        .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphore to signal
-        .pSignalSemaphores = signalSemaphores.data(),                           // Semaphore to signal when command buffer finishes
-    };
-
-    // Submit command buffer to queue
-    if (vkQueueSubmit(gQueue, 1, &submitInfo, this->drawFences[this->currentFrame]) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to submit Command Buffer to Queue!");
-    }
+    this->commandBuffers->submitToRender(subToRender);
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
+    std::array<VkSemaphore, 1> signalSemaphores{this->sync->getSignalSemaphore(this->currentFrame)}; // renderFinished[this->currentFrame]
     std::array<VkSwapchainKHR, 1> swapChains{this->swapchain->getKHR()};
     const VkPresentInfoKHR presentInfo{
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -252,30 +238,7 @@ void VulkanRenderer::createGraphicsPipeline() {
     this->pipeline->create(shaderModule, this->rederer->getRenderPass());
 }
 
-void VulkanRenderer::createSynchronisation() {
-
-    this->imageAvailable.resize(ce::MAX_FRAME_DRAWS);
-    this->renderFinished.resize(ce::MAX_FRAME_DRAWS);
-    this->drawFences.resize(ce::MAX_FRAME_DRAWS);
-
-    // Semaphore creation information
-    const VkSemaphoreCreateInfo semaphoreCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-    };
-
-    // Fence creation information
-    const VkFenceCreateInfo fenceCreateInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-
-    for (size_t i = 0; i < ce::MAX_FRAME_DRAWS; i++) {
-
-        if (vkCreateSemaphore(bvk->logical, &semaphoreCreateInfo, nullptr, &this->imageAvailable[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(bvk->logical, &semaphoreCreateInfo, nullptr, &this->renderFinished[i]) != VK_SUCCESS ||
-            vkCreateFence(bvk->logical, &fenceCreateInfo, nullptr, &this->drawFences[i]) != VK_SUCCESS) {
-
-            throw std::runtime_error("Failed to create a Semaphore and/or Fence!");
-        }
-    }
-}
+void VulkanRenderer::createSynchronisation() { this->sync = std::make_shared<ce::Sync>(this->bvk->logical, ce::MAX_FRAME_DRAWS); }
 
 void VulkanRenderer::createDescriptorPool() {
 
