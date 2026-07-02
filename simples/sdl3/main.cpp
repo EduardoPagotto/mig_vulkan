@@ -52,8 +52,8 @@ int main() {
         VulkanRenderer vulkanRenderer(devvk);
 
         float angle = 0.0F;
-        uint64_t deltaTime = 0;
-        uint64_t lastTime = 0;
+        float deltaTime = 0;
+        float lastTime = 0;
 
         int helicopter = vulkanRenderer.createMeshModel("./models/Seahawk.obj");
 
@@ -65,7 +65,7 @@ int main() {
                 }
             }
 
-            uint64_t now = SDL_GetTicks();
+            float now = SDL_GetTicks() / 1000.0F;
             deltaTime = now - lastTime;
             lastTime = now;
 
