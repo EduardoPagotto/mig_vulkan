@@ -11,6 +11,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 #add_subdirectory(simples/sdl3)
 add_subdirectory(simples/glfw)
+add_subdirectory(cevk)
 
 # clean
 add_custom_target (clean-all COMMAND rm -rf ${CMAKE_BINARY_DIR}/*

@@ -27,29 +27,17 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 # set(SPV_OUTPUTS "./bin")
 
 
-set (IncludeDirs ${CMAKE_SOURCE_DIR}/include)
+set (IncludeDirs ${CMAKE_SOURCE_DIR}/include
+                 ${CMAKE_SOURCE_DIR}/cevk/include)
 
-add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/DevVK.cpp
-                               ${CMAKE_SOURCE_DIR}/src/debug.cpp
-                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorSet.cpp
-                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorSetLayout.cpp
-                               ${CMAKE_SOURCE_DIR}/src/descriptors/DescriptorPool.cpp
-                               ${CMAKE_SOURCE_DIR}/src/buffers/BufferObject.cpp
-                               ${CMAKE_SOURCE_DIR}/src/buffers/CommandBuffer.cpp
-                               ${CMAKE_SOURCE_DIR}/src/buffers/ImageObject.cpp
-                               ${CMAKE_SOURCE_DIR}/src/buffers/VBO.cpp
-                               ${CMAKE_SOURCE_DIR}/src/buffers/IBO.cpp
-                               ${CMAKE_SOURCE_DIR}/src/entitys/Textures.cpp
-                               ${CMAKE_SOURCE_DIR}/src/entitys/MeshModel.cpp
-                               ${CMAKE_SOURCE_DIR}/src/entitys/Mesh.cpp
-                               ${CMAKE_SOURCE_DIR}/src/CommandPool.cpp
-                               ${CMAKE_SOURCE_DIR}/src/SwapChain.cpp
-                               ${CMAKE_SOURCE_DIR}/src/Renderer.cpp
-                               ${CMAKE_SOURCE_DIR}/src/ShaderModule.cpp
-                               ${CMAKE_SOURCE_DIR}/src/Pipeline.cpp
-                               ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp
+set (LIBRARY_DEPS ${CMAKE_SOURCE_DIR}/bin/libcevk.a
+                  glfw
+                  vulkan
+                  assimp::assimp)
+
+add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp
                                main.cpp)
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${IncludeDirs})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw vulkan assimp::assimp)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRARY_DEPS})
