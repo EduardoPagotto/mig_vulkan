@@ -9,8 +9,15 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-#add_subdirectory(simples/sdl3)
+#set(SET_GLFW_ENABLE ON)
+
+if(SET_GLFW_ENABLE)
+add_definitions(-DSET_GLFW_ENABLE)
 add_subdirectory(simples/glfw)
+else(SET_GLFW_ENABLE)
+add_subdirectory(simples/sdl3)
+endif(SET_GLFW_ENABLE)
+
 add_subdirectory(cevk)
 
 # clean

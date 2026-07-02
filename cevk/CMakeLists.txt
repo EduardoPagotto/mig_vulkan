@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
 
-set(SET_GLFW_ENABLE ON)
-add_definitions(-DSET_GLFW_ENABLE)
-
 PROJECT(cevk VERSION 0.0.1 LANGUAGES CXX)
-
-# set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
-# set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
 
 find_package(glfw3 3.3 REQUIRED)
 find_package(assimp REQUIRED)

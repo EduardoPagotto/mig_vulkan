@@ -1,11 +1,14 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include "VulkanRenderer.hpp"
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/trigonometric.hpp>
 #include <iostream>
 #include <string>
 
 SDL_Window* window = nullptr;
-VulkanRenderer vulkanRenderer;
 
 bool initWindow(const std::string& sName = "Teste", const int width = 800, const int height = 600) {
 
@@ -34,30 +37,58 @@ bool initWindow(const std::string& sName = "Teste", const int width = 800, const
 
 int main() {
 
-    if (!initWindow("Teste")) {
-        return SDL_APP_FAILURE;
-    }
+    auto result = SDL_APP_SUCCESS;
 
-    if (vulkanRenderer.init(window) == EXIT_FAILURE) {
-        return SDL_APP_FAILURE;
-    }
+    try {
 
-    for (bool running = true; running;) {
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                running = false;
-            }
+        if (!initWindow("Teste")) {
+            return SDL_APP_FAILURE;
         }
 
-        // Vulkan rendering would go here
-        vulkanRenderer.draw();
-    }
+        std::shared_ptr<ce::BaseVK> bvk = std::make_shared<ce::BaseVK>();
+        bvk->window = window;
 
-    vulkanRenderer.cleanup();
+        ce::DevVk devvk(bvk);
+        VulkanRenderer vulkanRenderer(devvk);
+
+        float angle = 0.0F;
+        uint64_t deltaTime = 0;
+        uint64_t lastTime = 0;
+
+        int helicopter = vulkanRenderer.createMeshModel("./models/Seahawk.obj");
+
+        for (bool running = true; running;) {
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_EVENT_QUIT) {
+                    running = false;
+                }
+            }
+
+            uint64_t now = SDL_GetTicks();
+            deltaTime = now - lastTime;
+            lastTime = now;
+
+            angle += 10.0F * deltaTime;
+            if (angle > 360.0F) {
+                angle -= 360.0F;
+            }
+
+            glm::mat4 testMat = glm::rotate(glm::mat4(1.0F), glm::radians(angle), glm::vec3(0.0F, 1.0F, 0.0F));
+            //  testMat = glm::rotate(testMat, glm::radians(-45.0F), glm::vec3(0.0F, 0.0F, 1.0F));
+            //  this->modelList[0].setModel(testMat);
+
+            vulkanRenderer.updateModel(helicopter, testMat);
+            vulkanRenderer.draw();
+        }
+
+    } catch (const std::runtime_error& e) {
+        std::cout << "Error: " << e.what() << '\n';
+        result = SDL_APP_FAILURE;
+    }
 
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    return SDL_APP_SUCCESS;
+    return result;
 }

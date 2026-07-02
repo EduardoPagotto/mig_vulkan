@@ -1,10 +1,10 @@
-#include <memory>
 #define STB_IMAGE_IMPLEMENTATION
 #include "VulkanRenderer.hpp"
 #include <cstdlib>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
+#include <memory>
 
 GLFWwindow* window;
 

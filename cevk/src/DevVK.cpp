@@ -128,7 +128,7 @@ namespace ce {
             throw std::runtime_error("Failed to create a surface!");
         }
 #else
-        if (!SDL_Vulkan_CreateSurface(this->window, this->instance, nullptr, &this->surface)) {
+        if (!SDL_Vulkan_CreateSurface(this->bvk->window, this->instance, nullptr, &this->bvk->surface)) {
             throw std::runtime_error("Failed to create a surface!");
         }
 #endif
