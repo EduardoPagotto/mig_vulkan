@@ -75,8 +75,6 @@ class VulkanRenderer {
     void createDescriptorPool();
     void createDescriptorSets();
 
-    void updateUniformBuffers(uint32_t imageIndex);
-
     // - Record Functions
     void recordCommands(uint32_t currentImage);
 };

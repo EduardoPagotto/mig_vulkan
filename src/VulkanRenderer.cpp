@@ -101,7 +101,8 @@ void VulkanRenderer::draw() {
                           this->sync->getWaitSemafore(this->currentFrame), VK_NULL_HANDLE, &imageIndex);
 
     this->recordCommands(imageIndex);
-    this->updateUniformBuffers(imageIndex);
+    // Copy View Projection data in UBO
+    this->uboVP->getUBO()[imageIndex]->mapper(&this->uboViewProjection);
 
     // -- SUBMIT COMMAND BUFFER TO RENDER
     // Queue submission information
@@ -115,25 +116,9 @@ void VulkanRenderer::draw() {
     this->commandBuffers->submitToRender(subToRender);
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
-    std::array<VkSemaphore, 1> signalSemaphores{this->sync->getSignalSemaphore(this->currentFrame)}; // renderFinished[this->currentFrame]
-    std::array<VkSwapchainKHR, 1> swapChains{this->swapchain->getKHR()};
-    const VkPresentInfoKHR presentInfo{
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphores to wait on
-        .pWaitSemaphores = signalSemaphores.data(),                           // Semaphores to wait on
-        .swapchainCount = static_cast<uint32_t>(swapChains.size()),           // Number of swapchains to present to
-        .pSwapchains = swapChains.data(),                                     // Swapchais to present images to
-        .pImageIndices = &imageIndex,                                         // Index of Images in swapchains to present
-    };
-
-    // Present Image
-    if (vkQueuePresentKHR(pQueue, &presentInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to present Image!");
-    }
-
+    this->swapchain->sendImageToScreen(pQueue, this->sync->getSignalSemaphore(this->currentFrame), imageIndex);
     // Get next frame
     this->currentFrame = (this->currentFrame + 1) % ce::MAX_FRAME_DRAWS;
-
     // AHHHH!!!!!! ugly!!!!! this is complete wrong, find what missmatch sYncs!!!
     if (this->currentFrame == (ce::MAX_FRAME_DRAWS - 1)) {
         vkDeviceWaitIdle(bvk->logical);
@@ -307,12 +292,6 @@ void VulkanRenderer::createDescriptorSets() {
     // Update the descripto sets with new buffer/binding info
     this->uboVP->updateDescriptorSets();
     this->uboVP->clearWriteDescriptorSet();
-}
-
-void VulkanRenderer::updateUniformBuffers(uint32_t imageIndex) {
-
-    // Copy VP data
-    this->uboVP->getUBO()[imageIndex]->mapper(&this->uboViewProjection);
 }
 
 void VulkanRenderer::recordCommands(uint32_t currentImage) {
