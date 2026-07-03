@@ -1,17 +1,10 @@
 #include "VulkanRenderer.hpp"
 #include "DevVK.hpp"
 #include "entitys/ShaderModule.hpp"
-#include <array>
 #include <cstddef>
-#include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/vector_float3.hpp>
-#include <glm/trigonometric.hpp>
-#include <limits>
-#include <memory>
 #include <stdexcept>
 
 VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {

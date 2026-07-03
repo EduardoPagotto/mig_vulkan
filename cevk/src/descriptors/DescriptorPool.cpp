@@ -1,6 +1,5 @@
 #include "descriptors/DescriptorPool.hpp"
 #include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
 namespace ce {
 
