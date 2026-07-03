@@ -7,8 +7,8 @@ find_package(assimp REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
-set (IncludeDirs ${CMAKE_SOURCE_DIR}/include
-                 ${CMAKE_SOURCE_DIR}/cevk/include)
+set (IncludeDirs ${CMAKE_SOURCE_DIR}/apps/include
+                 ${CMAKE_SOURCE_DIR}/src/cevk/include/cevk)
 
 set (LIBRARY_DEPS ${CMAKE_SOURCE_DIR}/bin/libcevk.a
                   SDL3::SDL3
@@ -16,7 +16,7 @@ set (LIBRARY_DEPS ${CMAKE_SOURCE_DIR}/bin/libcevk.a
                   GPUOpen::VulkanMemoryAllocator
                   assimp::assimp)
 
-add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/VulkanRenderer.cpp
+add_executable(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/apps/src/VulkanRenderer.cpp
                                main.cpp)
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${IncludeDirs})

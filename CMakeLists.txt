@@ -9,16 +9,21 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
-#set(SET_GLFW_ENABLE ON)
+set(SET_GLFW_ENABLE OFF)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
+set(CMAKE_COLOR_MAKEFILE ON)
+set(ENV{CLICOLOR_FORCE} 1)
+
+add_subdirectory(src/cevk)
 
 if(SET_GLFW_ENABLE)
 add_definitions(-DSET_GLFW_ENABLE)
-add_subdirectory(simples/glfw)
+add_subdirectory(apps/glfw)
 else(SET_GLFW_ENABLE)
-add_subdirectory(simples/sdl3)
+add_subdirectory(apps/sdl3)
 endif(SET_GLFW_ENABLE)
 
-add_subdirectory(cevk)
+
 
 # clean
 add_custom_target (clean-all COMMAND rm -rf ${CMAKE_BINARY_DIR}/*
