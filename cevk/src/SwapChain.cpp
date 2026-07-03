@@ -181,6 +181,27 @@ namespace ce {
         this->depthBufferObject->createImageView(VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
+    void SwapChain::sendImageToScreen(VkQueue pQueue, VkSemaphore signal, uint32_t& imageIndex) {
+        //
+        // -- PRESENT RENDERED IMAGE TO SCREEN --
+        std::array<VkSemaphore, 1> signalSemaphores{signal}; //{this->sync->getSignalSemaphore(this->currentFrame)};
+        std::array<VkSwapchainKHR, 1> swapChains{this->swapchain};
+
+        const VkPresentInfoKHR presentInfo{
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()), // Number of semaphores to wait on
+            .pWaitSemaphores = signalSemaphores.data(),                           // Semaphores to wait on
+            .swapchainCount = static_cast<uint32_t>(swapChains.size()),           // Number of swapchains to present to
+            .pSwapchains = swapChains.data(),                                     // Swapchais to present images to
+            .pImageIndices = &imageIndex,                                         // Index of Images in swapchains to present
+        };
+
+        // Present Image
+        if (vkQueuePresentKHR(pQueue, &presentInfo) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to present Image!");
+        }
+    }
+
     // Best format is subjective, but ours will be:
     // Format     : VK_FORMAT_R8G8B8A8_UNFORM (VK_FORMAT_B8G8R8A8_UNORM as backup)
     // colorSpace : VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
