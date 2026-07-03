@@ -55,7 +55,7 @@ int main() {
         float deltaTime = 0;
         float lastTime = 0;
 
-        int helicopter = vulkanRenderer.createMeshModel("./models/Seahawk.obj");
+        int helicopter = vulkanRenderer.createMeshModel("./assets/models/Seahawk.obj");
 
         for (bool running = true; running;) {
             SDL_Event event;

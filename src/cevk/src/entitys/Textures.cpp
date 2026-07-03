@@ -154,7 +154,7 @@ namespace ce {
         int channels;
 
         // Loads pixel data for image
-        std::string fileLoc = "./textures/" + filename;
+        std::string fileLoc = "./assets/textures/" + filename;
         stbi_uc* image = stbi_load(fileLoc.c_str(), width, height, &channels, STBI_rgb_alpha);
 
         if (image == nullptr) {

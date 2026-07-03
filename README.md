@@ -2,7 +2,7 @@
 Migrating my knowledge from OpenGL to Vulkan
 
 ## Features of project:
-- Editor: VSCode (clangd, Clang-Format, CMake Tools, CodeLLDB)
+- Editor: VSCodium (clangd, Clang-Format, CMake Tools, CodeLLDB)
 - Build tool: CMAKE
 - Compiler: Clang (mostly C++20)
 - Debug: lldb
@@ -10,7 +10,7 @@ Migrating my knowledge from OpenGL to Vulkan
 - LIBS an API's:
   - Vulkan 1.1
   - SDL3, SDL3_Image, SDL3_TTF
-  - GLFW3
+
 
 ## Deps develop
 ```bash
@@ -65,16 +65,10 @@ make -C build -j 4
 SDL_VIDEODRIVER=x11 ./bin/sdl_test
 
 # simple tests
-./bin/glwf_test
 ./bin/sdl_test
 
 # compile spirv
-glslangValidator  -V ./shaders/shader.vert -o ./bin/vert.spv
-glslangValidator  -V ./shaders/shader.frag -o ./bin/frag.spv
+glslangValidator  -V ./assets/shaders/shader.vert -o ./bin/vert.spv
+glslangValidator  -V ./assets/shaders/shader.frag -o ./bin/frag.spv
 
 ```
-
-consultas:
-
-- Na vulkan api como lidar com varios mesh com shaders diferentes em relacao ao pipeline
-  - Configuração de Descriptor Sets para evitar alterações de Pipeline
