@@ -27,14 +27,7 @@ class VulkanRenderer {
 
     VkQueue gQueue; // graphicsQueue
     VkQueue pQueue; // presentationQueue
-
-    std::shared_ptr<ce::BaseVK> bvk;
-    // std::shared_ptr<ce::VWrapp> vwrapp;
-    std::shared_ptr<ce::SwapChain> swapchain;
-    std::shared_ptr<ce::Renderer> rederer;
-
-    // Scene Objects
-    std::vector<ce::MeshModel> modelList;
+    VkPushConstantRange pushConstantRange;
 
     // Scene Settings
     struct UboViewProjection {
@@ -42,36 +35,24 @@ class VulkanRenderer {
         glm::mat4 view;
     } uboViewProjection;
 
-    // Vulkan components
-    // - Main
+    std::shared_ptr<ce::BaseVK> bvk;
+    std::shared_ptr<ce::SwapChain> swapchain;
+    std::shared_ptr<ce::Renderer> rederer;
     std::shared_ptr<ce::CommandBuffer> commandBuffers;
-
-    // - Descriptors
     std::shared_ptr<ce::DescriptorPool> descriptorPool;
     std::shared_ptr<ce::UBO<ce::BufferObject>> uboVP;
-
-    VkPushConstantRange pushConstantRange;
-
-    // - Assets
     std::shared_ptr<ce::Textures> textureMng;
-
-    // - Pipeline
     std::shared_ptr<ce::Pipeline> pipeline;
-
-    // - Pools
     std::shared_ptr<ce::CommandPool> graphicsCommandPool;
-
-    // - Synchronization
     std::shared_ptr<ce::Sync> sync;
+    // Scene Objects
+    std::vector<ce::MeshModel> modelList;
 
-    // Vulkan Functions
-    // - Create functions
+    // - Vulkan create functions
     void createDescriptorSetLayout();
     void createPushConstantRange();
     void createGraphicsPipeline();
-    // void createDepthBufferImage();
     void createCommandPool();
-    void createSynchronisation();
     void createDescriptorPool();
     void createDescriptorSets();
 

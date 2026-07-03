@@ -19,7 +19,6 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     using namespace ce;
 
     this->bvk = devvk.getBaseVK();
-
     this->gQueue = devvk.getGraphicsQueue();
     this->pQueue = devvk.getPresentationQueue();
 
@@ -39,7 +38,8 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
 
     createDescriptorPool();
     createDescriptorSets();
-    createSynchronisation();
+
+    this->sync = std::make_shared<ce::Sync>(this->bvk->logical, ce::MAX_FRAME_DRAWS);
 
     // const float radixAngle = 45.0F;
     const float near = 0.1F;
@@ -222,8 +222,6 @@ void VulkanRenderer::createGraphicsPipeline() {
     // -- GRAPHICS PIPELINE CREATION
     this->pipeline->create(shaderModule, this->rederer->getRenderPass());
 }
-
-void VulkanRenderer::createSynchronisation() { this->sync = std::make_shared<ce::Sync>(this->bvk->logical, ce::MAX_FRAME_DRAWS); }
 
 void VulkanRenderer::createDescriptorPool() {
 
