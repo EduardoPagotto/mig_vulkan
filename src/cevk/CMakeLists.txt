@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 4.3.0)
 
 PROJECT(cevk VERSION 0.0.1 LANGUAGES CXX)
 
@@ -49,3 +49,4 @@ set(SourceFiles ${CMAKE_CURRENT_SOURCE_DIR}/src/DevVK.cpp
 add_library(${PROJECT_NAME} STATIC ${SourceFiles})
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${IncludeDirs})
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

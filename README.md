@@ -47,6 +47,10 @@ sudo dnf install glfw-devel
 
 # ASSIMP (Model load)
 sudo dnf install assimp assimp-devel
+
+# fastgltf (for now)
+sudo dnf install simdjson
+sudo clone https://github.com/spnda/fastgltf
 ```
 
 ## Build and test:
