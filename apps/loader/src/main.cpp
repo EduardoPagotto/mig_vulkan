@@ -23,6 +23,38 @@ struct Model {
     std::vector<MeshData> meshes;
 };
 
+void carregarMateriais(const fastgltf::Asset& asset) {
+
+    // 3. Itera pelos materiais do modelo
+    // const auto& loadedAsset = asset.get();
+    for (size_t i = 0; i < asset.materials.size(); ++i) {
+        const auto& material = asset.materials[i];
+
+        std::cout << "Material [" << i << "]: " << material.name.c_str() << '\n';
+
+        // Acessa o atalho PBR da nova API
+        const auto& pbr = material.pbrData;
+
+        // 5. Extrai o 'baseColorFactor', que contem o vetor RGBA (canais de 0.0 a 1.0)
+        auto color = pbr.baseColorFactor;
+        // auto metallic = pbr.metallicFactor;
+        // auto roughness = pbr.roughnessFactor;
+
+        // Acesso ao índice da textura base (se houver)
+        if (pbr.baseColorTexture.has_value()) {
+            auto textureIndex = pbr.baseColorTexture->textureIndex;
+            std::cout << "Texture index: " << textureIndex << '\n';
+        }
+
+        // Pega os 3 primeiros canais (R, G, B) e converte para valor de 0 a 255
+        float red = color[0];
+        float green = color[1];
+        float blue = color[2];
+
+        std::cout << "  Cor RGB: R(" << red * 255.0F << ") G(" << green * 255.0F << ") B(" << blue * 255.0F << ")" << '\n';
+    }
+}
+
 void loadModel(const std::filesystem::path& filePath, MeshData* pMesh) { // NOLINT
     // 1. Create the data buffer using the modern static constructor
     auto expectedBuffer = fastgltf::GltfDataBuffer::FromPath(filePath);
@@ -45,6 +77,8 @@ void loadModel(const std::filesystem::path& filePath, MeshData* pMesh) { // NOLI
 
     fastgltf::Asset asset = std::move(expectedAsset.get());
     // Model is loaded and ready!
+
+    carregarMateriais(asset);
 
     for (const auto& mesh : asset.meshes) {
         for (const auto& primitive : mesh.primitives) {
