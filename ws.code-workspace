@@ -238,7 +238,7 @@
 		"configurations": [
 			{
 				"name": "SDL_test",
-				"type": "lldb",
+				"type": "lldb-dap",
 				"request": "launch",
 				"program": "${workspaceFolder}/bin/sdl_test",
 				"args": [],
@@ -248,10 +248,10 @@
 				"cwd": "${workspaceFolder}"
 			},
 			{
-				"name": "GLFW_Test",
+				"name": "loader",
 				"type": "lldb-dap",
 				"request": "launch",
-				"program": "${workspaceFolder}/bin/glwf_test",
+				"program": "${workspaceFolder}/bin/loader",
 				"args": [],
 				"cwd": "${workspaceFolder}",
 				"env": {

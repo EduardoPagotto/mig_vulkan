@@ -29,8 +29,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 # )
 # FetchContent_MakeAvailable(EnTT)
 
-add_subdirectory(src/cevk)
-add_subdirectory(apps/sdl3)
+#add_subdirectory(src/cevk)
+#add_subdirectory(apps/sdl3)
 add_subdirectory(apps/loader)
 
 
