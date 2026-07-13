@@ -3,7 +3,6 @@ project(VulkanTest)
 
 set(CMAKE_CXX_FLAGS "-std=c++20 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs -fstandalone-debug")
 
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
@@ -29,9 +28,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 # )
 # FetchContent_MakeAvailable(EnTT)
 
-#add_subdirectory(src/cevk)
-#add_subdirectory(apps/sdl3)
-add_subdirectory(apps/loader)
+add_subdirectory(src/cevk)
+add_subdirectory(apps/sdl3)
+#add_subdirectory(apps/loader)
 
 
 # clean

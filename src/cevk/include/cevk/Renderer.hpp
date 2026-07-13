@@ -1,18 +1,19 @@
 #pragma once
-#include "subsystem.hpp"
-#include <memory>
+
+#include "cevk.hpp"
 
 namespace ce {
 
     class Renderer {
       public:
-        explicit Renderer(std::shared_ptr<BaseVK> bvk, const VkFormat& format);
+        explicit Renderer(BaseVK* pBVK, const VkFormat& format);
         virtual ~Renderer();
 
         VkRenderPass& getRenderPass() { return renderPass; }
 
       private:
-        std::shared_ptr<BaseVK> bvk;
+        VkPhysicalDevice physical{VK_NULL_HANDLE};
+        VkDevice logical{VK_NULL_HANDLE};
 
         VkRenderPass renderPass;
 

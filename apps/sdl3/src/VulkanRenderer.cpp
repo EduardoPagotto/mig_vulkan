@@ -1,6 +1,6 @@
 #include "VulkanRenderer.hpp"
-#include "DevVK.hpp"
-#include "entitys/ShaderModule.hpp"
+#include "Command.hpp"
+#include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -15,9 +15,10 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     this->gQueue = devvk.getGraphicsQueue();
     this->pQueue = devvk.getPresentationQueue();
 
-    swapchain = std::make_shared<SwapChain>(bvk);
-    rederer = std::make_shared<Renderer>(bvk, swapchain->getImageFormat());
-    uboVP = std::make_shared<UBO<BufferObject>>(bvk->physical, bvk->logical, swapchain->getImages().size(), sizeof(UboViewProjection));
+    swapchain = std::make_shared<SwapChain>(bvk.get());
+    rederer = std::make_shared<Renderer>(bvk.get(), swapchain->getImageFormat());
+    uboVP = std::make_shared<UBO<BufferObject>>(bvk->physical, bvk->logical, swapchain->getImages().size(),
+                                                sizeof(UboViewProjection));
     textureMng = std::make_shared<Textures>(bvk->physical, bvk->logical);
 
     createDescriptorSetLayout();
@@ -25,9 +26,9 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     createGraphicsPipeline();
 
     swapchain->createFramebuffers(rederer->getRenderPass());
-    graphicsCommandPool = std::make_shared<CommandPool>(this->bvk);
-    commandBuffers =
-        std::make_shared<CommandBuffer>(bvk->logical, graphicsCommandPool->getPool(), swapchain->getSwapChainFrameBuffers().size());
+    graphicsCommandPool = std::make_shared<CommandPool>(this->bvk.get());
+    commandBuffers = std::make_shared<CommandBuffer>(bvk->logical, graphicsCommandPool->get(),
+                                                     swapchain->getSwapChainFrameBuffers().size());
 
     createDescriptorPool();
     createDescriptorSets();
@@ -49,7 +50,7 @@ VulkanRenderer::VulkanRenderer(ce::DevVk& devvk) {
     uboViewProjection.projection[1][1] *= -1; // vulkan inverted of OpenGL
 
     // Create our default "no texture" texture
-    textureMng->createTexture("plain.png", gQueue, graphicsCommandPool->getPool());
+    textureMng->createTexture("plain.png", gQueue, graphicsCommandPool->get());
 }
 
 VulkanRenderer::~VulkanRenderer() {
@@ -70,7 +71,8 @@ VulkanRenderer::~VulkanRenderer() {
 
     commandBuffers.reset();
     graphicsCommandPool.reset();
-    pipeline.reset();
+    graphicPipeline.reset();
+    pipelineLayout.reset();
 }
 
 void VulkanRenderer::updateModel(int modelId, glm::mat4 newModel) {
@@ -103,10 +105,9 @@ void VulkanRenderer::draw() {
                                              .wait = this->sync->getWaitSemafore(this->currentFrame),
                                              .signal = this->sync->getSignalSemaphore(this->currentFrame),
                                              .fence = this->sync->getDrawFence(this->currentFrame),
-                                             .pipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                             .bufferIndex = imageIndex};
+                                             .pipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
-    this->commandBuffers->submitToRender(subToRender);
+    ce::Command::SubmitToRender(subToRender, this->commandBuffers->getBuffers()[imageIndex]);
 
     // -- PRESENT RENDERED IMAGE TO SCREEN --
     this->swapchain->sendImageToScreen(pQueue, this->sync->getSignalSemaphore(this->currentFrame), imageIndex);
@@ -123,10 +124,11 @@ void VulkanRenderer::createDescriptorSetLayout() {
     // UNIFORM VALUES DESCRIPTOR SET LAYOUT
     // UboViewProjection Binding info
     this->uboVP->addDescriptorSetLayoutBinding({
-        .binding = 0,                                        // Binding point in shader (designed by binding number in shader)
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // Type of descriptor (uniform, dynamic, image sampler, etc)
-        .descriptorCount = 1,                                // Number of descriptors for binding
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,            // Shade stage to bind to
+        .binding = 0, // Binding point in shader (designed by binding number in shader)
+        .descriptorType =
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,    // Type of descriptor (uniform, dynamic, image sampler, etc)
+        .descriptorCount = 1,                     // Number of descriptors for binding
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, // Shade stage to bind to
         .pImmutableSamplers = nullptr, // for Texture: can make sampler unchangeable (immutable) by specifying in layout
     });
 
@@ -154,7 +156,8 @@ void VulkanRenderer::createGraphicsPipeline() {
     shaderModule->addCode(VK_SHADER_STAGE_VERTEX_BIT, ce::aux::readFile("./bin/vert.spv"));
     shaderModule->addCode(VK_SHADER_STAGE_FRAGMENT_BIT, ce::aux::readFile("./bin/frag.spv"));
 
-    // How the data for a sigle vertex (including info such as position, colour, texture coords, normals, etc..) is as a whole
+    // How the data for a sigle vertex (including info such as position, colour, texture coords, normals, etc..) is as a
+    // whole
     shaderModule->addBindingDescription(0, sizeof(ce::Vertex), VK_VERTEX_INPUT_RATE_VERTEX);
 
     // Attributes of shader vertex
@@ -173,19 +176,29 @@ void VulkanRenderer::createGraphicsPipeline() {
                               .minDepth = 0.0F,                                     // min framebuffer depth
                               .maxDepth = 1.0F};                                    // max framebuffer depth
 
-    const VkRect2D scissor{.offset = VkOffset2D{.x = 0, .y = 0},    // Offset to use region from
-                           .extent = this->swapchain->getExtent()}; // Extent to describe region to use, starting at offset
+    const VkRect2D scissor{.offset = VkOffset2D{.x = 0, .y = 0}, // Offset to use region from
+                           .extent =
+                               this->swapchain->getExtent()}; // Extent to describe region to use, starting at offset
+
+    // -- PIPELINE LAYOUT --
+    this->pipelineLayout = std::make_shared<ce::PipelineLayout>(this->bvk->logical);
+    this->pipelineLayout->addLayout(this->uboVP->getDescriptorSetLayout());
+    this->pipelineLayout->addLayout(this->textureMng->getUbo()->getDescriptorSetLayout());
+    this->pipelineLayout->addPushRange(this->pushConstantRange);
+    this->pipelineLayout->create();
 
     // TODO: mudar o nome da classe
-    this->pipeline = std::make_shared<ce::Pipeline>(this->bvk->logical);
-    this->pipeline->addViewport(viewport);
-    this->pipeline->addScissor(scissor);
+    this->graphicPipeline = std::make_shared<ce::Pipeline>(this->bvk->logical);
+    this->graphicPipeline->addViewport(viewport);
+    this->graphicPipeline->addScissor(scissor);
 
     // // -- DYNAMIC STATES --
-    // this->pipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in command buffer with
-    // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
-    // this->pipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_SCISSOR);  // Dynamic Scissor: Can resize in command buffer with
-    // ;                                                                        // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
+    // this->graphicPipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_VIEWPORT); // Dynamic Viewport: Can resize in
+    // command buffer with ;                                                                        //
+    // vkCmdSetViewport(commandbuffer, 0, 1, &viewport);
+    // this->graphicPipeline->addDynamicStateEnables(VK_DYNAMIC_STATE_SCISSOR);  // Dynamic Scissor: Can resize in
+    // command buffer with ;                                                                        //
+    // vkCmdSetViewport(commandbuffer, 0, 1, &scissor);
 
     // Blend Attachment State (how blending is handled)
     // Blending uses equation: (srcColorBlendfactor * new colour) colorBlendOp (dstColorBlendfactor * old colour)
@@ -205,15 +218,10 @@ void VulkanRenderer::createGraphicsPipeline() {
                           VK_COLOR_COMPONENT_A_BIT, // Color to apply blending to
     };
 
-    this->pipeline->addColourState(colourState);
-
-    // -- PIPELINE LAYOUT --
-    this->pipeline->addLayout(this->uboVP->getDescriptorSetLayout());
-    this->pipeline->addLayout(this->textureMng->getUbo()->getDescriptorSetLayout());
-    this->pipeline->addPushRange(this->pushConstantRange);
+    this->graphicPipeline->addColourState(colourState);
 
     // -- GRAPHICS PIPELINE CREATION
-    this->pipeline->create(shaderModule, this->rederer->getRenderPass());
+    this->graphicPipeline->create(shaderModule, this->rederer->getRenderPass(), this->pipelineLayout->get());
 }
 
 void VulkanRenderer::createDescriptorPool() {
@@ -230,7 +238,8 @@ void VulkanRenderer::createDescriptorPool() {
     //                                    static_cast<uint32_t>(this->modelDUniformBuffer.size());//
 
     // Create Descriptor Pool
-    this->descriptorPool->create(static_cast<uint32_t>(this->swapchain->getImages().size())); // Maximum number of descriptor Sets
+    this->descriptorPool->create(
+        static_cast<uint32_t>(this->swapchain->getImages().size())); // Maximum number of descriptor Sets
 }
 
 void VulkanRenderer::createDescriptorSets() {
@@ -250,10 +259,12 @@ void VulkanRenderer::createDescriptorSets() {
         // Data about connection between binding and buffer
         const VkWriteDescriptorSet vpSetWrite{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = this->uboVP->getDescriptorSets()[i],       // this->descriptorSets->get()[i],            // Descriptor Set to update
-            .dstBinding = 0,                                     // Binding to update (matches with binding on layout/shader)
-            .dstArrayElement = 0,                                // index in array to update
-            .descriptorCount = 1,                                // type of Descriptor
+            .dstSet =
+                this->uboVP
+                    ->getDescriptorSets()[i], // this->descriptorSets->get()[i],            // Descriptor Set to update
+            .dstBinding = 0,                  // Binding to update (matches with binding on layout/shader)
+            .dstArrayElement = 0,             // index in array to update
+            .descriptorCount = 1,             // type of Descriptor
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // Amount to update
             .pBufferInfo = &vpBufferInfo                         // Information about buffer data to bind
         };
@@ -297,76 +308,49 @@ void VulkanRenderer::recordCommands(uint32_t currentImage) {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = this->rederer->getRenderPass(),                             // Render pass to begin
         .framebuffer = this->swapchain->getSwapChainFrameBuffers()[currentImage], //
-        .renderArea = VkRect2D{.offset = {.x = 0, .y = 0},                        // Start point of render pass in pixels
-                               .extent = this->swapchain->getExtent()}, // Size of region to run render pass on (starting at offset)
-        .clearValueCount = static_cast<uint32_t>(clearValues.size()),   //
-        .pClearValues = clearValues.data()                              // List of clear values
+        .renderArea =
+            VkRect2D{.offset = {.x = 0, .y = 0}, // Start point of render pass in pixels
+                     .extent =
+                         this->swapchain->getExtent()}, // Size of region to run render pass on (starting at offset)
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()), //
+        .pClearValues = clearValues.data()                            // List of clear values
     };
 
-    // Start recording command to command buffer!
-    // Buffer can be resubmitted when it has alredy been submited and is awaiting execution
-    this->commandBuffers->begin(currentImage, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
-
     // Begin Render Pass
-    vkCmdBeginRenderPass(this->commandBuffers->getBuffers()[currentImage], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    {
-        // Bind Pipeline to be used  in render pass
-        vkCmdBindPipeline(this->commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          this->pipeline->getGraphicsPipeline());
+    { //
+        ce::Command cmd(this->commandBuffers->getBuffers()[currentImage], VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+        cmd.beginAndPipeline(renderPassBeginInfo, this->graphicPipeline->get());
 
         for (size_t j = 0; j < this->modelList.size(); j++) { // 1:11:29
 
             ce::MeshModel thisModel = modelList[j];
 
-            // "Push" constant to given shader stage directly (no buffer)
-            vkCmdPushConstants(this->commandBuffers->getBuffers()[currentImage], //
-                               this->pipeline->getPipelineLayout(),              //
-                               VK_SHADER_STAGE_VERTEX_BIT,                       // Stage to push constant to
-                               0,                                                // offset of pushconstant to update
-                               sizeof(ce::Model),                                // size of data being pushed
-                               &thisModel.getModel2());                          // Actual data being pushed (cam be array)
+            cmd.pushConstants(this->pipelineLayout->get(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ce::Model),
+                              &thisModel.getModel2());
 
             for (size_t k = 0; k < thisModel.getMeshCount(); k++) {
-                //
 
-                VkBuffer vertexBuffer[] = {thisModel.getMesh(k)->getVertexBuffer()}; // Buffers to bind
-                VkDeviceSize offsets[] = {0};                                        // Offsets into buffers being bound
-                vkCmdBindVertexBuffers(commandBuffers->getBuffers()[currentImage], 0, 1, vertexBuffer,
-                                       offsets); // Command to bind vertex buffer before drawing with then
-
-                // Bind mesh index buffer, with 0 offset and using the uint32_t type
-                vkCmdBindIndexBuffer(commandBuffers->getBuffers()[currentImage], thisModel.getMesh(k)->getIndexBuffer(), 0,
-                                     VK_INDEX_TYPE_UINT32);
-
-                // Dynamic offset Amount
-                // uint32_t dynamicOffset = static_cast<uint32_t>(this->modelUniformAlignment) * j;
-
-                std::array<VkDescriptorSet, 2> descriptorSetGroup = {
-                    this->uboVP->getDescriptorSets()[currentImage],
-                    this->textureMng->getUbo()->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]};
-
-                vkCmdBindDescriptorSets(commandBuffers->getBuffers()[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        this->pipeline->getPipelineLayout(), 0, static_cast<uint32_t>(descriptorSetGroup.size()),
-                                        descriptorSetGroup.data(), 0, nullptr);
-
-                // Execute pipeline
-                vkCmdDrawIndexed(commandBuffers->getBuffers()[currentImage], thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);
+                cmd.addVertexBuffer({0}, thisModel.getMesh(k)->getVertexBuffer());
+                cmd.bindVertexBuffer(0);
+                cmd.bindIndexBuffer(thisModel.getMesh(k)->getIndexBuffer(), {0});
+                cmd.addDescriptorSet(this->uboVP->getDescriptorSets()[currentImage]);
+                cmd.addDescriptorSet(this->textureMng->getUbo()->getDescriptorSets()[thisModel.getMesh(k)->getTexId()]);
+                cmd.bindDescriptorSets(this->pipelineLayout->get());
+                cmd.drawIndexed(thisModel.getMesh(k)->getIndexCount(), 1, 0, 0, 0);
+                cmd.clearTemps();
             }
         }
-    }
-    // End Render Pass
-    vkCmdEndRenderPass(this->commandBuffers->getBuffers()[currentImage]);
 
-    this->commandBuffers->end(currentImage);
-    //}
+        cmd.end();
+    }
 }
 
 int VulkanRenderer::createMeshModel(const std::string& modelFile) {
     // Import model "scene"
     Assimp::Importer importer;
 
-    const aiScene* scene =
-        importer.ReadFile(modelFile.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+    const aiScene* scene = importer.ReadFile(modelFile.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs |
+                                                                    aiProcess_JoinIdenticalVertices);
 
     if (scene == nullptr) {
         throw std::runtime_error("Faile to load model! (" + modelFile + ")");
@@ -387,14 +371,15 @@ int VulkanRenderer::createMeshModel(const std::string& modelFile) {
         } else {
 
             // Otherwise, create texture and set value to index of new texture
-            matToTex[i] = this->textureMng->createTexture(textureNames[i], this->gQueue, this->graphicsCommandPool->getPool());
+            matToTex[i] =
+                this->textureMng->createTexture(textureNames[i], this->gQueue, this->graphicsCommandPool->get());
             // matToTex[i] = createTexture("panda.jpg");
         }
     }
 
     // Load in all our meshes
-    std::vector<ce::Mesh> modelMeshes = ce::MeshModel::LoadNode(bvk->physical, bvk->logical, gQueue, this->graphicsCommandPool->getPool(),
-                                                                scene->mRootNode, scene, matToTex);
+    std::vector<ce::Mesh> modelMeshes = ce::MeshModel::LoadNode(
+        bvk->physical, bvk->logical, gQueue, this->graphicsCommandPool->get(), scene->mRootNode, scene, matToTex);
 
     // Create mesh model and add to list
     ce::MeshModel meshModel(modelMeshes);

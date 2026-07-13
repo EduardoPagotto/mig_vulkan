@@ -266,18 +266,45 @@
 		"version": "2.0.0",
 		"tasks": [
 			{
-				"type": "cmake",
-				"label": "CMake: build",
-				"command": "build",
-				"targets": [
-					"all"
+				"label": "cmake",
+				"type": "shell",
+				"options": {
+					"cwd": "${workspaceRoot}/build"
+				},
+				"command": "cmake",
+				"args": [
+					"-G",
+					"Unix Makefiles",
+					"-DCMAKE_BUILD_TYPE=Debug",
+					".."
+				],
+			},
+			{
+				"label": "make",
+				"type": "shell",
+				"options": {
+					"cwd": "${workspaceRoot}/build"
+				},
+				"dependsOn": [
+					"cmake"
 				],
 				"group": {
-					"kind":"build",
-					"isDefault":true
+					"kind": "build",
+					"isDefault": true
 				},
-				"problemMatcher": [],
-				"detail": "CMake template build task"
+				"command": "make",
+				"problemMatcher": {
+					"owner": "cpp",
+					"fileLocation": "absolute",
+					"pattern": {
+						"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+						"file": 1,
+						"line": 2,
+						"column": 3,
+						"severity": 4,
+						"message": 5
+					}
+				}
 			}
 		]
 	}

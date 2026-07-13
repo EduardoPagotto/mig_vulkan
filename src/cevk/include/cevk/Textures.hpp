@@ -1,8 +1,6 @@
 #pragma once
 
-#include "buffers/ImageObject.hpp"
-#include "buffers/UBO.hpp"
-#include "descriptors/DescriptorPool.hpp"
+#include "Buffers.hpp"
 #include "stb_image.h"
 
 namespace ce {

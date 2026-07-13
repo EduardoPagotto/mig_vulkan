@@ -1,20 +1,18 @@
 #pragma once
 
-#include "subsystem.hpp"
-#include <memory>
-#include <vulkan/vulkan_core.h>
+#include "cevk.hpp"
 
 namespace ce {
 
     class CommandPool {
       public:
-        explicit CommandPool(std::shared_ptr<BaseVK> bvk);
+        explicit CommandPool(BaseVK* pBVK);
         virtual ~CommandPool();
         void cleanup();
-        VkCommandPool& getPool() { return this->commandPool; }
+        VkCommandPool& get() { return this->commandPool; }
 
       private:
-        std::shared_ptr<BaseVK> bvk;
+        VkDevice logical{VK_NULL_HANDLE};
         VkCommandPool commandPool;
     };
 } // namespace ce

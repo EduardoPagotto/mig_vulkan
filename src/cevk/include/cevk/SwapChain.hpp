@@ -1,8 +1,6 @@
 #pragma once
 
-#include "buffers/ImageObject.hpp"
-#include "subsystem.hpp"
-#include <array>
+#include "Buffers.hpp"
 #include <memory>
 #include <vector>
 
@@ -10,7 +8,7 @@ namespace ce {
 
     class SwapChain {
       public:
-        explicit SwapChain(std::shared_ptr<BaseVK> bvk);
+        explicit SwapChain(BaseVK* pBVK);
         virtual ~SwapChain();
 
         VkSwapchainKHR& getKHR() { return this->swapchain; }
@@ -28,9 +26,13 @@ namespace ce {
         VkSwapchainKHR swapchain;
         VkFormat imageFormat;
         VkExtent2D extent;
-        std::shared_ptr<BaseVK> bvk;
+        VkPhysicalDevice physical{VK_NULL_HANDLE};
+        VkDevice logical{VK_NULL_HANDLE};
+
+        SDL_Window* window{nullptr};
+
         std::vector<std::shared_ptr<ImageObject>> images;
-        std::shared_ptr<ce::ImageObject> depthBufferObject;
+        std::shared_ptr<ImageObject> depthBufferObject;
         std::vector<VkFramebuffer> swapChainFrameBuffers;
 
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities);
